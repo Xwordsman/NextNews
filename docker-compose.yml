@@ -1,0 +1,89 @@
+services:
+  web:
+    image: ${NEXTNEWS_IMAGE:-ghcr.io/xwordsman/nextnews:latest}
+    container_name: nextnews-web
+    command: pnpm start
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      AUTH_SECRET: ${AUTH_SECRET:-please-change-this-secret}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change-me}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-nextnews}:${POSTGRES_PASSWORD:-nextnews}@postgres:5432/${POSTGRES_DB:-nextnews}
+      REDIS_URL: redis://redis:6379
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    restart: unless-stopped
+
+  worker:
+    image: ${NEXTNEWS_IMAGE:-ghcr.io/xwordsman/nextnews:latest}
+    container_name: nextnews-worker
+    command: pnpm worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      AUTH_SECRET: ${AUTH_SECRET:-please-change-this-secret}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-change-me}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-nextnews}:${POSTGRES_PASSWORD:-nextnews}@postgres:5432/${POSTGRES_DB:-nextnews}
+      REDIS_URL: redis://redis:6379
+      NODE_ENV: production
+      WORKER_POLL_INTERVAL_SECONDS: ${WORKER_POLL_INTERVAL_SECONDS:-30}
+      CRAWL_BATCH_SIZE: ${CRAWL_BATCH_SIZE:-5}
+      CRAWL_CONCURRENCY: ${CRAWL_CONCURRENCY:-3}
+      CRAWL_RUNNING_TIMEOUT_SECONDS: ${CRAWL_RUNNING_TIMEOUT_SECONDS:-900}
+    restart: unless-stopped
+
+  migrate:
+    image: ${NEXTNEWS_IMAGE:-ghcr.io/xwordsman/nextnews:latest}
+    command: pnpm db:migrate
+    profiles:
+      - migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-nextnews}:${POSTGRES_PASSWORD:-nextnews}@postgres:5432/${POSTGRES_DB:-nextnews}
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: nextnews-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-nextnews}
+      POSTGRES_USER: ${POSTGRES_USER:-nextnews}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nextnews}
+    volumes:
+      - nextnews_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-nextnews} -d ${POSTGRES_DB:-nextnews}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: nextnews-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - nextnews_redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  nextnews_postgres_data:
+  nextnews_redis_data:

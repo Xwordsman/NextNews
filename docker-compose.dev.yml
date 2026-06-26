@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: nextnews-postgres-dev
+    environment:
+      POSTGRES_DB: nextnews
+      POSTGRES_USER: nextnews
+      POSTGRES_PASSWORD: nextnews
+    ports:
+      - "5432:5432"
+    volumes:
+      - nextnews_postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nextnews -d nextnews"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: nextnews-redis-dev
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - nextnews_redis_dev_data:/data
+    restart: unless-stopped
+
+volumes:
+  nextnews_postgres_dev_data:
+  nextnews_redis_dev_data:

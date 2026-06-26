@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NextNews - 开源新闻聚合</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:wght@500;600;700&family=Roboto:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        safelist: [
+          'bg-white/10',
+          'bg-slate-900',
+          'text-red-300',
+          'text-red-600',
+          'text-white',
+          'text-slate-50',
+          'text-slate-900',
+          'border-slate-900',
+          'border-line',
+          'opacity-50',
+          'opacity-0',
+          'opacity-100',
+          'pointer-events-none',
+          'w-11',
+          'w-72',
+          'border-transparent',
+          'border-slate-200',
+          'bg-transparent',
+          'bg-white',
+          'col-span-full',
+        ],
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Roboto', 'Microsoft YaHei', 'sans-serif'],
+              serif: ['Newsreader', 'serif'],
+            },
+            colors: {
+              ink: '#0b1118',
+              line: 'rgba(255,255,255,0.10)',
+              brand: '#27d885',
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body
+    id="appBody"
+    class="min-w-[320px] bg-slate-100 text-slate-950 antialiased transition-colors duration-300 dark:bg-ink dark:text-slate-50"
+    style="
+      background:
+        radial-gradient(circle at top left, rgba(255, 116, 116, 0.18), transparent 26rem),
+        radial-gradient(circle at top right, rgba(34, 197, 94, 0.12), transparent 30rem),
+        #f1f5f9;
+    "
+  >
+    <div class="mx-auto w-full max-w-[1720px] px-6 py-6 max-sm:px-3 max-sm:py-3">
+      <header
+        class="sticky top-4 z-20 flex items-center justify-between gap-6 rounded-2xl border border-slate-200 bg-white/85 px-[18px] py-3 shadow-sm backdrop-blur-xl transition-colors duration-300 dark:border-line dark:bg-ink/80 dark:shadow-none max-xl:flex-wrap max-sm:top-2 max-sm:px-3"
+      >
+        <div class="flex min-w-0 flex-1 items-center gap-6 max-xl:flex-wrap">
+          <a class="inline-flex shrink-0 items-center gap-3 text-slate-950 no-underline dark:text-slate-50" href="#" aria-label="NextNews 首页">
+            <span class="grid h-10 w-10 place-items-center rounded-lg bg-gradient-to-br from-red-500 to-orange-400 text-white">
+              <svg class="h-[22px] w-[22px] fill-none stroke-current stroke-2" viewBox="0 0 32 32" aria-hidden="true">
+                <path d="M7 7h18v18H7z" fill="currentColor" opacity=".16" />
+                <path d="M10 10h12v3H10zm0 5h12v2H10zm0 4h8v2h-8z" fill="currentColor" />
+              </svg>
+            </span>
+            <span>
+              <strong class="block font-serif text-2xl leading-none tracking-normal">NextNews</strong>
+              <small class="mt-1 block text-xs text-slate-500 dark:text-slate-400">Open Source Radar</small>
+            </span>
+          </a>
+
+          <div class="flex min-w-0 flex-1 items-center gap-3 max-lg:w-full max-lg:flex-wrap">
+            <nav
+              class="flex min-w-0 flex-nowrap items-center gap-1 text-sm font-medium text-slate-500 dark:text-slate-400 max-sm:w-full max-sm:flex-wrap"
+              aria-label="站点导航"
+            >
+              <a class="flex min-h-8 shrink-0 items-center rounded-full bg-slate-900 px-3 text-white no-underline transition-colors hover:bg-slate-800 focus-visible:bg-slate-800 focus-visible:outline-none dark:bg-white/10 dark:text-slate-50 dark:hover:bg-white/15 dark:focus-visible:bg-white/15" href="./index.html" aria-current="page">首页</a>
+              <a class="flex min-h-8 shrink-0 items-center rounded-full px-3 no-underline transition-colors hover:bg-slate-900/10 hover:text-slate-950 focus-visible:bg-slate-900/10 focus-visible:text-slate-950 focus-visible:outline-none dark:hover:bg-white/10 dark:hover:text-slate-50 dark:focus-visible:bg-white/10 dark:focus-visible:text-slate-50" href="./daily.html">日报</a>
+              <a class="flex min-h-8 shrink-0 items-center rounded-full px-3 no-underline transition-colors hover:bg-slate-900/10 hover:text-slate-950 focus-visible:bg-slate-900/10 focus-visible:text-slate-950 focus-visible:outline-none dark:hover:bg-white/10 dark:hover:text-slate-50 dark:focus-visible:bg-white/10 dark:focus-visible:text-slate-50" href="./feed.html">动态</a>
+              <a class="flex min-h-8 shrink-0 items-center rounded-full px-3 no-underline transition-colors hover:bg-slate-900/10 hover:text-slate-950 focus-visible:bg-slate-900/10 focus-visible:text-slate-950 focus-visible:outline-none dark:hover:bg-white/10 dark:hover:text-slate-50 dark:focus-visible:bg-white/10 dark:focus-visible:text-slate-50" href="./tracking.html">追踪</a>
+              <a class="flex min-h-8 shrink-0 items-center rounded-full px-3 no-underline transition-colors hover:bg-slate-900/10 hover:text-slate-950 focus-visible:bg-slate-900/10 focus-visible:text-slate-950 focus-visible:outline-none dark:hover:bg-white/10 dark:hover:text-slate-50 dark:focus-visible:bg-white/10 dark:focus-visible:text-slate-50" href="./rankings.html">榜中榜</a>
+              <a class="flex min-h-8 shrink-0 items-center rounded-full px-3 no-underline transition-colors hover:bg-slate-900/10 hover:text-slate-950 focus-visible:bg-slate-900/10 focus-visible:text-slate-950 focus-visible:outline-none dark:hover:bg-white/10 dark:hover:text-slate-50 dark:focus-visible:bg-white/10 dark:focus-visible:text-slate-50" href="./topics.html">话题</a>
+            </nav>
+
+            <span class="h-7 w-px shrink-0 bg-slate-200 dark:bg-white/10 max-sm:hidden" aria-hidden="true"></span>
+
+            <nav
+              class="flex min-w-0 flex-nowrap items-center gap-1 text-sm font-medium text-slate-500 dark:text-slate-400 max-lg:flex-wrap max-sm:w-full"
+              aria-label="频道分类"
+            >
+              <a class="flex min-h-8 shrink-0 items-center rounded-full px-3 no-underline transition-colors hover:bg-slate-900/10 hover:text-slate-950 focus-visible:bg-slate-900/10 focus-visible:text-slate-950 focus-visible:outline-none dark:hover:bg-white/10 dark:hover:text-slate-50 dark:focus-visible:bg-white/10 dark:focus-visible:text-slate-50" href="./general.html">综合</a>
+              <a class="flex min-h-8 shrink-0 items-center rounded-full px-3 no-underline transition-colors hover:bg-slate-900/10 hover:text-slate-950 focus-visible:bg-slate-900/10 focus-visible:text-slate-950 focus-visible:outline-none dark:hover:bg-white/10 dark:hover:text-slate-50 dark:focus-visible:bg-white/10 dark:focus-visible:text-slate-50" href="./tech.html">科技</a>
+              <a class="flex min-h-8 shrink-0 items-center rounded-full px-3 no-underline transition-colors hover:bg-slate-900/10 hover:text-slate-950 focus-visible:bg-slate-900/10 focus-visible:text-slate-950 focus-visible:outline-none dark:hover:bg-white/10 dark:hover:text-slate-50 dark:focus-visible:bg-white/10 dark:focus-visible:text-slate-50" href="./entertainment.html">娱乐</a>
+              <a class="flex min-h-8 shrink-0 items-center rounded-full px-3 no-underline transition-colors hover:bg-slate-900/10 hover:text-slate-950 focus-visible:bg-slate-900/10 focus-visible:text-slate-950 focus-visible:outline-none dark:hover:bg-white/10 dark:hover:text-slate-50 dark:focus-visible:bg-white/10 dark:focus-visible:text-slate-50" href="./community.html">社区</a>
+              <a class="flex min-h-8 shrink-0 items-center rounded-full px-3 no-underline transition-colors hover:bg-slate-900/10 hover:text-slate-950 focus-visible:bg-slate-900/10 focus-visible:text-slate-950 focus-visible:outline-none dark:hover:bg-white/10 dark:hover:text-slate-50 dark:focus-visible:bg-white/10 dark:focus-visible:text-slate-50" href="./shopping.html">购物</a>
+              <a class="flex min-h-8 shrink-0 items-center rounded-full px-3 no-underline transition-colors hover:bg-slate-900/10 hover:text-slate-950 focus-visible:bg-slate-900/10 focus-visible:text-slate-950 focus-visible:outline-none dark:hover:bg-white/10 dark:hover:text-slate-50 dark:focus-visible:bg-white/10 dark:focus-visible:text-slate-50" href="./finance.html">财经</a>
+              <a class="flex min-h-8 shrink-0 items-center rounded-full px-3 no-underline transition-colors hover:bg-slate-900/10 hover:text-slate-950 focus-visible:bg-slate-900/10 focus-visible:text-slate-950 focus-visible:outline-none dark:hover:bg-white/10 dark:hover:text-slate-50 dark:focus-visible:bg-white/10 dark:focus-visible:text-slate-50" href="./dev.html">开发</a>
+              <a class="flex min-h-8 shrink-0 items-center rounded-full px-3 no-underline transition-colors hover:bg-slate-900/10 hover:text-slate-950 focus-visible:bg-slate-900/10 focus-visible:text-slate-950 focus-visible:outline-none dark:hover:bg-white/10 dark:hover:text-slate-50 dark:focus-visible:bg-white/10 dark:focus-visible:text-slate-50" href="./brief.html">简报</a>
+              <a class="flex min-h-8 shrink-0 items-center rounded-full px-3 no-underline transition-colors hover:bg-slate-900/10 hover:text-slate-950 focus-visible:bg-slate-900/10 focus-visible:text-slate-950 focus-visible:outline-none dark:hover:bg-white/10 dark:hover:text-slate-50 dark:focus-visible:bg-white/10 dark:focus-visible:text-slate-50" href="./ai.html">AI</a>
+              <details class="relative shrink-0">
+                <summary class="flex min-h-8 cursor-pointer list-none items-center rounded-full px-3 transition-colors hover:bg-slate-900/10 hover:text-slate-950 focus-visible:bg-slate-900/10 focus-visible:text-slate-950 focus-visible:outline-none dark:hover:bg-white/10 dark:hover:text-slate-50 dark:focus-visible:bg-white/10 dark:focus-visible:text-slate-50">更多</summary>
+                <div class="absolute right-0 top-11 z-30 grid min-w-28 gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-line dark:bg-slate-950">
+                  <a class="rounded-lg px-3 py-2 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-slate-50" href="./global.html">全球</a>
+                  <a class="rounded-lg px-3 py-2 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-slate-50" href="./sports.html">体育</a>
+                  <a class="rounded-lg px-3 py-2 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-slate-50" href="./auto.html">汽车</a>
+                </div>
+              </details>
+            </nav>
+          </div>
+        </div>
+
+        <div class="flex justify-self-end gap-2 max-xl:justify-self-start max-sm:w-full max-sm:flex-wrap">
+          <div
+            id="headerSearch"
+            class="flex h-11 w-11 items-center overflow-hidden rounded-full border border-transparent bg-transparent text-slate-500 transition-all duration-200 dark:text-slate-400 max-sm:max-w-full"
+          >
+            <button
+              class="grid h-11 w-11 shrink-0 place-items-center rounded-full text-slate-500 transition-colors hover:bg-slate-900/10 hover:text-slate-950 focus-visible:bg-slate-900/10 focus-visible:text-slate-950 focus-visible:outline-none dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-50 dark:focus-visible:bg-white/10 dark:focus-visible:text-slate-50"
+              aria-label="展开搜索"
+              aria-expanded="false"
+              id="searchToggle"
+              type="button"
+            >
+              <svg class="h-[22px] w-[22px] fill-none stroke-current stroke-2" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m16.5 16.5 4 4" />
+              </svg>
+            </button>
+            <input
+              id="searchInput"
+              class="pointer-events-none min-w-0 flex-1 border-0 bg-transparent pr-4 text-sm text-slate-950 opacity-0 outline-none transition-opacity duration-200 placeholder:text-slate-400 dark:text-slate-50 dark:placeholder:text-slate-500"
+              type="search"
+              placeholder="搜索平台、标题、关键词"
+            />
+          </div>
+          <button
+            class="icon-button grid h-11 w-11 place-items-center rounded-full border border-transparent text-slate-500 transition-colors hover:border-slate-200 hover:bg-slate-900/10 hover:text-slate-950 dark:text-slate-400 dark:hover:border-line dark:hover:bg-white/10 dark:hover:text-slate-50"
+            aria-label="刷新全部榜单"
+            id="refreshAll"
+          >
+            <svg class="h-[22px] w-[22px] fill-none stroke-current stroke-2" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20 6v5h-5M4 18v-5h5" />
+              <path d="M18 11a6.5 6.5 0 0 0-11-4.4L4 9.5M6 13a6.5 6.5 0 0 0 11 4.4l3-2.9" />
+            </svg>
+          </button>
+          <button
+            class="icon-button grid h-11 w-11 place-items-center rounded-full border border-transparent text-slate-500 transition-colors hover:border-slate-200 hover:bg-slate-900/10 hover:text-slate-950 dark:text-slate-400 dark:hover:border-line dark:hover:bg-white/10 dark:hover:text-slate-50"
+            aria-label="切换夜间模式"
+            id="themeToggle"
+            type="button"
+          >
+            <svg class="theme-sun hidden h-[22px] w-[22px] fill-none stroke-current stroke-2 dark:block" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+            </svg>
+            <svg class="theme-moon h-[22px] w-[22px] fill-none stroke-current stroke-2 dark:hidden" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20.5 14.5A8.5 8.5 0 0 1 9.5 3.5 7 7 0 1 0 20.5 14.5z" />
+            </svg>
+          </button>
+          <a
+            class="grid h-11 w-11 place-items-center rounded-full border border-slate-200 bg-white text-slate-600 no-underline shadow-sm transition-colors hover:bg-slate-900 hover:text-white focus-visible:bg-slate-900 focus-visible:text-white focus-visible:outline-none dark:border-line dark:bg-white/[0.06] dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-slate-50 dark:focus-visible:bg-white/10 dark:focus-visible:text-slate-50"
+            href="./login.html"
+            aria-label="登录或注册"
+          >
+            <svg class="h-[22px] w-[22px] fill-none stroke-current stroke-2" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 21a8 8 0 0 1 16 0" />
+            </svg>
+          </a>
+        </div>
+      </header>
+
+      <main class="grid gap-6 pt-6">
+        <section
+          id="hotSitesPanel"
+          class="grid gap-[18px] rounded-2xl border border-slate-200 bg-white px-[22px] py-5 shadow-sm transition-colors duration-300 dark:border-line dark:bg-white/[0.05] dark:shadow-none max-sm:p-[18px]"
+          style="background: linear-gradient(120deg, rgba(78, 142, 232, 0.08), transparent 44%), rgba(255, 255, 255, 0.9)"
+          aria-labelledby="hotSitesTitle"
+        >
+          <div class="flex items-baseline gap-2">
+            <h1 id="hotSitesTitle" class="font-serif text-[28px] leading-none tracking-normal">热门站点</h1>
+            <span class="text-lg text-slate-400 dark:text-slate-500">/</span>
+            <p class="m-0 text-xs font-bold uppercase tracking-[0.08em] text-brand">Hot Sites</p>
+          </div>
+          <div class="flex gap-3 overflow-x-auto px-0.5 pb-2.5 pt-0.5 [scrollbar-color:rgba(255,255,255,0.22)_transparent]" id="siteRail" aria-label="热门站点列表"></div>
+        </section>
+
+        <section aria-label="热榜看板">
+          <div class="mb-4 flex items-end justify-between gap-6 max-sm:grid">
+            <div>
+              <p class="m-0 text-xs font-bold uppercase tracking-[0.08em] text-brand">Sources</p>
+              <h2 class="m-0 font-serif text-[28px] tracking-normal">实时热榜</h2>
+            </div>
+            <p class="m-0 max-w-[420px] leading-7 text-slate-500 dark:text-slate-400">拖动卡片可调整你的阅读顺序，点击星标可加入关注。</p>
+          </div>
+          <div class="grid grid-cols-4 gap-6 max-xl:grid-cols-2 max-sm:grid-cols-1" id="newsGrid"></div>
+        </section>
+      </main>
+
+      <footer class="mt-10 grid grid-cols-[1fr_auto_1fr] items-center gap-4 border-t border-slate-200 py-6 text-sm text-slate-500 dark:border-line dark:text-slate-400 max-lg:grid-cols-1 max-lg:justify-items-center max-lg:text-center">
+        <div>
+          <strong class="block font-serif text-lg text-slate-900 dark:text-slate-50">NextNews</strong>
+          <span class="mt-1 block">开源新闻聚合前端原型，聚合站点热榜与实时内容。</span>
+        </div>
+
+        <div class="flex justify-center gap-4 whitespace-nowrap text-slate-500 dark:text-slate-400 max-sm:w-full max-sm:overflow-x-auto" aria-label="今日概览">
+          <span><strong id="sourceCount" class="text-slate-950 dark:text-slate-50">0</strong> 个来源</span>
+          <span><strong id="storyCount" class="text-slate-950 dark:text-slate-50">0</strong> 条热闻</span>
+          <span><strong class="text-slate-950 dark:text-slate-50">12</strong> 分钟内更新</span>
+        </div>
+
+        <nav class="flex flex-wrap items-center justify-end gap-1 max-lg:justify-center" aria-label="底部导航">
+          <a class="rounded-full px-3 py-2 no-underline transition-colors hover:bg-slate-900/10 hover:text-slate-950 focus-visible:bg-slate-900/10 focus-visible:text-slate-950 focus-visible:outline-none dark:hover:bg-white/10 dark:hover:text-slate-50" href="./about.html">关于</a>
+          <a class="rounded-full px-3 py-2 no-underline transition-colors hover:bg-slate-900/10 hover:text-slate-950 focus-visible:bg-slate-900/10 focus-visible:text-slate-950 focus-visible:outline-none dark:hover:bg-white/10 dark:hover:text-slate-50" href="./sources.html">数据源</a>
+          <a class="rounded-full px-3 py-2 no-underline transition-colors hover:bg-slate-900/10 hover:text-slate-950 focus-visible:bg-slate-900/10 focus-visible:text-slate-950 focus-visible:outline-none dark:hover:bg-white/10 dark:hover:text-slate-50" href="./privacy.html">隐私</a>
+          <a class="rounded-full px-3 py-2 no-underline transition-colors hover:bg-slate-900/10 hover:text-slate-950 focus-visible:bg-slate-900/10 focus-visible:text-slate-950 focus-visible:outline-none dark:hover:bg-white/10 dark:hover:text-slate-50" href="https://github.com/">GitHub</a>
+        </nav>
+      </footer>
+    </div>
+
+    <template id="sourceCardTemplate">
+      <article
+        class="source-card min-h-[390px] rounded-[14px] border border-slate-200 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 dark:border-white/[0.08] dark:shadow-[0_18px_50px_rgba(0,0,0,0.26)] dark:hover:border-white/20"
+        draggable="true"
+      >
+        <div class="mb-3.5 flex items-center justify-between gap-3">
+          <div class="flex min-w-0 items-center gap-2.5">
+            <span class="source-logo grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-extrabold text-white"></span>
+            <span class="min-w-0">
+              <span class="flex min-w-0 items-center gap-2">
+                <strong class="source-name block overflow-hidden text-ellipsis whitespace-nowrap text-xl"></strong>
+                <span class="badge max-w-[82px] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap rounded-md border border-slate-200 bg-white/70 px-1.5 py-0.5 text-xs text-slate-600 dark:border-white/[0.14] dark:bg-white/[0.08] dark:text-blue-100"></span>
+              </span>
+              <small class="source-update mt-1 block text-xs text-slate-500 dark:text-slate-400"></small>
+            </span>
+          </div>
+          <div class="flex items-center gap-0.5">
+            <button class="tool-button refresh-button grid h-11 w-11 place-items-center rounded-full border border-transparent text-slate-500 transition-colors hover:border-slate-200 hover:bg-slate-900/10 hover:text-slate-950 dark:text-slate-400 dark:hover:border-line dark:hover:bg-white/10 dark:hover:text-slate-50" aria-label="刷新该榜单">
+              <svg class="h-[22px] w-[22px] fill-none stroke-current stroke-2" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20 6v5h-5M4 18v-5h5" />
+                <path d="M18 11a6.5 6.5 0 0 0-11-4.4L4 9.5M6 13a6.5 6.5 0 0 0 11 4.4l3-2.9" />
+              </svg>
+            </button>
+            <button class="tool-button favorite-button grid h-11 w-11 place-items-center rounded-full border border-transparent text-slate-500 transition-colors hover:bg-slate-900/10 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-50" aria-label="收藏来源">
+              <svg class="favorite-icon h-[22px] w-[22px] fill-none stroke-current stroke-2 transition-colors" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m12 3 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5-5.8-3-5.8 3 1.1-6.5-4.7-4.6 6.5-.9L12 3z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        <ol class="story-list grid max-h-[310px] gap-2 overflow-auto rounded-xl bg-slate-50 p-2 dark:bg-black/25 [scrollbar-color:rgba(255,255,255,0.22)_transparent]"></ol>
+      </article>
+    </template>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
