@@ -1,11 +1,13 @@
 import { closeDatabaseConnection } from "@/server/db/client"
 import { runDueChannelCrawls } from "@/server/crawling/scheduler"
+import { getInstallState } from "@/server/install/service"
 
 const pollIntervalMs =
   Number(process.env.WORKER_POLL_INTERVAL_SECONDS ?? 30) * 1000
 const batchSize = Number(process.env.CRAWL_BATCH_SIZE ?? 5)
 
 let stopping = false
+let lastInstallWaitLogAt = 0
 
 process.once("SIGINT", () => {
   stopping = true
@@ -25,6 +27,22 @@ async function main() {
 
   while (!stopping) {
     try {
+      const installState = await getInstallState()
+
+      if (!installState.installed) {
+        const now = Date.now()
+
+        if (now - lastInstallWaitLogAt > 60_000) {
+          console.log(
+            "[nextnews-worker] waiting for web installer to initialize database",
+          )
+          lastInstallWaitLogAt = now
+        }
+
+        await sleep(pollIntervalMs)
+        continue
+      }
+
       const result = await runDueChannelCrawls({ limit: batchSize })
 
       if (result.dueCount > 0 || result.failedCount > 0) {

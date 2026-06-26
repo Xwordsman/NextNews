@@ -41,6 +41,14 @@ function getAuthSecret() {
   return secret ?? "nextnews-dev-secret"
 }
 
+function shouldUseSecureCookies() {
+  if (process.env.APP_URL) {
+    return process.env.APP_URL.startsWith("https://")
+  }
+
+  return process.env.NODE_ENV === "production"
+}
+
 function sign(value: string) {
   return createHmac("sha256", getAuthSecret()).update(value).digest("base64url")
 }
@@ -104,7 +112,7 @@ async function setSession(
   cookieStore.set(cookieName, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: shouldUseSecureCookies(),
     path: "/",
     maxAge: SESSION_MAX_AGE_SECONDS,
   })

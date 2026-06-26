@@ -128,7 +128,8 @@ ghcr.io/xwordsman/nextnews:sha-<commit>
 3. 等待 Actions 生成镜像。
 4. 在服务器的 `.env` 中设置 `NEXTNEWS_IMAGE=ghcr.io/xwordsman/nextnews:latest`。
 5. 宝塔 Docker 编排拉取镜像并启动 `web`、`worker`、`postgres`、`redis`。
-6. 首次启动后执行迁移服务或进入 Web 容器运行 `pnpm db:migrate`。
+6. 首次访问 `APP_URL`，进入 `/install` 安装向导，填写网站名称、网址和管理员账号。
+7. 安装向导自动执行数据库迁移、写入默认站点/分类/频道，并创建管理员。
 
 ## 推荐 Compose 形态
 
@@ -175,7 +176,7 @@ volumes:
   redis_data:
 ```
 
-正式文件以仓库根目录的 `docker-compose.yml` 为准。`migrate` 服务使用 profile，不会默认常驻启动，需要迁移时单独运行。
+正式文件以仓库根目录的 `docker-compose.yml` 为准。首次部署默认通过 Web 安装向导完成初始化；`migrate` 服务只作为高级维护 profile 保留，不需要在正常安装流程中手动运行。
 
 ## 环境变量
 
@@ -195,7 +196,7 @@ CRAWL_DEFAULT_INTERVAL_SECONDS=300
 CRAWL_RUNNING_TIMEOUT_SECONDS=900
 ```
 
-正式上线后，`ADMIN_PASSWORD` 只用于初始化第一个管理员账号，不应该每次启动都覆盖已有账号。
+正式上线后，推荐通过 `/install` 设置第一个管理员账号。`ADMIN_EMAIL` 和 `ADMIN_PASSWORD` 只作为安装页默认值或命令行 seed 的兜底值，不会在每次启动时覆盖已有账号。
 
 ## 数据备份
 

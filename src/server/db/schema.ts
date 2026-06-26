@@ -70,6 +70,22 @@ export const sysUser = pgTable(
   ],
 )
 
+export const sysSetting = pgTable(
+  "sys_setting",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    settingKey: varchar("setting_key", { length: 160 }).notNull(),
+    settingValue: text("setting_value").default("").notNull(),
+    description: text("description"),
+    isPublic: boolean("is_public").default(false).notNull(),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("uk_sys_setting_key").on(table.settingKey),
+    index("idx_sys_setting_public").on(table.isPublic),
+  ],
+)
+
 export const bizSite = pgTable(
   "biz_site",
   {
