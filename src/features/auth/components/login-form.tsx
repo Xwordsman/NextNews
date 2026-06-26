@@ -21,7 +21,7 @@ export function LoginForm() {
         </label>
         <input
           autoComplete="username"
-          className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-base outline-none transition-colors focus:border-blue-500"
+          className="min-h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm outline-none transition-colors focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
           id="email"
           name="email"
           required
@@ -35,7 +35,7 @@ export function LoginForm() {
         </label>
         <input
           autoComplete="current-password"
-          className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-base outline-none transition-colors focus:border-blue-500"
+          className="min-h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm outline-none transition-colors focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
           id="password"
           name="password"
           required
@@ -53,7 +53,7 @@ export function LoginForm() {
       ) : null}
 
       <button
-        className="min-h-11 cursor-pointer rounded-full bg-slate-950 px-4 text-sm font-semibold text-white transition-colors hover:bg-black disabled:cursor-not-allowed disabled:bg-slate-500"
+        className="min-h-10 cursor-pointer rounded-md bg-zinc-950 px-4 text-sm font-medium text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
         disabled={isPending}
         type="submit"
       >

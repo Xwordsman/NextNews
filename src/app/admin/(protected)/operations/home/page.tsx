@@ -207,15 +207,15 @@ export default async function AdminHomeOperationPage({
 }
 
 const inputClassName =
-  "min-h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium outline-none transition-colors focus:border-slate-400"
+  "min-h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm font-medium outline-none transition-colors focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
 
 function MetricCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white/85 p-4 shadow-sm">
-      <div className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+    <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
+      <div className="text-xs font-medium uppercase tracking-[0.08em] text-zinc-500">
         {label}
       </div>
-      <div className="mt-2 text-2xl font-semibold text-slate-950">{value}</div>
+      <div className="mt-2 text-2xl font-semibold text-zinc-950">{value}</div>
     </div>
   )
 }

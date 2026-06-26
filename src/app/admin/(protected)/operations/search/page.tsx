@@ -40,12 +40,14 @@ export default async function AdminSearchAnalyticsPage() {
       <section className="grid gap-4 md:grid-cols-3">
         {qualityStats.map((item) => (
           <article
-            className="rounded-2xl border border-slate-200 bg-white/85 p-5 shadow-sm"
+            className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm"
             key={item.label}
           >
-            <p className="text-sm font-medium text-slate-500">{item.label}</p>
-            <p className="mt-3 text-3xl font-semibold">{item.value}</p>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
+            <p className="text-sm font-medium text-zinc-500">{item.label}</p>
+            <p className="mt-3 text-3xl font-semibold text-zinc-950">
+              {item.value}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-zinc-500">
               {item.detail}
             </p>
           </article>

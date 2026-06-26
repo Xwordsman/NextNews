@@ -47,7 +47,7 @@ function Input(props: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className={`min-h-11 rounded-xl border border-slate-200 bg-white/90 px-3 text-base outline-none transition-colors placeholder:text-slate-400 focus:border-brand focus:ring-3 focus:ring-emerald-100 ${
+      className={`min-h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100 ${
         props.className ?? ""
       }`}
     />
@@ -58,7 +58,7 @@ function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
       {...props}
-      className={`min-h-11 rounded-xl border border-slate-200 bg-white/90 px-3 text-base outline-none transition-colors focus:border-brand focus:ring-3 focus:ring-emerald-100 ${
+      className={`min-h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm outline-none transition-colors focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100 ${
         props.className ?? ""
       }`}
     />
@@ -69,7 +69,7 @@ function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <textarea
       {...props}
-      className={`min-h-28 rounded-xl border border-slate-200 bg-white/90 px-3 py-2 text-base outline-none transition-colors focus:border-brand focus:ring-3 focus:ring-emerald-100 ${
+      className={`min-h-28 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100 ${
         props.className ?? ""
       }`}
     />
@@ -86,9 +86,9 @@ function Checkbox({
   defaultChecked?: boolean
 }) {
   return (
-    <label className="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white/85 px-3 text-sm font-medium transition-colors hover:bg-slate-50">
+    <label className="flex min-h-10 cursor-pointer items-center gap-2 rounded-md border border-zinc-200 bg-white px-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50">
       <input
-        className="size-4 accent-brand"
+        className="size-4 accent-zinc-950"
         defaultChecked={defaultChecked}
         name={name}
         type="checkbox"
@@ -106,15 +106,15 @@ function FormActions({
   submitLabel: string
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-end gap-3 border-t border-slate-200 bg-slate-50/80 px-5 py-4">
+    <div className="flex flex-wrap items-center justify-end gap-3 border-t border-zinc-200 bg-zinc-50 px-5 py-4">
       <Link
-        className="inline-flex min-h-10 items-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-900 hover:text-white"
+        className="inline-flex min-h-9 items-center rounded-md border border-zinc-200 bg-white px-3.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 hover:text-zinc-950"
         href={cancelHref}
       >
         取消
       </Link>
       <button
-        className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full bg-slate-950 px-4 text-sm font-semibold text-white transition-colors hover:bg-black"
+        className="inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-md bg-zinc-950 px-3.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800"
         type="submit"
       >
         <Save aria-hidden="true" size={16} />
@@ -136,7 +136,7 @@ export function SiteForm({
   return (
     <form
       action={action}
-      className="overflow-hidden rounded-2xl border border-slate-200 bg-white/85 shadow-sm backdrop-blur-xl"
+      className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm"
     >
       {site ? <input name="id" type="hidden" value={site.id} /> : null}
       <div className="grid gap-5 p-5 lg:grid-cols-2">
@@ -237,7 +237,7 @@ export function CategoryForm({
   return (
     <form
       action={action}
-      className="overflow-hidden rounded-2xl border border-slate-200 bg-white/85 shadow-sm backdrop-blur-xl"
+      className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm"
     >
       {category ? <input name="id" type="hidden" value={category.id} /> : null}
       <div className="grid gap-5 p-5 lg:grid-cols-2">
@@ -350,7 +350,7 @@ export function ChannelForm({
   return (
     <form
       action={action}
-      className="overflow-hidden rounded-2xl border border-slate-200 bg-white/85 shadow-sm backdrop-blur-xl"
+      className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm"
     >
       {channel ? <input name="id" type="hidden" value={channel.id} /> : null}
       <div className="grid gap-5 p-5 lg:grid-cols-2">
@@ -479,11 +479,11 @@ export function ChannelForm({
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {options.categories.map((category) => (
                 <label
-                  className="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white/85 px-3 text-sm font-medium transition-colors hover:bg-slate-50"
+                  className="flex min-h-10 cursor-pointer items-center gap-2 rounded-md border border-zinc-200 bg-white px-3 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50"
                   key={category.id}
                 >
                   <input
-                    className="size-4 accent-brand"
+                    className="size-4 accent-zinc-950"
                     defaultChecked={checkedCategoryIds.has(category.id)}
                     name="categoryIds"
                     type="checkbox"

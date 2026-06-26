@@ -116,7 +116,7 @@ export default async function AdminOperationsAnalyticsPage() {
       />
       <div className="flex justify-end">
         <Link
-          className="inline-flex min-h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 shadow-sm transition-colors hover:bg-slate-900 hover:text-white"
+          className="inline-flex min-h-9 items-center gap-2 rounded-md border border-zinc-200 bg-white px-3.5 text-sm font-medium text-zinc-700 shadow-sm transition-colors hover:bg-zinc-950 hover:text-white"
           href="/admin/operations/analytics/export"
         >
           <Download aria-hidden="true" size={16} />
@@ -127,7 +127,7 @@ export default async function AdminOperationsAnalyticsPage() {
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {data.alerts.map((alert) => (
           <article
-            className={`rounded-2xl border p-4 shadow-sm ${alertClassName(
+            className={`rounded-xl border p-4 shadow-sm ${alertClassName(
               alert.level,
             )}`}
             key={`${alert.level}-${alert.title}`}
@@ -141,12 +141,14 @@ export default async function AdminOperationsAnalyticsPage() {
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {stats.map((item) => (
           <article
-            className="rounded-2xl border border-slate-200 bg-white/85 p-5 shadow-sm backdrop-blur-xl"
+            className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm"
             key={item.label}
           >
-            <p className="text-sm font-medium text-slate-500">{item.label}</p>
-            <p className="mt-3 text-3xl font-semibold">{item.value}</p>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
+            <p className="text-sm font-medium text-zinc-500">{item.label}</p>
+            <p className="mt-3 text-3xl font-semibold text-zinc-950">
+              {item.value}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-zinc-500">
               {item.detail}
             </p>
           </article>
@@ -252,10 +254,10 @@ function TrendPanel({
   const maxValue = Math.max(1, ...values)
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
+    <div className="rounded-lg border border-zinc-200 bg-white p-4">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-semibold text-slate-700">{title}</p>
-        <p className="font-mono text-xs text-slate-500">
+        <p className="text-sm font-semibold text-zinc-700">{title}</p>
+        <p className="font-mono text-xs text-zinc-500">
           {values.reduce((sum, value) => sum + value, 0)}
         </p>
       </div>

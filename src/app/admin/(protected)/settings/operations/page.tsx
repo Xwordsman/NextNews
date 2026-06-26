@@ -28,7 +28,7 @@ export default async function AdminSystemOperationsPage() {
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         {data.jobCounts.length === 0 ? (
-          <article className="rounded-2xl border border-slate-200 bg-white/85 p-5 shadow-sm">
+          <article className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
             <p className="text-sm font-medium text-slate-500">任务队列</p>
             <p className="mt-3 text-3xl font-semibold">0</p>
             <p className="mt-2 text-sm text-slate-500">暂无任务</p>
@@ -36,7 +36,7 @@ export default async function AdminSystemOperationsPage() {
         ) : (
           data.jobCounts.map((item) => (
             <article
-              className="rounded-2xl border border-slate-200 bg-white/85 p-5 shadow-sm"
+              className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm"
               key={item.status}
             >
               <p className="text-sm font-medium text-slate-500">

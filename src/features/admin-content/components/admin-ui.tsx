@@ -20,20 +20,20 @@ export function AdminPageHeader({
 }: AdminPageHeaderProps) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-4">
-      <div>
-        <p className="text-xs font-bold uppercase tracking-[0.08em] text-brand">
+      <div className="min-w-0">
+        <p className="text-xs font-medium uppercase tracking-[0.08em] text-zinc-500">
           {eyebrow}
         </p>
-        <h1 className="mt-2 font-serif text-[28px] font-semibold leading-none tracking-normal">
+        <h1 className="mt-2 text-2xl font-semibold tracking-normal text-zinc-950 sm:text-[28px]">
           {title}
         </h1>
-        <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500">
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-500">
           {description}
         </p>
       </div>
       {action ? (
         <Link
-          className="inline-flex min-h-10 items-center gap-2 rounded-full bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-black"
+          className="inline-flex min-h-9 items-center gap-2 rounded-md bg-zinc-950 px-3.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-zinc-800 focus-visible:outline-none"
           href={action.href}
         >
           <Plus aria-hidden="true" size={16} />
@@ -47,7 +47,7 @@ export function AdminPageHeader({
 export function AdminBackLink({ href }: { href: string }) {
   return (
     <Link
-      className="inline-flex min-h-10 items-center gap-2 rounded-full border border-slate-200 bg-white/85 px-4 text-sm font-semibold text-slate-600 shadow-sm transition-colors hover:bg-slate-900 hover:text-white"
+      className="inline-flex min-h-9 items-center gap-2 rounded-md border border-zinc-200 bg-white px-3.5 text-sm font-medium text-zinc-700 shadow-sm transition-colors hover:bg-zinc-50 hover:text-zinc-950 focus-visible:outline-none"
       href={href}
     >
       <ArrowLeft aria-hidden="true" size={16} />
@@ -63,7 +63,7 @@ export function AdminAlert({ message }: { message?: string }) {
 
   return (
     <p
-      className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+      className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
       role="alert"
     >
       {message}
@@ -78,7 +78,7 @@ export function AdminNotice({ message }: { message?: string }) {
 
   return (
     <p
-      className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700"
+      className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700"
       role="status"
     >
       {message}
@@ -86,9 +86,17 @@ export function AdminNotice({ message }: { message?: string }) {
   )
 }
 
-export function AdminSection({ children }: { children: ReactNode }) {
+export function AdminSection({
+  children,
+  className = "",
+}: {
+  children: ReactNode
+  className?: string
+}) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white/85 shadow-sm backdrop-blur-xl">
+    <section
+      className={`overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm ${className}`}
+    >
       {children}
     </section>
   )
@@ -97,7 +105,7 @@ export function AdminSection({ children }: { children: ReactNode }) {
 export function AdminTable({ children }: { children: ReactNode }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[760px] border-collapse text-left text-sm">
+      <table className="w-full min-w-[760px] border-collapse text-left text-sm text-zinc-700 [&_tbody_tr]:border-b [&_tbody_tr]:border-zinc-100 [&_tbody_tr:last-child]:border-0 [&_tbody_tr:hover]:bg-zinc-50/80 [&_td]:px-4 [&_td]:py-3.5 [&_th]:px-4 [&_th]:py-3 [&_th]:font-medium [&_thead]:bg-zinc-50 [&_thead]:text-xs [&_thead]:uppercase [&_thead]:tracking-[0.04em] [&_thead]:text-zinc-500">
         {children}
       </table>
     </div>
@@ -112,9 +120,9 @@ export function AdminEmptyState({
   description: string
 }) {
   return (
-    <div className="grid gap-2 px-5 py-12 text-center">
-      <h2 className="text-base font-semibold">{title}</h2>
-      <p className="text-sm text-slate-500">{description}</p>
+    <div className="grid gap-2 px-5 py-14 text-center">
+      <h2 className="text-base font-semibold text-zinc-950">{title}</h2>
+      <p className="text-sm text-zinc-500">{description}</p>
     </div>
   )
 }
@@ -142,11 +150,11 @@ export function StatusBadge({ status }: { status: string }) {
         ? "border-amber-200 bg-amber-50 text-amber-700"
         : status === "failed"
           ? "border-red-200 bg-red-50 text-red-700"
-          : "border-slate-200 bg-slate-100 text-slate-600"
+          : "border-zinc-200 bg-zinc-100 text-zinc-600"
 
   return (
     <span
-      className={`inline-flex min-h-7 items-center rounded-full border px-2.5 text-xs font-semibold ${className}`}
+      className={`inline-flex min-h-6 items-center rounded-md border px-2 text-xs font-medium ${className}`}
     >
       {labels[status] ?? status}
     </span>
@@ -164,10 +172,10 @@ export function BooleanBadge({
 }) {
   return (
     <span
-      className={`inline-flex min-h-7 items-center rounded-full border px-2.5 text-xs font-semibold ${
+      className={`inline-flex min-h-6 items-center rounded-md border px-2 text-xs font-medium ${
         active
-          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-          : "border-slate-200 bg-slate-100 text-slate-600"
+          ? "border-zinc-300 bg-zinc-950 text-white"
+          : "border-zinc-200 bg-zinc-100 text-zinc-600"
       }`}
     >
       {active ? activeLabel : inactiveLabel}
@@ -178,7 +186,7 @@ export function BooleanBadge({
 export function DeleteButton({ label }: { label: string }) {
   return (
     <button
-      className="inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-full border border-red-200 bg-white px-3 text-sm font-semibold text-red-700 transition-colors hover:bg-red-50"
+      className="inline-flex min-h-8 cursor-pointer items-center gap-2 rounded-md border border-red-200 bg-white px-2.5 text-sm font-medium text-red-700 transition-colors hover:bg-red-50 focus-visible:outline-none"
       type="submit"
     >
       <Trash2 aria-hidden="true" size={15} />
@@ -190,7 +198,7 @@ export function DeleteButton({ label }: { label: string }) {
 export function RunButton({ label }: { label: string }) {
   return (
     <button
-      className="inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-900 hover:text-white"
+      className="inline-flex min-h-8 cursor-pointer items-center gap-2 rounded-md border border-zinc-200 bg-white px-2.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-950 hover:text-white focus-visible:outline-none"
       type="submit"
     >
       <RefreshCw aria-hidden="true" size={15} />
@@ -202,7 +210,7 @@ export function RunButton({ label }: { label: string }) {
 export function EditLink({ href }: { href: string }) {
   return (
     <Link
-      className="inline-flex min-h-9 items-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-900 hover:text-white"
+      className="inline-flex min-h-8 items-center gap-2 rounded-md border border-zinc-200 bg-white px-2.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-950 hover:text-white focus-visible:outline-none"
       href={href}
     >
       <Pencil aria-hidden="true" size={15} />
@@ -220,7 +228,7 @@ export function ViewLink({
 }) {
   return (
     <Link
-      className="inline-flex min-h-9 items-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-900 hover:text-white"
+      className="inline-flex min-h-8 items-center gap-2 rounded-md border border-zinc-200 bg-white px-2.5 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-950 hover:text-white focus-visible:outline-none"
       href={href}
     >
       <Eye aria-hidden="true" size={15} />
