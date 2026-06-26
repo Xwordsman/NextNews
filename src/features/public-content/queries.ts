@@ -4,6 +4,7 @@ import {
   bizCategory,
   bizChannel,
   bizChannelSnapshot,
+  bizContentBlock,
   bizSite,
   bizSnapshotItem,
   relChannelCategory,
@@ -86,7 +87,19 @@ export async function getPublicSite(siteSlug: string) {
             publishedAt: bizSnapshotItem.publishedAt,
           })
           .from(bizSnapshotItem)
-          .where(inArray(bizSnapshotItem.snapshotId, snapshotIds))
+          .leftJoin(
+            bizContentBlock,
+            and(
+              eq(bizSnapshotItem.urlHash, bizContentBlock.urlHash),
+              isNull(bizContentBlock.deletedAt),
+            ),
+          )
+          .where(
+            and(
+              inArray(bizSnapshotItem.snapshotId, snapshotIds),
+              isNull(bizContentBlock.id),
+            ),
+          )
           .orderBy(asc(bizSnapshotItem.snapshotId), asc(bizSnapshotItem.rankNo))
       : []
 
@@ -294,7 +307,19 @@ export async function getPublicCategory(categorySlug: string) {
             publishedAt: bizSnapshotItem.publishedAt,
           })
           .from(bizSnapshotItem)
-          .where(inArray(bizSnapshotItem.snapshotId, snapshotIds))
+          .leftJoin(
+            bizContentBlock,
+            and(
+              eq(bizSnapshotItem.urlHash, bizContentBlock.urlHash),
+              isNull(bizContentBlock.deletedAt),
+            ),
+          )
+          .where(
+            and(
+              inArray(bizSnapshotItem.snapshotId, snapshotIds),
+              isNull(bizContentBlock.id),
+            ),
+          )
           .orderBy(asc(bizSnapshotItem.snapshotId), asc(bizSnapshotItem.rankNo))
       : []
 
@@ -335,7 +360,19 @@ async function listSnapshotItems(
       publishedAt: bizSnapshotItem.publishedAt,
     })
     .from(bizSnapshotItem)
-    .where(eq(bizSnapshotItem.snapshotId, snapshotId))
+    .leftJoin(
+      bizContentBlock,
+      and(
+        eq(bizSnapshotItem.urlHash, bizContentBlock.urlHash),
+        isNull(bizContentBlock.deletedAt),
+      ),
+    )
+    .where(
+      and(
+        eq(bizSnapshotItem.snapshotId, snapshotId),
+        isNull(bizContentBlock.id),
+      ),
+    )
     .orderBy(asc(bizSnapshotItem.rankNo), asc(bizSnapshotItem.createdAt))
 
   return items.map(toPublicRankItem)

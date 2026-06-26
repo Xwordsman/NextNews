@@ -131,6 +131,8 @@ ghcr.io/xwordsman/nextnews:sha-<commit>
 6. 首次访问 `APP_URL`，进入 `/install` 安装向导，填写网站名称、网址和管理员账号。
 7. 安装向导自动执行数据库迁移、写入默认站点/分类/频道，并创建管理员。
 
+升级镜像时，Web 容器会在请求安装状态时自动检查并执行最新 Drizzle 迁移。也就是说：首次安装不需要手动迁移，后续拉取新镜像增加新表时也不需要手动进入容器运行 `pnpm db:migrate`。`migrate` profile 只作为高级维护兜底。
+
 ## 推荐 Compose 形态
 
 当前仓库已经提供正式 `docker-compose.yml`。结构如下：
@@ -176,7 +178,7 @@ volumes:
   redis_data:
 ```
 
-正式文件以仓库根目录的 `docker-compose.yml` 为准。首次部署默认通过 Web 安装向导完成初始化；`migrate` 服务只作为高级维护 profile 保留，不需要在正常安装流程中手动运行。
+正式文件以仓库根目录的 `docker-compose.yml` 为准。首次部署默认通过 Web 安装向导完成初始化；已安装环境升级镜像后，Web 会自动补齐最新迁移；`migrate` 服务只作为高级维护 profile 保留，不需要在正常安装流程中手动运行。
 
 ## 环境变量
 

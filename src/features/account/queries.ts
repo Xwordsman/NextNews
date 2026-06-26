@@ -2,11 +2,19 @@ import { asc, and, desc, eq, inArray, isNull } from "drizzle-orm"
 import { getDb } from "@/server/db/client"
 import {
   bizChannel,
+  bizContentBlock,
   bizSite,
   bizSnapshotItem,
   relUserChannelSubscription,
+  userTrackingRule,
 } from "@/server/db/schema"
 import type { PublicRankItem } from "@/features/public-content/queries"
+import {
+  listLatestPublicOperationItems,
+  matchesKeywords,
+  parseKeywords,
+  type PublicOperationItem,
+} from "@/features/public-operations/queries"
 
 export type UserSubscription = {
   subscriptionId: string
@@ -28,6 +36,18 @@ export type UserFeedItem = PublicRankItem & {
   channelName: string
   siteName: string
   channelHref: string
+}
+
+export type UserTrackingRule = {
+  id: string
+  keyword: string
+  description: string | null
+  isEnabled: boolean
+  notifyEnabled: boolean
+  createdAt: Date
+  updatedAt: Date
+  keywords: string[]
+  matches: PublicOperationItem[]
 }
 
 export async function isChannelSubscribed(userId: string, channelId: string) {
@@ -107,7 +127,19 @@ export async function getUserSubscriptions(
             publishedAt: bizSnapshotItem.publishedAt,
           })
           .from(bizSnapshotItem)
-          .where(inArray(bizSnapshotItem.snapshotId, snapshotIds))
+          .leftJoin(
+            bizContentBlock,
+            and(
+              eq(bizSnapshotItem.urlHash, bizContentBlock.urlHash),
+              isNull(bizContentBlock.deletedAt),
+            ),
+          )
+          .where(
+            and(
+              inArray(bizSnapshotItem.snapshotId, snapshotIds),
+              isNull(bizContentBlock.id),
+            ),
+          )
           .orderBy(asc(bizSnapshotItem.snapshotId), asc(bizSnapshotItem.rankNo))
       : []
 
@@ -156,6 +188,46 @@ export async function getUserFeed(userId: string): Promise<UserFeedItem[]> {
 
       return bTime - aTime
     })
+}
+
+export async function getUserTrackingDashboard(
+  userId: string,
+): Promise<UserTrackingRule[]> {
+  const db = getDb()
+  const rules = await db
+    .select({
+      id: userTrackingRule.id,
+      keyword: userTrackingRule.keyword,
+      description: userTrackingRule.description,
+      isEnabled: userTrackingRule.isEnabled,
+      notifyEnabled: userTrackingRule.notifyEnabled,
+      createdAt: userTrackingRule.createdAt,
+      updatedAt: userTrackingRule.updatedAt,
+    })
+    .from(userTrackingRule)
+    .where(eq(userTrackingRule.userId, userId))
+    .orderBy(desc(userTrackingRule.isEnabled), desc(userTrackingRule.createdAt))
+
+  if (rules.length === 0) {
+    return []
+  }
+
+  const latestItems = await listLatestPublicOperationItems(240)
+
+  return rules.map((rule) => {
+    const keywords = parseKeywords(rule.keyword)
+    const matches = rule.isEnabled
+      ? latestItems
+          .filter((item) => matchesKeywords(item, keywords))
+          .slice(0, 8)
+      : []
+
+    return {
+      ...rule,
+      keywords,
+      matches,
+    }
+  })
 }
 
 function toPublicRankItem(item: PublicRankItem): PublicRankItem {

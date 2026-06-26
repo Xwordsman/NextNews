@@ -5,7 +5,9 @@ import { seedInitialData } from "@/server/db/initial-data"
 import { sysSetting } from "@/server/db/schema"
 
 const INSTALLED_CACHE_TTL_MS = 30_000
+const MIGRATION_CACHE_TTL_MS = 60_000
 const INSTALL_COMPLETED_KEY = "install.completed"
+const MIGRATION_LOCK_ID = 0x4e4e4d47
 
 type InstallStateCache = {
   checkedAt: number
@@ -13,6 +15,8 @@ type InstallStateCache = {
 }
 
 let installedStateCache: InstallStateCache | undefined
+let latestMigrationCheckedAt = 0
+let migrationPromise: Promise<void> | undefined
 
 export type InstallState = {
   databaseReady: boolean
@@ -49,6 +53,8 @@ export async function getInstallState(
   }
 
   try {
+    await ensureLatestMigrations()
+
     const migrated = await hasSettingTable()
 
     if (!migrated) {
@@ -94,7 +100,7 @@ export async function getInstallState(
 }
 
 export async function installApplication(input: InstallApplicationInput) {
-  await migrateDatabase()
+  await ensureLatestMigrations({ force: true })
 
   const { admin } = await seedInitialData({
     adminEmail: input.adminEmail,
@@ -110,10 +116,44 @@ export async function installApplication(input: InstallApplicationInput) {
 }
 
 export async function migrateDatabase() {
-  const db = getDb()
-  await migrate(db, {
-    migrationsFolder: "drizzle",
-  })
+  const sql = getSqlClient()
+  const reservedSql = await sql.reserve()
+
+  await reservedSql`select pg_advisory_lock(${MIGRATION_LOCK_ID})`
+
+  try {
+    const db = getDb()
+    await migrate(db, {
+      migrationsFolder: "drizzle",
+    })
+  } finally {
+    try {
+      await reservedSql`select pg_advisory_unlock(${MIGRATION_LOCK_ID})`
+    } finally {
+      reservedSql.release()
+    }
+  }
+}
+
+async function ensureLatestMigrations(
+  options: { force?: boolean } = {},
+): Promise<void> {
+  if (
+    !options.force &&
+    Date.now() - latestMigrationCheckedAt < MIGRATION_CACHE_TTL_MS
+  ) {
+    return
+  }
+
+  migrationPromise ??= migrateDatabase()
+    .then(() => {
+      latestMigrationCheckedAt = Date.now()
+    })
+    .finally(() => {
+      migrationPromise = undefined
+    })
+
+  await migrationPromise
 }
 
 export function clearInstallStateCache() {

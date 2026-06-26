@@ -1,18 +1,35 @@
 import {
+  AdminAlert,
   AdminEmptyState,
+  AdminNotice,
   AdminPageHeader,
   AdminSection,
   AdminTable,
   BooleanBadge,
+  RunButton,
   StatusBadge,
   formatDateTime,
 } from "@/features/admin-content/components/admin-ui"
+import { runChannelCrawlAction } from "@/features/admin-content/actions"
 import { listAdminCrawlTasks } from "@/features/admin-content/queries"
+import {
+  getErrorMessage,
+  getNoticeMessage,
+  type AdminSearchParams,
+} from "@/features/admin-content/search-params"
 
 export const dynamic = "force-dynamic"
 
-export default async function CrawlTasksPage() {
-  const tasks = await listAdminCrawlTasks()
+export default async function CrawlTasksPage({
+  searchParams,
+}: {
+  searchParams: AdminSearchParams
+}) {
+  const [tasks, errorMessage, noticeMessage] = await Promise.all([
+    listAdminCrawlTasks(),
+    getErrorMessage(searchParams),
+    getNoticeMessage(searchParams),
+  ])
 
   return (
     <div className="grid gap-6">
@@ -21,6 +38,8 @@ export default async function CrawlTasksPage() {
         eyebrow="抓取中心"
         title="抓取任务"
       />
+      <AdminAlert message={errorMessage} />
+      <AdminNotice message={noticeMessage} />
       <AdminSection>
         {tasks.length === 0 ? (
           <AdminEmptyState
@@ -37,6 +56,7 @@ export default async function CrawlTasksPage() {
                 <th className="px-5 py-3 font-semibold">采集间隔</th>
                 <th className="px-5 py-3 font-semibold">最近采集</th>
                 <th className="px-5 py-3 font-semibold">最近成功</th>
+                <th className="px-5 py-3 font-semibold">操作</th>
               </tr>
             </thead>
             <tbody>
@@ -72,6 +92,17 @@ export default async function CrawlTasksPage() {
                   </td>
                   <td className="px-5 py-4 text-sm text-slate-500">
                     {formatDateTime(task.lastSuccessAt)}
+                  </td>
+                  <td className="px-5 py-4">
+                    <form action={runChannelCrawlAction}>
+                      <input name="id" type="hidden" value={task.id} />
+                      <input
+                        name="backTo"
+                        type="hidden"
+                        value="/admin/crawls/tasks"
+                      />
+                      <RunButton label="立即采集" />
+                    </form>
                   </td>
                 </tr>
               ))}

@@ -3,6 +3,7 @@ import { getDb } from "@/server/db/client"
 import {
   bizCategory,
   bizChannel,
+  bizContentBlock,
   bizSite,
   bizSnapshotItem,
   relChannelCategory,
@@ -115,7 +116,19 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
             publishedAt: bizSnapshotItem.publishedAt,
           })
           .from(bizSnapshotItem)
-          .where(inArray(bizSnapshotItem.snapshotId, snapshotIds))
+          .leftJoin(
+            bizContentBlock,
+            and(
+              eq(bizSnapshotItem.urlHash, bizContentBlock.urlHash),
+              isNull(bizContentBlock.deletedAt),
+            ),
+          )
+          .where(
+            and(
+              inArray(bizSnapshotItem.snapshotId, snapshotIds),
+              isNull(bizContentBlock.id),
+            ),
+          )
           .orderBy(asc(bizSnapshotItem.snapshotId), asc(bizSnapshotItem.rankNo))
       : [],
   ])

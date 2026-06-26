@@ -1,17 +1,24 @@
 "use server"
 
-import { eq } from "drizzle-orm"
+import { and, eq, isNull } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { requireAdmin } from "@/server/auth/session"
 import { getChannelDefinition } from "@/server/channels/registry"
+import { hashContentUrl, normalizeContentUrl } from "@/server/content/hash"
 import { runChannelCrawl } from "@/server/crawling/run-channel"
 import { getDb } from "@/server/db/client"
 import {
   bizCategory,
   bizChannel,
+  bizContentBlock,
+  bizDailyReport,
+  bizSnapshotItem,
   bizSite,
+  bizTopic,
+  logCrawlRun,
   relChannelCategory,
+  userTrackingRule,
 } from "@/server/db/schema"
 import {
   AdminFormError,
@@ -45,6 +52,42 @@ function isUniqueViolation(error: unknown) {
     "code" in error &&
     error.code === "23505"
   )
+}
+
+function formString(formData: FormData, name: string) {
+  return String(formData.get(name) ?? "").trim()
+}
+
+function safeAdminBackTo(value: string, fallback = "/admin") {
+  if (
+    value.startsWith("//") ||
+    (value !== "/admin" && !value.startsWith("/admin/"))
+  ) {
+    return fallback
+  }
+
+  return value
+}
+
+function redirectWithMessage(
+  pathname: string,
+  key: "error" | "notice",
+  message: string,
+): never {
+  const [path, search = ""] = pathname.split("?")
+  const params = new URLSearchParams(search)
+  params.set(key, message)
+
+  redirect(`${path}?${params.toString()}`)
+}
+
+function formatLocalDate(value: Date) {
+  return new Intl.DateTimeFormat("en-CA", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+  }).format(value)
 }
 
 function parseSiteForm(formData: FormData) {
@@ -114,6 +157,20 @@ function parseChannelForm(formData: FormData) {
     sort: optionalInteger(formData, "sort", "排序", 0),
     status: selectValue(formData, "status", "状态", entityStatuses),
     categoryIds: uuidList(formData, "categoryIds", "所属分类"),
+  }
+}
+
+function parseTopicForm(formData: FormData) {
+  const topicName = requiredString(formData, "topicName", "话题名称", 160)
+
+  return {
+    topicName,
+    slug: slugString(formData, "slug", "话题 slug"),
+    description: optionalString(formData, "description", "话题描述"),
+    keywords: optionalString(formData, "keywords", "关键词", 500) ?? topicName,
+    status: selectValue(formData, "status", "状态", entityStatuses),
+    isHomeVisible: booleanField(formData, "isHomeVisible"),
+    sort: optionalInteger(formData, "sort", "排序", 0),
   }
 }
 
@@ -390,13 +447,17 @@ export async function runChannelCrawlAction(formData: FormData) {
   await requireAdmin()
 
   const id = uuidString(formData, "id", "频道 ID")
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    "/admin/channels",
+  )
   let result: Awaited<ReturnType<typeof runChannelCrawl>>
 
   try {
     result = await runChannelCrawl(id, { runType: "manual" })
   } catch (error) {
     const message = error instanceof Error ? error.message : "采集失败"
-    redirectWithError("/admin/channels", new AdminFormError(message))
+    redirectWithMessage(backTo, "error", message)
   }
 
   const message =
@@ -408,5 +469,346 @@ export async function runChannelCrawlAction(formData: FormData) {
 
   revalidatePath("/admin")
   revalidatePath("/admin/channels")
-  redirect(`/admin/channels?notice=${encodeURIComponent(message)}`)
+  revalidatePath("/admin/crawls/tasks")
+  revalidatePath("/admin/crawls/logs")
+  redirectWithMessage(backTo, "notice", message)
+}
+
+export async function retryCrawlRunAction(formData: FormData) {
+  await requireAdmin()
+
+  const id = uuidString(formData, "id", "采集记录 ID")
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    "/admin/crawls/failures",
+  )
+  const db = getDb()
+  const [run] = await db
+    .select({ channelId: logCrawlRun.channelId })
+    .from(logCrawlRun)
+    .where(eq(logCrawlRun.id, id))
+    .limit(1)
+
+  if (!run) {
+    redirectWithMessage(backTo, "error", "采集记录不存在")
+  }
+
+  let result: Awaited<ReturnType<typeof runChannelCrawl>>
+
+  try {
+    result = await runChannelCrawl(run.channelId, { runType: "retry" })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "重试失败"
+    redirectWithMessage(backTo, "error", message)
+  }
+
+  const message =
+    result.status === "skipped"
+      ? (result.skippedReason ?? "该频道已有采集任务正在运行")
+      : result.createdSnapshot
+        ? `重试完成，写入 ${result.insertedCount} 条快照明细`
+        : "重试完成，内容未变化，复用已有快照"
+
+  revalidatePath("/admin")
+  revalidatePath("/admin/crawls/failures")
+  revalidatePath("/admin/crawls/logs")
+  revalidatePath("/admin/contents/latest")
+  redirectWithMessage(backTo, "notice", message)
+}
+
+export async function blockSnapshotItemAction(formData: FormData) {
+  const admin = await requireAdmin()
+  const id = uuidString(formData, "id", "内容 ID")
+  const reason = optionalString(formData, "reason", "屏蔽原因", 300)
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    "/admin/contents/latest",
+  )
+  const db = getDb()
+  const [item] = await db
+    .select({
+      id: bizSnapshotItem.id,
+      contentItemId: bizSnapshotItem.contentItemId,
+      title: bizSnapshotItem.title,
+      url: bizSnapshotItem.url,
+      urlHash: bizSnapshotItem.urlHash,
+    })
+    .from(bizSnapshotItem)
+    .where(eq(bizSnapshotItem.id, id))
+    .limit(1)
+
+  if (!item) {
+    redirectWithMessage(backTo, "error", "内容不存在")
+  }
+
+  await upsertContentBlock({
+    contentItemId: item.contentItemId,
+    createdBy: admin.id,
+    reason,
+    snapshotItemId: item.id,
+    title: item.title,
+    url: item.url,
+    urlHash: item.urlHash,
+  })
+
+  revalidateContentViews()
+  redirectWithMessage(backTo, "notice", "已屏蔽该内容，前台将不再展示")
+}
+
+export async function createManualContentBlockAction(formData: FormData) {
+  const admin = await requireAdmin()
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    "/admin/contents/blocked",
+  )
+  const title = requiredString(formData, "title", "标题", 240)
+  const url = normalizeContentUrl(requiredString(formData, "url", "链接"))
+  const reason = optionalString(formData, "reason", "屏蔽原因", 300)
+
+  if (!url) {
+    redirectWithMessage(backTo, "error", "请填写有效链接")
+  }
+
+  await upsertContentBlock({
+    contentItemId: null,
+    createdBy: admin.id,
+    reason,
+    snapshotItemId: null,
+    title,
+    url,
+    urlHash: hashContentUrl(url),
+  })
+
+  revalidateContentViews()
+  redirectWithMessage(backTo, "notice", "已添加屏蔽链接")
+}
+
+export async function unblockContentAction(formData: FormData) {
+  await requireAdmin()
+
+  const id = uuidString(formData, "id", "屏蔽记录 ID")
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    "/admin/contents/blocked",
+  )
+
+  await getDb()
+    .update(bizContentBlock)
+    .set({
+      deletedAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(bizContentBlock.id, id))
+
+  revalidateContentViews()
+  redirectWithMessage(backTo, "notice", "已取消屏蔽")
+}
+
+export async function publishTodayDailyReportAction(formData: FormData) {
+  await requireAdmin()
+
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    "/admin/operations/daily",
+  )
+  const now = new Date()
+  const reportDate = formatLocalDate(now)
+
+  await getDb()
+    .insert(bizDailyReport)
+    .values({
+      reportDate,
+      title: `NextNews 日报 ${reportDate}`,
+      summary: "由当前首页频道与最近入库快照生成。",
+      status: "active",
+      publishedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: bizDailyReport.reportDate,
+      set: {
+        status: "active",
+        publishedAt: now,
+        updatedAt: now,
+      },
+    })
+
+  revalidatePath("/daily")
+  revalidatePath("/admin/operations/daily")
+  redirectWithMessage(backTo, "notice", "今日日报已发布")
+}
+
+export async function updateDailyReportStatusAction(formData: FormData) {
+  await requireAdmin()
+
+  const id = uuidString(formData, "id", "日报 ID")
+  const status = selectValue(formData, "status", "状态", entityStatuses)
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    "/admin/operations/daily",
+  )
+
+  await getDb()
+    .update(bizDailyReport)
+    .set({
+      status,
+      publishedAt: status === "active" ? new Date() : null,
+      updatedAt: new Date(),
+    })
+    .where(eq(bizDailyReport.id, id))
+
+  revalidatePath("/daily")
+  revalidatePath("/admin/operations/daily")
+  redirectWithMessage(backTo, "notice", "日报状态已更新")
+}
+
+export async function createTopicAction(formData: FormData) {
+  await requireAdmin()
+
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    "/admin/operations/topics",
+  )
+  let values: ReturnType<typeof parseTopicForm>
+
+  try {
+    values = parseTopicForm(formData)
+  } catch (error) {
+    const message =
+      error instanceof AdminFormError ? error.message : "话题保存失败"
+    redirectWithMessage(backTo, "error", message)
+  }
+
+  try {
+    await getDb().insert(bizTopic).values(values)
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      redirectWithMessage(backTo, "error", "话题 slug 已存在")
+    }
+
+    throw error
+  }
+
+  revalidatePath("/topics")
+  revalidatePath("/admin/operations/topics")
+  redirectWithMessage(backTo, "notice", "话题已创建")
+}
+
+export async function updateTopicStatusAction(formData: FormData) {
+  await requireAdmin()
+
+  const id = uuidString(formData, "id", "话题 ID")
+  const status = selectValue(formData, "status", "状态", entityStatuses)
+  const isHomeVisible = formString(formData, "isHomeVisible") === "true"
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    "/admin/operations/topics",
+  )
+
+  await getDb()
+    .update(bizTopic)
+    .set({
+      isHomeVisible,
+      status,
+      updatedAt: new Date(),
+    })
+    .where(eq(bizTopic.id, id))
+
+  revalidatePath("/topics")
+  revalidatePath("/admin/operations/topics")
+  redirectWithMessage(backTo, "notice", "话题状态已更新")
+}
+
+export async function deleteTopicAction(formData: FormData) {
+  await requireAdmin()
+
+  const id = uuidString(formData, "id", "话题 ID")
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    "/admin/operations/topics",
+  )
+
+  await getDb()
+    .update(bizTopic)
+    .set({
+      deletedAt: new Date(),
+      status: "disabled",
+      updatedAt: new Date(),
+    })
+    .where(eq(bizTopic.id, id))
+
+  revalidatePath("/topics")
+  revalidatePath("/admin/operations/topics")
+  redirectWithMessage(backTo, "notice", "话题已删除")
+}
+
+export async function updateTrackingRuleEnabledAction(formData: FormData) {
+  await requireAdmin()
+
+  const id = uuidString(formData, "id", "追踪规则 ID")
+  const isEnabled = formString(formData, "isEnabled") === "true"
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    "/admin/users/tracking",
+  )
+
+  await getDb()
+    .update(userTrackingRule)
+    .set({
+      isEnabled,
+      updatedAt: new Date(),
+    })
+    .where(eq(userTrackingRule.id, id))
+
+  revalidatePath("/tracking")
+  revalidatePath("/admin/users/tracking")
+  redirectWithMessage(backTo, "notice", "追踪规则已更新")
+}
+
+async function upsertContentBlock(values: {
+  contentItemId: string | null
+  createdBy: string
+  reason: string | null
+  snapshotItemId: string | null
+  title: string
+  url: string
+  urlHash: string
+}) {
+  const db = getDb()
+  const [existing] = await db
+    .select({ id: bizContentBlock.id })
+    .from(bizContentBlock)
+    .where(
+      and(
+        eq(bizContentBlock.urlHash, values.urlHash),
+        isNull(bizContentBlock.deletedAt),
+      ),
+    )
+    .limit(1)
+
+  if (existing) {
+    await db
+      .update(bizContentBlock)
+      .set({
+        contentItemId: values.contentItemId,
+        reason: values.reason,
+        snapshotItemId: values.snapshotItemId,
+        title: values.title,
+        updatedAt: new Date(),
+        url: values.url,
+      })
+      .where(eq(bizContentBlock.id, existing.id))
+    return
+  }
+
+  await db.insert(bizContentBlock).values(values)
+}
+
+function revalidateContentViews() {
+  revalidatePath("/")
+  revalidatePath("/daily")
+  revalidatePath("/feed")
+  revalidatePath("/rankings")
+  revalidatePath("/topics")
+  revalidatePath("/admin/contents/latest")
+  revalidatePath("/admin/contents/blocked")
 }

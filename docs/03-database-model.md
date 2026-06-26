@@ -19,6 +19,7 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 ```txt
 系统
   sys_user
+  sys_setting
 
 内容源
   biz_site
@@ -34,6 +35,12 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 
 用户能力
   rel_user_channel_subscription
+  user_tracking_rule
+
+运营与审核
+  biz_content_block
+  biz_daily_report
+  biz_topic
 ```
 
 ## sys_user
@@ -41,6 +48,7 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 系统用户表，当前同时承载后台管理员和前台读者。
 
 关键字段：
+
 - `email`
 - `password_hash`
 - `display_name`
@@ -49,6 +57,7 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 - `last_login_at`
 
 说明：
+
 - 后台登录只允许 `role = admin`。
 - 前台个人中心只允许 `role = user`。
 - 后台 session 和前台 session 使用不同 cookie，避免权限混用。
@@ -58,6 +67,7 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 站点表，表示微博、知乎、GitHub、Solidot 这类内容来源品牌。
 
 关键字段：
+
 - `site_name`
 - `slug`
 - `homepage_url`
@@ -68,6 +78,7 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 - `is_visible`
 
 关键索引：
+
 - `uk_biz_site_slug`
 - `idx_biz_site_status_sort`
 
@@ -76,6 +87,7 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 分类表，用于前台导航、首页模块和频道归类。
 
 关键字段：
+
 - `category_name`
 - `slug`
 - `parent_id`
@@ -87,6 +99,7 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 - `status`
 
 关键索引：
+
 - `uk_biz_category_slug`
 - `idx_biz_category_parent_sort`
 
@@ -95,6 +108,7 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 频道表，表示一个具体可抓取的榜单或信息流。一个站点可以有多个频道。
 
 关键字段：
+
 - `site_id`
 - `channel_name`
 - `slug`
@@ -116,6 +130,7 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 - `last_success_at`
 
 `definition_key` 对应代码仓库中的频道定义，例如：
+
 - `weibo.hot-search`
 - `zhihu.hot-list`
 - `github.trending-today`
@@ -124,6 +139,7 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 后台只填写频道基础信息和 `definition_key`。采集执行器只能从注册表中查找该 key，禁止根据后台输入动态拼接文件路径或执行任意代码。
 
 关键索引：
+
 - `uk_biz_channel_site_slug`
 - `uk_biz_channel_definition_key`
 - `idx_biz_channel_site_status`
@@ -135,11 +151,13 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 频道和分类的多对多关系。
 
 关键字段：
+
 - `channel_id`
 - `category_id`
 - `sort`
 
 关键索引：
+
 - `uk_rel_channel_category`
 - `idx_rel_channel_category_category`
 
@@ -148,6 +166,7 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 抓取日志表。每次手动或定时抓取都会生成一条记录。
 
 关键字段：
+
 - `channel_id`
 - `run_type`: `scheduled`、`manual`、`retry`
 - `status`: `running`、`success`、`failed`、`skipped`
@@ -161,6 +180,7 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 - `error_stack`
 
 说明：
+
 - 当前实现会在同频道已有 `running` 任务时跳过新任务。
 - 超过 `CRAWL_RUNNING_TIMEOUT_SECONDS` 的 running 任务会被标记为 failed，避免永久占用运行状态。
 
@@ -169,6 +189,7 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 频道快照表。一次成功抓取对应一个快照。
 
 关键字段：
+
 - `channel_id`
 - `crawl_run_id`
 - `snapshot_time`
@@ -178,11 +199,13 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 - `status`
 
 关键索引：
+
 - `idx_biz_channel_snapshot_channel_time`
 - `idx_biz_channel_snapshot_date`
 - `uk_biz_channel_snapshot_hash`
 
 说明：
+
 - 同一频道、相同 `content_hash` 不重复写入快照。
 - 内容未变化时复用已有快照，并更新频道最近采集时间。
 
@@ -191,6 +214,7 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 快照条目表，保存某次快照中的排名、标题、URL、图片、摘要和热度。
 
 关键字段：
+
 - `snapshot_id`
 - `channel_id`
 - `content_item_id`
@@ -206,6 +230,7 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 - `published_at`
 
 关键索引：
+
 - `idx_biz_snapshot_item_snapshot_rank`
 - `idx_biz_snapshot_item_channel_time`
 - `idx_biz_snapshot_item_url_hash`
@@ -215,6 +240,7 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 内容主表，用于跨快照去重和后续话题聚合。
 
 关键字段：
+
 - `canonical_title`
 - `canonical_url`
 - `url_hash`
@@ -225,6 +251,7 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 - `image_url`
 
 关键索引：
+
 - `uk_biz_content_item_url_hash`
 - `idx_biz_content_item_title_hash`
 - `idx_biz_content_item_last_seen`
@@ -234,6 +261,7 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 前台用户频道订阅关系表。
 
 关键字段：
+
 - `user_id`
 - `channel_id`
 - `sort`
@@ -244,13 +272,102 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 - `updated_at`
 
 关键索引：
+
 - `uk_rel_user_channel_subscription`
 - `idx_rel_user_channel_subscription_user`
 - `idx_rel_user_channel_subscription_channel`
 
 说明：
+
 - 第一版用于个人中心和 `/feed` 动态页。
 - `is_pinned`、`notify_enabled` 先预留，后续可用于订阅排序和通知。
+
+## user_tracking_rule
+
+用户追踪规则表。用户在前台 `/tracking` 创建关键词规则，后台可以查看并停用。
+
+关键字段：
+
+- `user_id`
+- `keyword`
+- `description`
+- `is_enabled`
+- `notify_enabled`
+- `last_matched_at`
+
+关键索引：
+
+- `uk_user_tracking_rule_keyword`
+- `idx_user_tracking_rule_user`
+
+说明：
+
+- 当前实现以关键词匹配最新公开快照条目。
+- 通知字段先作为策略开关保留，后续可接入邮件、站内通知或 Webhook。
+
+## biz_content_block
+
+内容屏蔽表。后台可以从最新内容页一键屏蔽，也可以手动添加 URL。
+
+关键字段：
+
+- `content_item_id`
+- `snapshot_item_id`
+- `title`
+- `url`
+- `url_hash`
+- `reason`
+- `created_by`
+- `deleted_at`
+
+关键索引：
+
+- `idx_biz_content_block_url_hash`
+- `idx_biz_content_block_deleted`
+- `idx_biz_content_block_snapshot_item`
+
+说明：
+
+- 前台首页、频道、站点、分类、日报、话题和个人动态都会过滤 active 屏蔽记录。
+- 取消屏蔽使用软删除，保留审核痕迹。
+
+## biz_daily_report
+
+日报发布表。后台负责发布/下线日报，前台 `/daily` 读取最新 active 日报，并聚合当前首页频道最新快照。
+
+关键字段：
+
+- `report_date`
+- `title`
+- `summary`
+- `status`
+- `published_at`
+- `channel_limit`
+- `item_limit_per_channel`
+
+关键索引：
+
+- `uk_biz_daily_report_date`
+- `idx_biz_daily_report_status_date`
+
+## biz_topic
+
+话题配置表。后台维护话题名称、slug、关键词和展示状态，前台 `/topics` 基于关键词匹配最新入库内容。
+
+关键字段：
+
+- `topic_name`
+- `slug`
+- `description`
+- `keywords`
+- `status`
+- `is_home_visible`
+- `sort`
+
+关键索引：
+
+- `uk_biz_topic_slug`
+- `idx_biz_topic_status_sort`
 
 ## 后续规划表
 
@@ -260,20 +377,18 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
   cfg_page_block
   rel_page_block_channel
 
-日报与话题
-  biz_daily_report
+日报增强
   biz_daily_report_item
-  biz_topic
   rel_topic_item
 
 追踪
-  biz_track_rule
   biz_track_match
 ```
 
 ## 大表策略
 
 `biz_snapshot_item` 会是增长最快的表，需要从第一版就注意：
+
 - 首页和频道页默认读取 `biz_channel.last_snapshot_id` 对应的最新快照，不扫全历史。
 - 历史查询必须按频道和时间范围过滤。
 - 后续数据变大后，可按 `snapshot_time` 或 `created_at` 月份分区。

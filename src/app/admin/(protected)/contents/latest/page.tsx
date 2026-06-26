@@ -1,17 +1,35 @@
 import {
+  AdminAlert,
   AdminEmptyState,
+  AdminNotice,
   AdminPageHeader,
   AdminSection,
   AdminTable,
+  BooleanBadge,
+  DeleteButton,
   ViewLink,
   formatDateTime,
 } from "@/features/admin-content/components/admin-ui"
+import { blockSnapshotItemAction } from "@/features/admin-content/actions"
 import { listAdminLatestContents } from "@/features/admin-content/queries"
+import {
+  getErrorMessage,
+  getNoticeMessage,
+  type AdminSearchParams,
+} from "@/features/admin-content/search-params"
 
 export const dynamic = "force-dynamic"
 
-export default async function AdminLatestContentsPage() {
-  const items = await listAdminLatestContents()
+export default async function AdminLatestContentsPage({
+  searchParams,
+}: {
+  searchParams: AdminSearchParams
+}) {
+  const [items, errorMessage, noticeMessage] = await Promise.all([
+    listAdminLatestContents(),
+    getErrorMessage(searchParams),
+    getNoticeMessage(searchParams),
+  ])
 
   return (
     <div className="grid gap-6">
@@ -20,6 +38,8 @@ export default async function AdminLatestContentsPage() {
         eyebrow="Contents"
         title="最新内容"
       />
+      <AdminAlert message={errorMessage} />
+      <AdminNotice message={noticeMessage} />
 
       <AdminSection>
         {items.length === 0 ? (
@@ -35,6 +55,7 @@ export default async function AdminLatestContentsPage() {
                 <th className="px-5 py-3">来源</th>
                 <th className="px-5 py-3">排名</th>
                 <th className="px-5 py-3">热度</th>
+                <th className="px-5 py-3">审核</th>
                 <th className="px-5 py-3">入库时间</th>
                 <th className="px-5 py-3">操作</th>
               </tr>
@@ -69,14 +90,34 @@ export default async function AdminLatestContentsPage() {
                   <td className="px-5 py-4 text-sm text-slate-500">
                     {item.hotLabel ?? item.hotValue ?? "-"}
                   </td>
+                  <td className="px-5 py-4">
+                    <BooleanBadge
+                      active={!item.blockedId}
+                      activeLabel="展示"
+                      inactiveLabel="已屏蔽"
+                    />
+                  </td>
                   <td className="px-5 py-4 text-sm text-slate-500">
                     {formatDateTime(item.createdAt)}
                   </td>
                   <td className="px-5 py-4">
-                    <ViewLink
-                      href={`/admin/contents/snapshots/${item.snapshotId}`}
-                      label="快照"
-                    />
+                    <div className="flex flex-wrap gap-2">
+                      <ViewLink
+                        href={`/admin/contents/snapshots/${item.snapshotId}`}
+                        label="快照"
+                      />
+                      {item.blockedId ? null : (
+                        <form action={blockSnapshotItemAction}>
+                          <input name="id" type="hidden" value={item.id} />
+                          <input
+                            name="backTo"
+                            type="hidden"
+                            value="/admin/contents/latest"
+                          />
+                          <DeleteButton label="屏蔽" />
+                        </form>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

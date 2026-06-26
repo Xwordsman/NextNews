@@ -233,6 +233,78 @@ export const relUserChannelSubscription = pgTable(
   ],
 )
 
+export const bizDailyReport = pgTable(
+  "biz_daily_report",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    reportDate: date("report_date").notNull(),
+    title: varchar("title", { length: 180 }).notNull(),
+    summary: text("summary"),
+    status: entityStatusEnum("status").default("draft").notNull(),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    channelLimit: integer("channel_limit").default(8).notNull(),
+    itemLimitPerChannel: integer("item_limit_per_channel").default(5).notNull(),
+    extra: jsonb("extra").$type<Record<string, unknown>>().default(emptyJson),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("uk_biz_daily_report_date").on(table.reportDate),
+    index("idx_biz_daily_report_status_date").on(
+      table.status,
+      table.reportDate,
+    ),
+  ],
+)
+
+export const bizTopic = pgTable(
+  "biz_topic",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    topicName: varchar("topic_name", { length: 160 }).notNull(),
+    slug: varchar("slug", { length: 180 }).notNull(),
+    description: text("description"),
+    keywords: text("keywords").default("").notNull(),
+    status: entityStatusEnum("status").default("draft").notNull(),
+    isHomeVisible: boolean("is_home_visible").default(true).notNull(),
+    sort: integer("sort").default(0).notNull(),
+    extra: jsonb("extra").$type<Record<string, unknown>>().default(emptyJson),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("uk_biz_topic_slug").on(table.slug),
+    index("idx_biz_topic_status_sort").on(table.status, table.sort),
+  ],
+)
+
+export const userTrackingRule = pgTable(
+  "user_tracking_rule",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => sysUser.id),
+    keyword: varchar("keyword", { length: 160 }).notNull(),
+    description: text("description"),
+    isEnabled: boolean("is_enabled").default(true).notNull(),
+    notifyEnabled: boolean("notify_enabled").default(false).notNull(),
+    lastMatchedAt: timestamp("last_matched_at", { withTimezone: true }),
+    extra: jsonb("extra").$type<Record<string, unknown>>().default(emptyJson),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("uk_user_tracking_rule_keyword").on(
+      table.userId,
+      table.keyword,
+    ),
+    index("idx_user_tracking_rule_user").on(table.userId, table.isEnabled),
+  ],
+)
+
 export const logCrawlRun = pgTable(
   "log_crawl_run",
   {
@@ -358,5 +430,28 @@ export const bizSnapshotItem = pgTable(
       table.createdAt,
     ),
     index("idx_biz_snapshot_item_url_hash").on(table.urlHash),
+  ],
+)
+
+export const bizContentBlock = pgTable(
+  "biz_content_block",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    contentItemId: uuid("content_item_id").references(() => bizContentItem.id),
+    snapshotItemId: uuid("snapshot_item_id").references(
+      () => bizSnapshotItem.id,
+    ),
+    title: text("title").notNull(),
+    url: text("url").notNull(),
+    urlHash: varchar("url_hash", { length: 128 }).notNull(),
+    reason: text("reason"),
+    createdBy: uuid("created_by").references(() => sysUser.id),
+    extra: jsonb("extra").$type<Record<string, unknown>>().default(emptyJson),
+    ...timestamps,
+  },
+  (table) => [
+    index("idx_biz_content_block_url_hash").on(table.urlHash),
+    index("idx_biz_content_block_deleted").on(table.deletedAt),
+    index("idx_biz_content_block_snapshot_item").on(table.snapshotItemId),
   ],
 )

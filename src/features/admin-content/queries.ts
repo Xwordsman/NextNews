@@ -5,12 +5,16 @@ import {
   bizCategory,
   bizChannel,
   bizChannelSnapshot,
+  bizContentBlock,
+  bizDailyReport,
   bizSite,
   bizSnapshotItem,
+  bizTopic,
   logCrawlRun,
   relChannelCategory,
   relUserChannelSubscription,
   sysUser,
+  userTrackingRule,
 } from "@/server/db/schema"
 import { serverEnv } from "@/server/env"
 
@@ -360,6 +364,7 @@ export async function listAdminLatestContents() {
       publishedAt: bizSnapshotItem.publishedAt,
       snapshotTime: bizChannelSnapshot.snapshotTime,
       createdAt: bizSnapshotItem.createdAt,
+      blockedId: bizContentBlock.id,
     })
     .from(bizSnapshotItem)
     .innerJoin(bizChannel, eq(bizSnapshotItem.channelId, bizChannel.id))
@@ -367,6 +372,13 @@ export async function listAdminLatestContents() {
     .innerJoin(
       bizChannelSnapshot,
       eq(bizSnapshotItem.snapshotId, bizChannelSnapshot.id),
+    )
+    .leftJoin(
+      bizContentBlock,
+      and(
+        eq(bizSnapshotItem.urlHash, bizContentBlock.urlHash),
+        isNull(bizContentBlock.deletedAt),
+      ),
     )
     .where(and(isNull(bizChannel.deletedAt), isNull(bizSite.deletedAt)))
     .orderBy(desc(bizSnapshotItem.createdAt))
@@ -532,6 +544,92 @@ export async function listAdminNavCategoriesOperation() {
     ...category,
     activePublicChannelCount: channelCountByCategoryId.get(category.id) ?? 0,
   }))
+}
+
+export async function listAdminBlockedContents() {
+  const db = getDb()
+
+  return db
+    .select({
+      id: bizContentBlock.id,
+      title: bizContentBlock.title,
+      url: bizContentBlock.url,
+      reason: bizContentBlock.reason,
+      urlHash: bizContentBlock.urlHash,
+      createdAt: bizContentBlock.createdAt,
+      updatedAt: bizContentBlock.updatedAt,
+      creatorEmail: sysUser.email,
+      creatorName: sysUser.displayName,
+    })
+    .from(bizContentBlock)
+    .leftJoin(sysUser, eq(bizContentBlock.createdBy, sysUser.id))
+    .where(isNull(bizContentBlock.deletedAt))
+    .orderBy(desc(bizContentBlock.createdAt))
+    .limit(100)
+}
+
+export async function listAdminDailyReports() {
+  const db = getDb()
+
+  return db
+    .select({
+      id: bizDailyReport.id,
+      reportDate: bizDailyReport.reportDate,
+      title: bizDailyReport.title,
+      summary: bizDailyReport.summary,
+      status: bizDailyReport.status,
+      publishedAt: bizDailyReport.publishedAt,
+      channelLimit: bizDailyReport.channelLimit,
+      itemLimitPerChannel: bizDailyReport.itemLimitPerChannel,
+      updatedAt: bizDailyReport.updatedAt,
+    })
+    .from(bizDailyReport)
+    .where(isNull(bizDailyReport.deletedAt))
+    .orderBy(desc(bizDailyReport.reportDate))
+    .limit(60)
+}
+
+export async function listAdminTopics() {
+  const db = getDb()
+
+  return db
+    .select({
+      id: bizTopic.id,
+      topicName: bizTopic.topicName,
+      slug: bizTopic.slug,
+      description: bizTopic.description,
+      keywords: bizTopic.keywords,
+      status: bizTopic.status,
+      isHomeVisible: bizTopic.isHomeVisible,
+      sort: bizTopic.sort,
+      updatedAt: bizTopic.updatedAt,
+      createdAt: bizTopic.createdAt,
+    })
+    .from(bizTopic)
+    .where(isNull(bizTopic.deletedAt))
+    .orderBy(asc(bizTopic.sort), asc(bizTopic.topicName))
+}
+
+export async function listAdminTrackingRules() {
+  const db = getDb()
+
+  return db
+    .select({
+      id: userTrackingRule.id,
+      keyword: userTrackingRule.keyword,
+      description: userTrackingRule.description,
+      isEnabled: userTrackingRule.isEnabled,
+      notifyEnabled: userTrackingRule.notifyEnabled,
+      lastMatchedAt: userTrackingRule.lastMatchedAt,
+      createdAt: userTrackingRule.createdAt,
+      updatedAt: userTrackingRule.updatedAt,
+      userEmail: sysUser.email,
+      userDisplayName: sysUser.displayName,
+    })
+    .from(userTrackingRule)
+    .innerJoin(sysUser, eq(userTrackingRule.userId, sysUser.id))
+    .orderBy(desc(userTrackingRule.createdAt))
+    .limit(100)
 }
 
 export function getAdminSystemOverview() {

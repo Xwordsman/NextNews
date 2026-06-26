@@ -1,6 +1,6 @@
-import { createHash } from "crypto"
 import { and, eq, gt, isNull, lt, sql } from "drizzle-orm"
 import { getChannelDefinition } from "@/server/channels/registry"
+import { hashText } from "@/server/content/hash"
 import { getDb } from "@/server/db/client"
 import {
   bizChannel,
@@ -389,10 +389,6 @@ function hashSnapshot(items: NormalizedNewsItem[]) {
       })),
     ),
   )
-}
-
-function hashText(value: string) {
-  return createHash("sha256").update(value).digest("hex")
 }
 
 function cleanString(value?: string) {

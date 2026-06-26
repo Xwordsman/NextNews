@@ -9,6 +9,7 @@ import {
   bizChannel,
   bizSite,
   relUserChannelSubscription,
+  userTrackingRule,
 } from "@/server/db/schema"
 
 function formString(formData: FormData, key: string) {
@@ -109,4 +110,63 @@ export async function unsubscribeChannelAction(formData: FormData) {
   revalidatePath("/account")
   revalidatePath("/feed")
   redirect(withNotice(backTo, "已取消订阅"))
+}
+
+export async function createTrackingRuleAction(formData: FormData) {
+  const user = await requireUser()
+  const keyword = formString(formData, "keyword")
+  const description = formString(formData, "description")
+  const backTo = safeBackTo(formString(formData, "backTo") || "/tracking")
+  const notifyEnabled = formData.get("notifyEnabled") === "on"
+
+  if (!keyword) {
+    redirect(withNotice(backTo, "请填写追踪关键词"))
+  }
+
+  if (keyword.length > 160) {
+    redirect(withNotice(backTo, "追踪关键词不能超过 160 个字符"))
+  }
+
+  await getDb()
+    .insert(userTrackingRule)
+    .values({
+      userId: user.id,
+      keyword,
+      description: description || null,
+      isEnabled: true,
+      notifyEnabled,
+    })
+    .onConflictDoUpdate({
+      target: [userTrackingRule.userId, userTrackingRule.keyword],
+      set: {
+        description: description || null,
+        isEnabled: true,
+        notifyEnabled,
+        updatedAt: new Date(),
+      },
+    })
+
+  revalidatePath("/tracking")
+  revalidatePath("/account")
+  redirect(withNotice(backTo, "追踪规则已保存"))
+}
+
+export async function deleteTrackingRuleAction(formData: FormData) {
+  const user = await requireUser()
+  const id = formString(formData, "id")
+  const backTo = safeBackTo(formString(formData, "backTo") || "/tracking")
+
+  if (!id) {
+    redirect(withNotice(backTo, "追踪规则参数缺失"))
+  }
+
+  await getDb()
+    .delete(userTrackingRule)
+    .where(
+      and(eq(userTrackingRule.id, id), eq(userTrackingRule.userId, user.id)),
+    )
+
+  revalidatePath("/tracking")
+  revalidatePath("/account")
+  redirect(withNotice(backTo, "追踪规则已删除"))
 }

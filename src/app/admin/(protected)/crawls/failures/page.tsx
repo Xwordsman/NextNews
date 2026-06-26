@@ -1,18 +1,35 @@
 import {
+  AdminAlert,
   AdminEmptyState,
+  AdminNotice,
   AdminPageHeader,
   AdminSection,
   AdminTable,
+  RunButton,
   StatusBadge,
   formatDateTime,
   formatDurationMs,
 } from "@/features/admin-content/components/admin-ui"
+import { retryCrawlRunAction } from "@/features/admin-content/actions"
 import { listAdminCrawlRuns } from "@/features/admin-content/queries"
+import {
+  getErrorMessage,
+  getNoticeMessage,
+  type AdminSearchParams,
+} from "@/features/admin-content/search-params"
 
 export const dynamic = "force-dynamic"
 
-export default async function CrawlFailuresPage() {
-  const runs = await listAdminCrawlRuns({ status: "failed" })
+export default async function CrawlFailuresPage({
+  searchParams,
+}: {
+  searchParams: AdminSearchParams
+}) {
+  const [runs, errorMessage, noticeMessage] = await Promise.all([
+    listAdminCrawlRuns({ status: "failed" }),
+    getErrorMessage(searchParams),
+    getNoticeMessage(searchParams),
+  ])
 
   return (
     <div className="grid gap-6">
@@ -21,6 +38,8 @@ export default async function CrawlFailuresPage() {
         eyebrow="抓取中心"
         title="失败记录"
       />
+      <AdminAlert message={errorMessage} />
+      <AdminNotice message={noticeMessage} />
       <AdminSection>
         {runs.length === 0 ? (
           <AdminEmptyState
@@ -36,6 +55,7 @@ export default async function CrawlFailuresPage() {
                 <th className="px-5 py-3 font-semibold">状态</th>
                 <th className="px-5 py-3 font-semibold">耗时</th>
                 <th className="px-5 py-3 font-semibold">错误</th>
+                <th className="px-5 py-3 font-semibold">操作</th>
               </tr>
             </thead>
             <tbody>
@@ -63,6 +83,17 @@ export default async function CrawlFailuresPage() {
                     <p className="max-w-[520px] text-sm text-red-700">
                       {run.errorMessage ?? "未知错误"}
                     </p>
+                  </td>
+                  <td className="px-5 py-4">
+                    <form action={retryCrawlRunAction}>
+                      <input name="id" type="hidden" value={run.id} />
+                      <input
+                        name="backTo"
+                        type="hidden"
+                        value="/admin/crawls/failures"
+                      />
+                      <RunButton label="重试" />
+                    </form>
                   </td>
                 </tr>
               ))}
