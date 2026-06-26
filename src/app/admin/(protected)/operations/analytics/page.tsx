@@ -1,3 +1,5 @@
+import Link from "next/link"
+import { Download } from "lucide-react"
 import {
   AdminEmptyState,
   AdminPageHeader,
@@ -70,6 +72,26 @@ export default async function AdminOperationsAnalyticsPage() {
       value: data.stats.activeDailyReports,
       detail: "已发布日报数量",
     },
+    {
+      label: "今日搜索",
+      value: data.stats.todaySearches,
+      detail: "前台搜索日志命中次数",
+    },
+    {
+      label: "收藏内容",
+      value: data.stats.bookmarks,
+      detail: "用户收藏的快照条目",
+    },
+    {
+      label: "今日阅读",
+      value: data.stats.todayReads,
+      detail: "通过跳转页记录的阅读次数",
+    },
+    {
+      label: "待处理任务",
+      value: data.stats.pendingJobs,
+      detail: "系统任务队列中的 pending 任务",
+    },
   ]
 
   return (
@@ -79,6 +101,15 @@ export default async function AdminOperationsAnalyticsPage() {
         eyebrow="Analytics"
         title="运营统计"
       />
+      <div className="flex justify-end">
+        <Link
+          className="inline-flex min-h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 shadow-sm transition-colors hover:bg-slate-900 hover:text-white"
+          href="/admin/operations/analytics/export"
+        >
+          <Download aria-hidden="true" size={16} />
+          导出 CSV
+        </Link>
+      </div>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {stats.map((item) => (

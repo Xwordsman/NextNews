@@ -1,4 +1,5 @@
 export type HomeStory = {
+  id?: string
   title: string
   meta: string
   url?: string

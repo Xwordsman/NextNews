@@ -87,7 +87,7 @@ export default async function DailyPage() {
                       {item.url ? (
                         <a
                           className="text-sm font-semibold leading-6 text-slate-950 no-underline transition-colors hover:text-brand"
-                          href={item.url}
+                          href={item.id ? `/go/${item.id}` : item.url}
                           rel="noreferrer"
                           target="_blank"
                         >

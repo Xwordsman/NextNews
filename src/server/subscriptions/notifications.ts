@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm"
+import { and, eq, gte, inArray } from "drizzle-orm"
 import { getDb } from "@/server/db/client"
 import {
   bizChannel,
@@ -7,10 +7,21 @@ import {
   relUserChannelSubscription,
   userNotification,
 } from "@/server/db/schema"
+import {
+  getAppSettings,
+  settingBoolean,
+  settingNumber,
+} from "@/server/settings/app-settings"
 
 export async function recordSubscriptionNotificationsForSnapshot(
   snapshotId: string,
 ) {
+  const settings = await getAppSettings()
+
+  if (!settingBoolean(settings, "notification.subscription_enabled")) {
+    return { insertedCount: 0 }
+  }
+
   const db = getDb()
   const [snapshot] = await db
     .select({
@@ -49,6 +60,35 @@ export async function recordSubscriptionNotificationsForSnapshot(
   }
 
   const userIds = subscriptions.map((subscription) => subscription.userId)
+  const minIntervalMinutes = settingNumber(
+    settings,
+    "notification.subscription_min_interval_minutes",
+  )
+  const throttledUserIds = new Set<string>()
+
+  if (minIntervalMinutes > 0) {
+    const cutoff = new Date(Date.now() - minIntervalMinutes * 60 * 1000)
+    const recentRows = await db
+      .select({ userId: userNotification.userId })
+      .from(userNotification)
+      .innerJoin(
+        bizChannelSnapshot,
+        eq(userNotification.sourceId, bizChannelSnapshot.id),
+      )
+      .where(
+        and(
+          inArray(userNotification.userId, userIds),
+          eq(userNotification.sourceType, "channel_snapshot"),
+          eq(bizChannelSnapshot.channelId, snapshot.channelId),
+          gte(userNotification.createdAt, cutoff),
+        ),
+      )
+
+    for (const row of recentRows) {
+      throttledUserIds.add(row.userId)
+    }
+  }
+
   const existingRows = await db
     .select({ userId: userNotification.userId })
     .from(userNotification)
@@ -62,7 +102,11 @@ export async function recordSubscriptionNotificationsForSnapshot(
 
   const existingUserIds = new Set(existingRows.map((row) => row.userId))
   const values = subscriptions
-    .filter((subscription) => !existingUserIds.has(subscription.userId))
+    .filter(
+      (subscription) =>
+        !existingUserIds.has(subscription.userId) &&
+        !throttledUserIds.has(subscription.userId),
+    )
     .map((subscription) => ({
       userId: subscription.userId,
       notificationType: "channel_update",

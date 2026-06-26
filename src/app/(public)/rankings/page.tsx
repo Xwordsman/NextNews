@@ -50,7 +50,7 @@ export default async function RankingsPage() {
               <span className="min-w-0">
                 <a
                   className="block font-serif text-xl font-semibold text-slate-950 no-underline transition-colors hover:text-brand"
-                  href={item.url}
+                  href={`/go/${item.id}`}
                   rel="noreferrer"
                   target="_blank"
                 >

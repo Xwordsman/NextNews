@@ -119,6 +119,7 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
     snapshotIds.length > 0
       ? db
           .select({
+            id: bizSnapshotItem.id,
             snapshotId: bizSnapshotItem.snapshotId,
             rankNo: bizSnapshotItem.rankNo,
             title: bizSnapshotItem.title,
@@ -180,6 +181,7 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
         favorite: index < 3,
         href: `/channels/${channel.siteSlug}/${channel.channelSlug}`,
         items: items.slice(0, 8).map((item, itemIndex) => ({
+          id: item.id,
           title: item.title,
           url: item.url,
           meta:

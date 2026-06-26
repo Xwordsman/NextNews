@@ -578,7 +578,9 @@ export function PublicHomePage({
                                   {item.url ? (
                                     <a
                                       className="block text-[15px] font-semibold leading-6 text-slate-900 no-underline transition-colors hover:text-brand focus-visible:text-brand focus-visible:outline-none dark:text-white/90"
-                                      href={item.url}
+                                      href={
+                                        item.id ? `/go/${item.id}` : item.url
+                                      }
                                       rel="noreferrer"
                                       target="_blank"
                                     >

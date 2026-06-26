@@ -46,7 +46,10 @@ export default async function ChannelSnapshotPage({
         meta={`${data.snapshot.itemCount} 条 / ${data.snapshot.status}`}
         title={`${data.channel.channelName} ${formatDateTime(data.snapshot.snapshotTime)}`}
       />
-      <PublicRankList items={data.items} />
+      <PublicRankList
+        backTo={`/channels/${siteSlug}/${channelSlug}/snapshots/${snapshotId}`}
+        items={data.items}
+      />
     </PublicContentShell>
   )
 }

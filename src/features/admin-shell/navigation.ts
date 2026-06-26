@@ -40,6 +40,7 @@ export const adminNavigation: AdminNavigationGroup[] = [
     items: [
       { title: "首页配置", href: "/admin/operations/home" },
       { title: "运营统计", href: "/admin/operations/analytics" },
+      { title: "搜索分析", href: "/admin/operations/search" },
       { title: "导航配置", href: "/admin/operations/nav" },
       { title: "热门站点", href: "/admin/operations/sites" },
       { title: "榜中榜配置", href: "/admin/operations/rankings" },
@@ -51,6 +52,7 @@ export const adminNavigation: AdminNavigationGroup[] = [
     title: "用户中心",
     items: [
       { title: "用户列表", href: "/admin/users" },
+      { title: "会员商业化", href: "/admin/users/memberships" },
       { title: "频道订阅", href: "/admin/users/subscriptions" },
       { title: "追踪规则", href: "/admin/users/tracking" },
       { title: "站内通知", href: "/admin/users/notifications" },
@@ -58,6 +60,9 @@ export const adminNavigation: AdminNavigationGroup[] = [
   },
   {
     title: "系统设置",
-    items: [{ title: "基础设置", href: "/admin/settings" }],
+    items: [
+      { title: "基础设置", href: "/admin/settings" },
+      { title: "操作日志", href: "/admin/settings/operations" },
+    ],
   },
 ]

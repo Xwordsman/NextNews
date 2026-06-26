@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { LogOut, Rss, UserRound } from "lucide-react"
+import { Bookmark, Crown, History, LogOut, Rss, UserRound } from "lucide-react"
 import {
   ChannelSubscriptionControl,
   SubscriptionNotifyControl,
@@ -12,6 +12,8 @@ import {
 } from "@/features/public-content/components/public-content-ui"
 import { userLogoutAction } from "@/features/user-auth/actions"
 import { requireUser } from "@/server/auth/session"
+import { getHistoryAccessForUser } from "@/server/membership/access"
+import { isCommerceEnabled } from "@/server/settings/app-settings"
 
 export const dynamic = "force-dynamic"
 export const metadata = {
@@ -25,7 +27,11 @@ export default async function AccountPage({
 }) {
   const user = await requireUser()
   const query = await searchParams
-  const subscriptions = await getUserSubscriptions(user.id)
+  const [subscriptions, access, commerceEnabled] = await Promise.all([
+    getUserSubscriptions(user.id),
+    getHistoryAccessForUser(user.id),
+    isCommerceEnabled(),
+  ])
 
   return (
     <PublicContentShell>
@@ -67,6 +73,60 @@ export default async function AccountPage({
           {query.notice}
         </p>
       ) : null}
+
+      <section className="grid gap-4 md:grid-cols-3">
+        <article className="rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm">
+          <div className="flex items-start gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-lg bg-slate-950 text-white">
+              <Crown aria-hidden="true" size={18} />
+            </span>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.08em] text-brand">
+                Membership
+              </p>
+              <h2 className="mt-2 text-lg font-semibold">{access.planName}</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                可查看最近 {access.historyDays} 天历史快照
+              </p>
+              {access.expiresAt ? (
+                <p className="mt-1 text-xs text-slate-500">
+                  到期：{formatDateTime(access.expiresAt)}
+                </p>
+              ) : null}
+            </div>
+          </div>
+          {commerceEnabled ? (
+            <Link
+              className="mt-4 inline-flex min-h-10 items-center rounded-full bg-slate-950 px-4 text-sm font-semibold text-white no-underline transition-colors hover:bg-black"
+              href="/membership"
+            >
+              查看会员套餐
+            </Link>
+          ) : null}
+        </article>
+
+        <Link
+          className="rounded-2xl border border-slate-200 bg-white/90 p-5 text-slate-950 no-underline shadow-sm transition-colors hover:border-slate-300 hover:bg-white"
+          href="/bookmarks"
+        >
+          <Bookmark aria-hidden="true" size={22} />
+          <h2 className="mt-4 text-lg font-semibold">我的收藏</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            保存重要条目，后续从个人中心快速返回。
+          </p>
+        </Link>
+
+        <Link
+          className="rounded-2xl border border-slate-200 bg-white/90 p-5 text-slate-950 no-underline shadow-sm transition-colors hover:border-slate-300 hover:bg-white"
+          href="/history"
+        >
+          <History aria-hidden="true" size={22} />
+          <h2 className="mt-4 text-lg font-semibold">阅读历史</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-500">
+            通过站内跳转访问的内容会记录在这里。
+          </p>
+        </Link>
+      </section>
 
       <section className="grid gap-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
@@ -153,7 +213,7 @@ export default async function AccountPage({
                         </span>
                         <a
                           className="font-semibold leading-6 text-slate-900 no-underline transition-colors hover:text-brand"
-                          href={item.url}
+                          href={`/go/${item.id}`}
                           rel="noreferrer"
                           target="_blank"
                         >

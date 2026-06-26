@@ -199,6 +199,7 @@ async function getDailyReportSources(report: {
     snapshotIds.length > 0
       ? await db
           .select({
+            id: bizSnapshotItem.id,
             snapshotId: bizSnapshotItem.snapshotId,
             title: bizSnapshotItem.title,
             url: bizSnapshotItem.url,
@@ -249,6 +250,7 @@ async function getDailyReportSources(report: {
         favorite: false,
         href: `/channels/${channel.siteSlug}/${channel.channelSlug}`,
         items: items.slice(0, report.itemLimitPerChannel).map((item) => ({
+          id: item.id,
           title: item.title,
           url: item.url,
           meta:

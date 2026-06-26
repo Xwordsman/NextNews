@@ -115,7 +115,7 @@ export default async function FeedPage() {
               </div>
               <a
                 className="flex items-start justify-between gap-4 text-base font-semibold leading-7 text-slate-950 no-underline transition-colors hover:text-brand"
-                href={item.url}
+                href={`/go/${item.id}`}
                 rel="noreferrer"
                 target="_blank"
               >

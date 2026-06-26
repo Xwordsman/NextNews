@@ -2,10 +2,12 @@ import Link from "next/link"
 import {
   ArrowLeft,
   Bell,
+  Bookmark,
   ExternalLink,
   Newspaper,
   UserRound,
 } from "lucide-react"
+import { toggleBookmarkAction } from "@/features/account/actions"
 import type { PublicRankItem } from "../queries"
 
 export function PublicContentShell({
@@ -95,7 +97,13 @@ export function PublicPageHero({
   )
 }
 
-export function PublicRankList({ items }: { items: PublicRankItem[] }) {
+export function PublicRankList({
+  items,
+  backTo = "/",
+}: {
+  items: PublicRankItem[]
+  backTo?: string
+}) {
   if (items.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-slate-300 bg-white/70 px-6 py-12 text-center text-sm text-slate-500">
@@ -117,7 +125,7 @@ export function PublicRankList({ items }: { items: PublicRankItem[] }) {
           <span className="min-w-0">
             <a
               className="text-base font-semibold leading-6 text-slate-950 no-underline transition-colors hover:text-brand"
-              href={item.url}
+              href={`/go/${item.id}`}
               rel="noreferrer"
               target="_blank"
             >
@@ -137,11 +145,28 @@ export function PublicRankList({ items }: { items: PublicRankItem[] }) {
               ) : null}
             </span>
           </span>
-          <ExternalLink
-            aria-hidden="true"
-            className="mt-1 text-slate-400"
-            size={18}
-          />
+          <span className="grid gap-2">
+            <a
+              aria-label="打开原文"
+              className="grid h-10 w-10 place-items-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-900 hover:text-white"
+              href={`/go/${item.id}`}
+              rel="noreferrer"
+              target="_blank"
+            >
+              <ExternalLink aria-hidden="true" size={18} />
+            </a>
+            <form action={toggleBookmarkAction}>
+              <input name="snapshotItemId" type="hidden" value={item.id} />
+              <input name="backTo" type="hidden" value={backTo} />
+              <button
+                aria-label="收藏内容"
+                className="grid h-10 w-10 cursor-pointer place-items-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-amber-50 hover:text-amber-700"
+                type="submit"
+              >
+                <Bookmark aria-hidden="true" size={18} />
+              </button>
+            </form>
+          </span>
         </li>
       ))}
     </ol>

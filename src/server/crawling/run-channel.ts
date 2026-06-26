@@ -9,6 +9,7 @@ import {
   bizSnapshotItem,
   logCrawlRun,
 } from "@/server/db/schema"
+import { enqueueSystemJob } from "@/server/jobs/queue"
 import { recordSubscriptionNotificationsForSnapshot } from "@/server/subscriptions/notifications"
 import { recordTrackingMatchesForSnapshot } from "@/server/tracking/matches"
 import type { NewsItem } from "@/types"
@@ -228,6 +229,19 @@ export async function runChannelCrawl(
       .where(eq(logCrawlRun.id, reservation.runId))
 
     if (result.createdSnapshot) {
+      try {
+        await enqueueSystemJob({
+          jobType: "snapshot.created",
+          payload: {
+            channelId,
+            crawlRunId: reservation.runId,
+            snapshotId: result.snapshotId,
+          },
+        })
+      } catch (error) {
+        console.error("[nextnews] snapshot job enqueue failed", error)
+      }
+
       try {
         await recordTrackingMatchesForSnapshot(result.snapshotId)
       } catch (error) {

@@ -11,6 +11,7 @@ import {
   userTrackingMatch,
   userTrackingRule,
 } from "@/server/db/schema"
+import { getAppSettings, settingBoolean } from "@/server/settings/app-settings"
 
 type TrackingCandidate = {
   id: string
@@ -24,7 +25,8 @@ type TrackingCandidate = {
 
 export async function recordTrackingMatchesForSnapshot(snapshotId: string) {
   const db = getDb()
-  const [rules, items] = await Promise.all([
+  const [settings, rules, items] = await Promise.all([
+    getAppSettings(),
     db
       .select({
         id: userTrackingRule.id,
@@ -42,9 +44,13 @@ export async function recordTrackingMatchesForSnapshot(snapshotId: string) {
   }
 
   let insertedCount = 0
+  const notificationsEnabled = settingBoolean(
+    settings,
+    "notification.tracking_enabled",
+  )
 
   for (const rule of rules) {
-    insertedCount += await recordRuleMatches(rule, items)
+    insertedCount += await recordRuleMatches(rule, items, notificationsEnabled)
   }
 
   return { insertedCount }
@@ -52,25 +58,34 @@ export async function recordTrackingMatchesForSnapshot(snapshotId: string) {
 
 export async function recordTrackingMatchesForRule(ruleId: string) {
   const db = getDb()
-  const [rule] = await db
-    .select({
-      id: userTrackingRule.id,
-      userId: userTrackingRule.userId,
-      keyword: userTrackingRule.keyword,
-      notifyEnabled: userTrackingRule.notifyEnabled,
-      isEnabled: userTrackingRule.isEnabled,
-    })
-    .from(userTrackingRule)
-    .where(eq(userTrackingRule.id, ruleId))
-    .limit(1)
+  const [settings, [rule]] = await Promise.all([
+    getAppSettings(),
+    db
+      .select({
+        id: userTrackingRule.id,
+        userId: userTrackingRule.userId,
+        keyword: userTrackingRule.keyword,
+        notifyEnabled: userTrackingRule.notifyEnabled,
+        isEnabled: userTrackingRule.isEnabled,
+      })
+      .from(userTrackingRule)
+      .where(eq(userTrackingRule.id, ruleId))
+      .limit(1),
+  ])
 
   if (!rule || !rule.isEnabled) {
     return { insertedCount: 0 }
   }
 
   const items = await listLatestCandidates(240)
+  const notificationsEnabled = settingBoolean(
+    settings,
+    "notification.tracking_enabled",
+  )
 
-  return { insertedCount: await recordRuleMatches(rule, items) }
+  return {
+    insertedCount: await recordRuleMatches(rule, items, notificationsEnabled),
+  }
 }
 
 async function listSnapshotCandidates(snapshotId: string) {
@@ -153,6 +168,7 @@ async function recordRuleMatches(
     notifyEnabled: boolean
   },
   items: TrackingCandidate[],
+  notificationsEnabled: boolean,
 ) {
   const db = getDb()
   const keywords = parseKeywords(rule.keyword)
@@ -189,7 +205,7 @@ async function recordRuleMatches(
 
     insertedCount += 1
 
-    if (rule.notifyEnabled) {
+    if (rule.notifyEnabled && notificationsEnabled) {
       await db.insert(userNotification).values({
         userId: rule.userId,
         notificationType: "tracking_match",

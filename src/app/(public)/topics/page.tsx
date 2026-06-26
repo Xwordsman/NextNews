@@ -89,7 +89,7 @@ export default async function TopicsPage() {
                       <span className="min-w-0">
                         <a
                           className="line-clamp-2 text-sm font-semibold leading-6 text-slate-950 no-underline transition-colors hover:text-brand"
-                          href={item.url}
+                          href={`/go/${item.id}`}
                           rel="noreferrer"
                           target="_blank"
                         >

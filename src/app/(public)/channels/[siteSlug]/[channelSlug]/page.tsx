@@ -86,7 +86,7 @@ export default async function ChannelPage({
               </a>
             ) : null}
           </div>
-          <PublicRankList items={channel.items} />
+          <PublicRankList backTo={backTo} items={channel.items} />
         </div>
 
         <aside className="h-fit rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm">

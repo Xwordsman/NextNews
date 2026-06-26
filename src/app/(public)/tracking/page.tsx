@@ -205,7 +205,7 @@ export default async function TrackingPage({
                       <span className="min-w-0">
                         <a
                           className="line-clamp-2 font-semibold leading-6 text-slate-950 no-underline transition-colors hover:text-brand"
-                          href={item.url}
+                          href={`/go/${item.snapshotItemId}`}
                           rel="noreferrer"
                           target="_blank"
                         >

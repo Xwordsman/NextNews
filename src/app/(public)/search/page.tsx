@@ -1,5 +1,6 @@
 import Link from "next/link"
-import { ExternalLink, Search } from "lucide-react"
+import { Bookmark, ExternalLink, Search } from "lucide-react"
+import { toggleBookmarkAction } from "@/features/account/actions"
 import {
   PublicContentShell,
   PublicPageHero,
@@ -10,6 +11,8 @@ import {
   getPublicSearchFilters,
   searchPublicContents,
 } from "@/features/public-operations/queries"
+import { getCurrentUser } from "@/server/auth/session"
+import { recordSearchQuery } from "@/server/search/logging"
 
 export const dynamic = "force-dynamic"
 export const metadata = {
@@ -35,10 +38,31 @@ export default async function SearchPage({
     siteSlug: String(query?.site ?? "").trim() || undefined,
     to: String(query?.to ?? "").trim() || undefined,
   }
-  const [filterOptions, items] = await Promise.all([
+  const [filterOptions, items, user] = await Promise.all([
     getPublicSearchFilters(),
     keyword ? searchPublicContents(keyword, filters) : Promise.resolve([]),
+    getCurrentUser(),
   ])
+
+  if (keyword) {
+    await recordSearchQuery({
+      channelId: filters.channelId,
+      dateFrom: filters.from,
+      dateTo: filters.to,
+      keyword,
+      resultCount: items.length,
+      siteSlug: filters.siteSlug,
+      userId: user?.id,
+    })
+  }
+
+  const backToParams = new URLSearchParams()
+  if (keyword) backToParams.set("q", keyword)
+  if (filters.siteSlug) backToParams.set("site", filters.siteSlug)
+  if (filters.channelId) backToParams.set("channel", filters.channelId)
+  if (filters.from) backToParams.set("from", filters.from)
+  if (filters.to) backToParams.set("to", filters.to)
+  const backTo = `/search${backToParams.size > 0 ? `?${backToParams}` : ""}`
 
   return (
     <PublicContentShell>
@@ -159,7 +183,7 @@ export default async function SearchPage({
                 </Link>
                 <a
                   className="mt-3 block font-serif text-xl font-semibold leading-7 text-slate-950 no-underline transition-colors hover:text-brand"
-                  href={item.url}
+                  href={`/go/${item.id}`}
                   rel="noreferrer"
                   target="_blank"
                 >
@@ -183,6 +207,17 @@ export default async function SearchPage({
                 className="mt-1 text-slate-400"
                 size={18}
               />
+              <form action={toggleBookmarkAction} className="col-start-2">
+                <input name="snapshotItemId" type="hidden" value={item.id} />
+                <input name="backTo" type="hidden" value={backTo} />
+                <button
+                  aria-label="收藏内容"
+                  className="mt-10 grid h-10 w-10 cursor-pointer place-items-center rounded-full border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-amber-50 hover:text-amber-700"
+                  type="submit"
+                >
+                  <Bookmark aria-hidden="true" size={18} />
+                </button>
+              </form>
             </article>
           ))}
         </section>

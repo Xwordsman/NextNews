@@ -64,7 +64,10 @@ export default async function CategoryPage({
                   查看频道
                 </Link>
               </div>
-              <PublicRankList items={channel.items} />
+              <PublicRankList
+                backTo={`/categories/${categorySlug}`}
+                items={channel.items}
+              />
             </article>
           ))
         )}

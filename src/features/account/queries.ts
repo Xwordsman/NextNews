@@ -6,7 +6,9 @@ import {
   bizSite,
   bizSnapshotItem,
   relUserChannelSubscription,
+  userBookmark,
   userNotification,
+  userReadHistory,
   userTrackingMatch,
   userTrackingRule,
 } from "@/server/db/schema"
@@ -49,6 +51,7 @@ export type UserTrackingRule = {
 
 export type UserTrackingMatch = {
   id: string
+  snapshotItemId: string
   title: string
   url: string
   matchedKeyword: string
@@ -67,6 +70,27 @@ export type UserNotification = {
   href: string | null
   isRead: boolean
   createdAt: Date
+}
+
+export type UserSavedItem = {
+  id: string
+  snapshotItemId: string
+  title: string
+  url: string
+  rankNo: number | null
+  hotValue: string | null
+  hotLabel: string | null
+  tag: string | null
+  channelName: string
+  siteName: string
+  channelHref: string
+  createdAt: Date
+}
+
+export type UserReadHistoryItem = UserSavedItem & {
+  firstReadAt: Date
+  lastReadAt: Date
+  readCount: number
 }
 
 export async function isChannelSubscribed(userId: string, channelId: string) {
@@ -234,6 +258,7 @@ export async function getUserTrackingDashboard(
   const matches = await db
     .select({
       id: userTrackingMatch.id,
+      snapshotItemId: userTrackingMatch.snapshotItemId,
       ruleId: userTrackingMatch.ruleId,
       title: userTrackingMatch.title,
       url: userTrackingMatch.url,
@@ -262,6 +287,7 @@ export async function getUserTrackingDashboard(
     const ruleMatches = matchesByRuleId.get(match.ruleId) ?? []
     ruleMatches.push({
       id: match.id,
+      snapshotItemId: match.snapshotItemId,
       title: match.title,
       url: match.url,
       matchedKeyword: match.matchedKeyword,
@@ -302,6 +328,106 @@ export async function getUserNotifications(
     .where(eq(userNotification.userId, userId))
     .orderBy(desc(userNotification.createdAt))
     .limit(100)
+}
+
+export async function getUserBookmarks(
+  userId: string,
+): Promise<UserSavedItem[]> {
+  return getDb()
+    .select({
+      id: userBookmark.id,
+      snapshotItemId: userBookmark.snapshotItemId,
+      title: userBookmark.title,
+      url: userBookmark.url,
+      rankNo: bizSnapshotItem.rankNo,
+      hotValue: bizSnapshotItem.hotValue,
+      hotLabel: bizSnapshotItem.hotLabel,
+      tag: bizSnapshotItem.tag,
+      createdAt: userBookmark.createdAt,
+      channelName: bizChannel.channelName,
+      siteName: bizSite.siteName,
+      siteSlug: bizSite.slug,
+      channelSlug: bizChannel.slug,
+    })
+    .from(userBookmark)
+    .innerJoin(
+      bizSnapshotItem,
+      eq(userBookmark.snapshotItemId, bizSnapshotItem.id),
+    )
+    .innerJoin(bizChannel, eq(bizSnapshotItem.channelId, bizChannel.id))
+    .innerJoin(bizSite, eq(bizChannel.siteId, bizSite.id))
+    .where(eq(userBookmark.userId, userId))
+    .orderBy(desc(userBookmark.createdAt))
+    .limit(120)
+    .then((items) =>
+      items.map((item) => ({
+        id: item.id,
+        snapshotItemId: item.snapshotItemId,
+        title: item.title,
+        url: item.url,
+        rankNo: item.rankNo,
+        hotValue: item.hotValue,
+        hotLabel: item.hotLabel,
+        tag: item.tag,
+        channelName: item.channelName,
+        siteName: item.siteName,
+        channelHref: `/channels/${item.siteSlug}/${item.channelSlug}`,
+        createdAt: item.createdAt,
+      })),
+    )
+}
+
+export async function getUserReadHistory(
+  userId: string,
+): Promise<UserReadHistoryItem[]> {
+  return getDb()
+    .select({
+      id: userReadHistory.id,
+      snapshotItemId: userReadHistory.snapshotItemId,
+      title: userReadHistory.title,
+      url: userReadHistory.url,
+      rankNo: bizSnapshotItem.rankNo,
+      hotValue: bizSnapshotItem.hotValue,
+      hotLabel: bizSnapshotItem.hotLabel,
+      tag: bizSnapshotItem.tag,
+      createdAt: userReadHistory.lastReadAt,
+      firstReadAt: userReadHistory.firstReadAt,
+      lastReadAt: userReadHistory.lastReadAt,
+      readCount: userReadHistory.readCount,
+      channelName: bizChannel.channelName,
+      siteName: bizSite.siteName,
+      siteSlug: bizSite.slug,
+      channelSlug: bizChannel.slug,
+    })
+    .from(userReadHistory)
+    .innerJoin(
+      bizSnapshotItem,
+      eq(userReadHistory.snapshotItemId, bizSnapshotItem.id),
+    )
+    .innerJoin(bizChannel, eq(bizSnapshotItem.channelId, bizChannel.id))
+    .innerJoin(bizSite, eq(bizChannel.siteId, bizSite.id))
+    .where(eq(userReadHistory.userId, userId))
+    .orderBy(desc(userReadHistory.lastReadAt))
+    .limit(160)
+    .then((items) =>
+      items.map((item) => ({
+        id: item.id,
+        snapshotItemId: item.snapshotItemId,
+        title: item.title,
+        url: item.url,
+        rankNo: item.rankNo,
+        hotValue: item.hotValue,
+        hotLabel: item.hotLabel,
+        tag: item.tag,
+        channelName: item.channelName,
+        siteName: item.siteName,
+        channelHref: `/channels/${item.siteSlug}/${item.channelSlug}`,
+        createdAt: item.createdAt,
+        firstReadAt: item.firstReadAt,
+        lastReadAt: item.lastReadAt,
+        readCount: item.readCount,
+      })),
+    )
 }
 
 function toPublicRankItem(item: PublicRankItem): PublicRankItem {

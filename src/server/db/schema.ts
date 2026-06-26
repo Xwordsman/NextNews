@@ -55,6 +55,19 @@ export const membershipStatusEnum = pgEnum("membership_status", [
   "expired",
   "canceled",
 ])
+export const membershipOrderStatusEnum = pgEnum("membership_order_status", [
+  "pending",
+  "paid",
+  "canceled",
+  "refunded",
+])
+export const jobStatusEnum = pgEnum("job_status", [
+  "pending",
+  "running",
+  "success",
+  "failed",
+  "canceled",
+])
 
 export const sysUser = pgTable(
   "sys_user",
@@ -116,6 +129,61 @@ export const userMembership = pgTable(
     index("idx_user_membership_status_expiry").on(
       table.status,
       table.expiresAt,
+    ),
+  ],
+)
+
+export const membershipPlan = pgTable(
+  "membership_plan",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    planKey: varchar("plan_key", { length: 80 }).notNull(),
+    planName: varchar("plan_name", { length: 120 }).notNull(),
+    description: text("description"),
+    priceCents: integer("price_cents").default(0).notNull(),
+    currency: varchar("currency", { length: 12 }).default("CNY").notNull(),
+    historyDays: integer("history_days").default(30).notNull(),
+    durationDays: integer("duration_days").default(30).notNull(),
+    isEnabled: boolean("is_enabled").default(true).notNull(),
+    isFeatured: boolean("is_featured").default(false).notNull(),
+    sort: integer("sort").default(0).notNull(),
+    extra: jsonb("extra").$type<Record<string, unknown>>().default(emptyJson),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("uk_membership_plan_key").on(table.planKey),
+    index("idx_membership_plan_enabled_sort").on(table.isEnabled, table.sort),
+  ],
+)
+
+export const membershipOrder = pgTable(
+  "membership_order",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => sysUser.id),
+    planId: uuid("plan_id").references(() => membershipPlan.id),
+    planKey: varchar("plan_key", { length: 80 }).notNull(),
+    planName: varchar("plan_name", { length: 120 }).notNull(),
+    amountCents: integer("amount_cents").default(0).notNull(),
+    currency: varchar("currency", { length: 12 }).default("CNY").notNull(),
+    status: membershipOrderStatusEnum("status").default("pending").notNull(),
+    paymentProvider: varchar("payment_provider", { length: 80 }),
+    providerTradeNo: varchar("provider_trade_no", { length: 160 }),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    rawPayload: jsonb("raw_payload")
+      .$type<Record<string, unknown>>()
+      .default(emptyJson),
+    ...timestamps,
+  },
+  (table) => [
+    index("idx_membership_order_user_time").on(table.userId, table.createdAt),
+    index("idx_membership_order_status_time").on(table.status, table.createdAt),
+    index("idx_membership_order_provider_trade").on(
+      table.paymentProvider,
+      table.providerTradeNo,
     ),
   ],
 )
@@ -590,6 +658,35 @@ export const bizDailyReportItem = pgTable(
   ],
 )
 
+export const bizDailyReportTemplate = pgTable(
+  "biz_daily_report_template",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    templateName: varchar("template_name", { length: 160 }).notNull(),
+    status: entityStatusEnum("status").default("active").notNull(),
+    titlePattern: varchar("title_pattern", { length: 200 })
+      .default("NextNews 日报 {date}")
+      .notNull(),
+    summaryPattern: text("summary_pattern"),
+    channelLimit: integer("channel_limit").default(8).notNull(),
+    itemLimitPerChannel: integer("item_limit_per_channel").default(5).notNull(),
+    autoPublish: boolean("auto_publish").default(false).notNull(),
+    requireReview: boolean("require_review").default(true).notNull(),
+    scheduleTime: varchar("schedule_time", { length: 16 })
+      .default("09:00")
+      .notNull(),
+    sort: integer("sort").default(0).notNull(),
+    extra: jsonb("extra").$type<Record<string, unknown>>().default(emptyJson),
+    ...timestamps,
+  },
+  (table) => [
+    index("idx_biz_daily_report_template_status_sort").on(
+      table.status,
+      table.sort,
+    ),
+  ],
+)
+
 export const relTopicSnapshotItem = pgTable(
   "rel_topic_snapshot_item",
   {
@@ -658,6 +755,63 @@ export const userTrackingMatch = pgTable(
   ],
 )
 
+export const userBookmark = pgTable(
+  "user_bookmark",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => sysUser.id),
+    snapshotItemId: uuid("snapshot_item_id")
+      .notNull()
+      .references(() => bizSnapshotItem.id),
+    channelId: uuid("channel_id").references(() => bizChannel.id),
+    title: text("title").notNull(),
+    url: text("url").notNull(),
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("uk_user_bookmark_item").on(table.userId, table.snapshotItemId),
+    index("idx_user_bookmark_user_time").on(table.userId, table.createdAt),
+  ],
+)
+
+export const userReadHistory = pgTable(
+  "user_read_history",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => sysUser.id),
+    snapshotItemId: uuid("snapshot_item_id")
+      .notNull()
+      .references(() => bizSnapshotItem.id),
+    channelId: uuid("channel_id").references(() => bizChannel.id),
+    title: text("title").notNull(),
+    url: text("url").notNull(),
+    readCount: integer("read_count").default(1).notNull(),
+    firstReadAt: timestamp("first_read_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    lastReadAt: timestamp("last_read_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("uk_user_read_history_item").on(
+      table.userId,
+      table.snapshotItemId,
+    ),
+    index("idx_user_read_history_user_time").on(table.userId, table.lastReadAt),
+  ],
+)
+
 export const bizContentBlock = pgTable(
   "biz_content_block",
   {
@@ -678,5 +832,85 @@ export const bizContentBlock = pgTable(
     index("idx_biz_content_block_url_hash").on(table.urlHash),
     index("idx_biz_content_block_deleted").on(table.deletedAt),
     index("idx_biz_content_block_snapshot_item").on(table.snapshotItemId),
+  ],
+)
+
+export const logSearchQuery = pgTable(
+  "log_search_query",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id").references(() => sysUser.id),
+    keyword: varchar("keyword", { length: 200 }).notNull(),
+    siteSlug: varchar("site_slug", { length: 160 }),
+    channelId: uuid("channel_id").references(() => bizChannel.id),
+    dateFrom: date("date_from"),
+    dateTo: date("date_to"),
+    resultCount: integer("result_count").default(0).notNull(),
+    sourceIp: varchar("source_ip", { length: 80 }),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("idx_log_search_query_keyword_time").on(
+      table.keyword,
+      table.createdAt,
+    ),
+    index("idx_log_search_query_user_time").on(table.userId, table.createdAt),
+  ],
+)
+
+export const sysOperationLog = pgTable(
+  "sys_operation_log",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    adminId: uuid("admin_id").references(() => sysUser.id),
+    action: varchar("action", { length: 120 }).notNull(),
+    targetType: varchar("target_type", { length: 120 }),
+    targetId: uuid("target_id"),
+    summary: text(),
+    sourceIp: varchar("source_ip", { length: 80 }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("idx_sys_operation_log_admin_time").on(
+      table.adminId,
+      table.createdAt,
+    ),
+    index("idx_sys_operation_log_action_time").on(
+      table.action,
+      table.createdAt,
+    ),
+  ],
+)
+
+export const sysJobQueue = pgTable(
+  "sys_job_queue",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    jobType: varchar("job_type", { length: 120 }).notNull(),
+    status: jobStatusEnum("status").default("pending").notNull(),
+    payload: jsonb("payload")
+      .$type<Record<string, unknown>>()
+      .default(emptyJson),
+    attempts: integer("attempts").default(0).notNull(),
+    maxAttempts: integer("max_attempts").default(3).notNull(),
+    availableAt: timestamp("available_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    errorMessage: text("error_message"),
+    ...timestamps,
+  },
+  (table) => [
+    index("idx_sys_job_queue_status_available").on(
+      table.status,
+      table.availableAt,
+    ),
+    index("idx_sys_job_queue_type_time").on(table.jobType, table.createdAt),
   ],
 )

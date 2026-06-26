@@ -528,6 +528,182 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 - `idx_user_notification_user_time`
 - `idx_user_notification_unread`
 
+## 本轮新增商业化与运营控制表
+
+### membership_plan
+
+可售会员套餐表。商业化默认关闭，但套餐配置可以先在后台维护，等待后续接入支付网关。
+
+关键字段：
+
+- `plan_key`
+- `plan_name`
+- `description`
+- `price_cents`
+- `currency`
+- `history_days`
+- `duration_days`
+- `is_enabled`
+- `is_featured`
+- `sort`
+- `extra`
+
+关键索引：
+
+- `uk_membership_plan_key`
+- `idx_membership_plan_enabled_sort`
+
+### membership_order
+
+会员订单预留表。当前前台只创建 `pending` 订单，不接真实支付；后续支付回调会更新订单状态并授予 `user_membership`。
+
+关键字段：
+
+- `user_id`
+- `plan_id`
+- `plan_key`
+- `plan_name`
+- `amount_cents`
+- `currency`
+- `status`: `pending`、`paid`、`closed`、`refunded`
+- `payment_provider`
+- `provider_trade_no`
+- `paid_at`
+- `expires_at`
+- `raw_payload`
+
+关键索引：
+
+- `idx_membership_order_user_time`
+- `idx_membership_order_status_time`
+- `idx_membership_order_provider_trade`
+
+### biz_daily_report_template
+
+日报模板表。用于后台预先配置日报标题、摘要、频道数量、每频道条目数、自动发布和审核策略。当前先落库配置，自动生成由后续任务消费实现。
+
+关键字段：
+
+- `template_name`
+- `status`
+- `title_pattern`
+- `summary_pattern`
+- `channel_limit`
+- `item_limit_per_channel`
+- `auto_publish`
+- `require_review`
+- `schedule_time`
+- `sort`
+- `extra`
+
+关键索引：
+
+- `idx_biz_daily_report_template_status_sort`
+
+### user_bookmark
+
+用户收藏表。前台主要榜单入口可以把快照条目加入收藏，个人中心通过 `/bookmarks` 查看。
+
+关键字段：
+
+- `user_id`
+- `snapshot_item_id`
+- `channel_id`
+- `title`
+- `url`
+- `note`
+- `created_at`
+- `updated_at`
+
+关键索引：
+
+- `uk_user_bookmark_item`
+- `idx_user_bookmark_user_time`
+
+### user_read_history
+
+用户阅读历史表。前台内容链接统一尽量走 `/go/[snapshotItemId]`，登录用户跳转第三方 URL 前写入阅读历史。
+
+关键字段：
+
+- `user_id`
+- `snapshot_item_id`
+- `channel_id`
+- `title`
+- `url`
+- `read_count`
+- `first_read_at`
+- `last_read_at`
+
+关键索引：
+
+- `uk_user_read_history_item`
+- `idx_user_read_history_user_time`
+
+### log_search_query
+
+搜索日志表。是否记录由 `search.logging_enabled` 控制，用于后台分析热门关键词、筛选条件和搜索结果质量。
+
+关键字段：
+
+- `user_id`
+- `keyword`
+- `site_slug`
+- `channel_id`
+- `date_from`
+- `date_to`
+- `result_count`
+- `source_ip`
+- `user_agent`
+- `created_at`
+
+关键索引：
+
+- `idx_log_search_query_keyword_time`
+- `idx_log_search_query_user_time`
+
+### sys_operation_log
+
+后台操作日志表。用于记录管理员关键操作，例如更新系统设置、维护会员套餐、调整日报模板等。
+
+关键字段：
+
+- `admin_id`
+- `action`
+- `target_type`
+- `target_id`
+- `summary`
+- `source_ip`
+- `created_at`
+
+关键索引：
+
+- `idx_sys_operation_log_admin_time`
+- `idx_sys_operation_log_action_time`
+
+### sys_job_queue
+
+系统任务队列表。当前作为异步任务预留，`jobs.async_enabled` 开启后新快照会写入 `snapshot.created` 任务；后续 Worker 可消费日报生成、通知聚合和异常预警。
+
+关键字段：
+
+- `job_type`
+- `status`: `pending`、`running`、`success`、`failed`
+- `payload`
+- `attempts`
+- `max_attempts`
+- `available_at`
+- `locked_at`
+- `finished_at`
+- `error_message`
+- `created_at`
+- `updated_at`
+
+关键索引：
+
+- `idx_sys_job_queue_status_available`
+- `idx_sys_job_queue_type_time`
+
 ## 后续规划表
 
 ```txt

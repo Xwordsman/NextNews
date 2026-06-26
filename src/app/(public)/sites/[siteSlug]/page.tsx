@@ -64,7 +64,10 @@ export default async function SitePage({
                   查看频道
                 </Link>
               </div>
-              <PublicRankList items={channel.items} />
+              <PublicRankList
+                backTo={`/sites/${siteSlug}`}
+                items={channel.items}
+              />
             </article>
           ))
         )}

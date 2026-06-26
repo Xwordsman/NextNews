@@ -104,7 +104,7 @@ export default async function DailyDetailPage({
                 <span className="min-w-0">
                   <a
                     className="font-semibold leading-6 text-slate-950 no-underline transition-colors hover:text-brand"
-                    href={item.url}
+                    href={`/go/${item.id}`}
                     rel="noreferrer"
                     target="_blank"
                   >
@@ -180,7 +180,7 @@ export default async function DailyDetailPage({
                         <span className="min-w-0">
                           <a
                             className="line-clamp-2 text-sm font-semibold leading-6 text-slate-950 no-underline transition-colors hover:text-brand"
-                            href={item.url}
+                            href={item.id ? `/go/${item.id}` : item.url}
                             rel="noreferrer"
                             target="_blank"
                           >

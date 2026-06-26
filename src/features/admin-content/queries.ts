@@ -1,4 +1,14 @@
-import { and, asc, count, desc, eq, gte, inArray, isNull } from "drizzle-orm"
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNull,
+  sql,
+} from "drizzle-orm"
 import { listChannelDefinitions } from "@/server/channels/registry"
 import { getDb } from "@/server/db/client"
 import {
@@ -8,24 +18,36 @@ import {
   bizContentBlock,
   bizDailyReport,
   bizDailyReportItem,
+  bizDailyReportTemplate,
   bizHomeModule,
   bizRankingConfig,
   bizSite,
   bizSnapshotItem,
   bizTopic,
+  logSearchQuery,
   logCrawlRun,
+  membershipOrder,
+  membershipPlan,
   relRankingChannel,
   relChannelCategory,
   relTopicSnapshotItem,
   relUserChannelSubscription,
+  sysJobQueue,
+  sysOperationLog,
   sysUser,
+  userBookmark,
   userMembership,
   userNotification,
+  userReadHistory,
   userTrackingMatch,
   userTrackingRule,
 } from "@/server/db/schema"
 import { matchesKeywords, parseKeywords } from "@/server/content/keywords"
 import { serverEnv } from "@/server/env"
+import {
+  appSettingDefinitions,
+  getAppSettings,
+} from "@/server/settings/app-settings"
 
 type CrawlRunStatus = typeof logCrawlRun.$inferSelect.status
 
@@ -904,6 +926,143 @@ export function getAdminSystemOverview() {
   }
 }
 
+export async function getAdminSystemSettings() {
+  const settings = await getAppSettings()
+
+  return appSettingDefinitions.map((definition) => ({
+    ...definition,
+    value: settings[definition.key],
+  }))
+}
+
+export async function listAdminMembershipPlans() {
+  return getDb()
+    .select()
+    .from(membershipPlan)
+    .where(isNull(membershipPlan.deletedAt))
+    .orderBy(asc(membershipPlan.sort), asc(membershipPlan.priceCents))
+}
+
+export async function listAdminMembershipOrders() {
+  return getDb()
+    .select({
+      id: membershipOrder.id,
+      planKey: membershipOrder.planKey,
+      planName: membershipOrder.planName,
+      amountCents: membershipOrder.amountCents,
+      currency: membershipOrder.currency,
+      status: membershipOrder.status,
+      paymentProvider: membershipOrder.paymentProvider,
+      providerTradeNo: membershipOrder.providerTradeNo,
+      paidAt: membershipOrder.paidAt,
+      expiresAt: membershipOrder.expiresAt,
+      createdAt: membershipOrder.createdAt,
+      userEmail: sysUser.email,
+      userDisplayName: sysUser.displayName,
+    })
+    .from(membershipOrder)
+    .innerJoin(sysUser, eq(membershipOrder.userId, sysUser.id))
+    .orderBy(desc(membershipOrder.createdAt))
+    .limit(100)
+}
+
+export async function getAdminSearchAnalytics() {
+  const db = getDb()
+
+  const [recentLogs, hotKeywords] = await Promise.all([
+    db
+      .select({
+        id: logSearchQuery.id,
+        keyword: logSearchQuery.keyword,
+        siteSlug: logSearchQuery.siteSlug,
+        channelId: logSearchQuery.channelId,
+        dateFrom: logSearchQuery.dateFrom,
+        dateTo: logSearchQuery.dateTo,
+        resultCount: logSearchQuery.resultCount,
+        createdAt: logSearchQuery.createdAt,
+        userEmail: sysUser.email,
+        userDisplayName: sysUser.displayName,
+      })
+      .from(logSearchQuery)
+      .leftJoin(sysUser, eq(logSearchQuery.userId, sysUser.id))
+      .orderBy(desc(logSearchQuery.createdAt))
+      .limit(100),
+    db
+      .select({
+        keyword: logSearchQuery.keyword,
+        searchCount: count(),
+        averageResultCount: sql<number>`round(avg(${logSearchQuery.resultCount}))`,
+        lastSearchedAt: sql<Date>`max(${logSearchQuery.createdAt})`,
+      })
+      .from(logSearchQuery)
+      .groupBy(logSearchQuery.keyword)
+      .orderBy(desc(count()), desc(sql`max(${logSearchQuery.createdAt})`))
+      .limit(30),
+  ])
+
+  return { hotKeywords, recentLogs }
+}
+
+export async function listAdminDailyReportTemplates() {
+  return getDb()
+    .select()
+    .from(bizDailyReportTemplate)
+    .orderBy(
+      asc(bizDailyReportTemplate.sort),
+      asc(bizDailyReportTemplate.templateName),
+    )
+}
+
+export async function getAdminSystemOperations() {
+  const db = getDb()
+  const [operationLogs, jobRows, jobCounts] = await Promise.all([
+    db
+      .select({
+        id: sysOperationLog.id,
+        action: sysOperationLog.action,
+        targetType: sysOperationLog.targetType,
+        targetId: sysOperationLog.targetId,
+        summary: sysOperationLog.summary,
+        sourceIp: sysOperationLog.sourceIp,
+        createdAt: sysOperationLog.createdAt,
+        adminEmail: sysUser.email,
+        adminName: sysUser.displayName,
+      })
+      .from(sysOperationLog)
+      .leftJoin(sysUser, eq(sysOperationLog.adminId, sysUser.id))
+      .orderBy(desc(sysOperationLog.createdAt))
+      .limit(100),
+    db
+      .select({
+        id: sysJobQueue.id,
+        jobType: sysJobQueue.jobType,
+        status: sysJobQueue.status,
+        attempts: sysJobQueue.attempts,
+        maxAttempts: sysJobQueue.maxAttempts,
+        availableAt: sysJobQueue.availableAt,
+        finishedAt: sysJobQueue.finishedAt,
+        errorMessage: sysJobQueue.errorMessage,
+        createdAt: sysJobQueue.createdAt,
+      })
+      .from(sysJobQueue)
+      .orderBy(desc(sysJobQueue.createdAt))
+      .limit(100),
+    db
+      .select({
+        status: sysJobQueue.status,
+        value: count(),
+      })
+      .from(sysJobQueue)
+      .groupBy(sysJobQueue.status),
+  ])
+
+  return {
+    jobCounts,
+    jobs: jobRows,
+    operationLogs,
+  }
+}
+
 export async function listAdminUsers() {
   const db = getDb()
   const users = await db
@@ -992,6 +1151,10 @@ export async function getAdminOperationsAnalytics() {
     [unreadNotificationCount],
     [todayTrackingMatchCount],
     [activeDailyReportCount],
+    [todaySearchCount],
+    [bookmarkCount],
+    [todayReadCount],
+    [pendingJobCount],
     failedRows,
     channelRows,
   ] = await Promise.all([
@@ -1056,6 +1219,19 @@ export async function getAdminOperationsAnalytics() {
         ),
       ),
     db
+      .select({ value: count() })
+      .from(logSearchQuery)
+      .where(gte(logSearchQuery.createdAt, today)),
+    db.select({ value: count() }).from(userBookmark),
+    db
+      .select({ value: count() })
+      .from(userReadHistory)
+      .where(gte(userReadHistory.lastReadAt, today)),
+    db
+      .select({ value: count() })
+      .from(sysJobQueue)
+      .where(eq(sysJobQueue.status, "pending")),
+    db
       .select({
         channelId: logCrawlRun.channelId,
         value: count(),
@@ -1115,6 +1291,10 @@ export async function getAdminOperationsAnalytics() {
       unreadNotifications: Number(unreadNotificationCount?.value ?? 0),
       todayTrackingMatches: Number(todayTrackingMatchCount?.value ?? 0),
       activeDailyReports: Number(activeDailyReportCount?.value ?? 0),
+      todaySearches: Number(todaySearchCount?.value ?? 0),
+      bookmarks: Number(bookmarkCount?.value ?? 0),
+      todayReads: Number(todayReadCount?.value ?? 0),
+      pendingJobs: Number(pendingJobCount?.value ?? 0),
     },
     channelHealth: channelRows.map((channel) => ({
       ...channel,

@@ -127,14 +127,18 @@ export function StatusBadge({ status }: { status: string }) {
     duplicate: "重复",
     failed: "失败",
     ignored: "忽略",
+    paid: "已支付",
+    pending: "待处理",
+    refunded: "已退款",
     running: "运行中",
     skipped: "跳过",
     success: "成功",
+    canceled: "已取消",
   }
   const className =
-    status === "active" || status === "success"
+    status === "active" || status === "success" || status === "paid"
       ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-      : status === "draft" || status === "running"
+      : status === "draft" || status === "running" || status === "pending"
         ? "border-amber-200 bg-amber-50 text-amber-700"
         : status === "failed"
           ? "border-red-200 bg-red-50 text-red-700"

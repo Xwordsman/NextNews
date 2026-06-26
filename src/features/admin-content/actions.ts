@@ -3,6 +3,7 @@
 import { and, eq, inArray, isNull } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
+import { recordAdminOperation } from "@/server/admin/operation-log"
 import { requireAdmin } from "@/server/auth/session"
 import { getChannelDefinition } from "@/server/channels/registry"
 import { hashContentUrl, normalizeContentUrl } from "@/server/content/hash"
@@ -14,18 +15,24 @@ import {
   bizContentBlock,
   bizDailyReport,
   bizDailyReportItem,
+  bizDailyReportTemplate,
   bizHomeModule,
   bizRankingConfig,
   bizSnapshotItem,
   bizSite,
   bizTopic,
   logCrawlRun,
+  membershipPlan,
   relRankingChannel,
   relChannelCategory,
   relTopicSnapshotItem,
   userMembership,
   userTrackingRule,
 } from "@/server/db/schema"
+import {
+  appSettingDefinitions,
+  saveAppSettings,
+} from "@/server/settings/app-settings"
 import {
   AdminFormError,
   booleanField,
@@ -122,6 +129,22 @@ function planKeyString(formData: FormData) {
     throw new AdminFormError(
       "套餐 key 只能使用小写字母、数字、点、下划线和短横线",
     )
+  }
+
+  return value
+}
+
+function scheduleTimeString(formData: FormData) {
+  const value = formString(formData, "scheduleTime") || "09:00"
+
+  if (!/^\d{2}:\d{2}$/.test(value)) {
+    throw new AdminFormError("执行时间格式不正确")
+  }
+
+  const [hour, minute] = value.split(":").map(Number)
+
+  if (hour > 23 || minute > 59) {
+    throw new AdminFormError("执行时间超出范围")
   }
 
   return value
@@ -856,6 +879,164 @@ export async function saveUserMembershipAction(formData: FormData) {
 
   revalidatePath("/admin/users")
   redirectWithMessage(backTo, "notice", "会员权益已保存")
+}
+
+export async function saveSystemSettingsAction(formData: FormData) {
+  const admin = await requireAdmin()
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    "/admin/settings",
+  )
+  const values = Object.fromEntries(
+    appSettingDefinitions.map((definition) => [
+      definition.key,
+      formString(formData, definition.key),
+    ]),
+  )
+
+  await saveAppSettings(values)
+  await recordAdminOperation({
+    action: "settings.update",
+    adminId: admin.id,
+    summary: "更新系统业务开关",
+    targetType: "sys_setting",
+  })
+
+  redirectWithMessage(backTo, "notice", "系统设置已保存")
+}
+
+export async function saveMembershipPlanAction(formData: FormData) {
+  const admin = await requireAdmin()
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    "/admin/users/memberships",
+  )
+  const id = optionalUuidString(formData, "id", "套餐 ID")
+
+  let values: typeof membershipPlan.$inferInsert
+
+  try {
+    values = {
+      planKey: planKeyString(formData),
+      planName: requiredString(formData, "planName", "套餐名称", 120),
+      description: optionalString(formData, "description", "套餐说明", 500),
+      priceCents: optionalInteger(formData, "priceCents", "价格分", 0, 0),
+      currency: optionalString(formData, "currency", "币种", 12) ?? "CNY",
+      historyDays: optionalInteger(formData, "historyDays", "历史天数", 30, 1),
+      durationDays: optionalInteger(
+        formData,
+        "durationDays",
+        "有效天数",
+        30,
+        1,
+      ),
+      isEnabled: formString(formData, "isEnabled") === "true",
+      isFeatured: formString(formData, "isFeatured") === "true",
+      sort: optionalInteger(formData, "sort", "排序", 0),
+    }
+  } catch (error) {
+    const message =
+      error instanceof AdminFormError ? error.message : "会员套餐保存失败"
+    redirectWithMessage(backTo, "error", message)
+  }
+
+  try {
+    if (id) {
+      await getDb()
+        .update(membershipPlan)
+        .set({
+          ...values,
+          deletedAt: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(membershipPlan.id, id))
+    } else {
+      await getDb().insert(membershipPlan).values(values)
+    }
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      redirectWithMessage(backTo, "error", "套餐 key 已存在")
+    }
+
+    throw error
+  }
+
+  await recordAdminOperation({
+    action: id ? "membership_plan.update" : "membership_plan.create",
+    adminId: admin.id,
+    summary: `保存会员套餐 ${values.planKey}`,
+    targetId: id,
+    targetType: "membership_plan",
+  })
+
+  revalidatePath("/membership")
+  revalidatePath("/admin/users/memberships")
+  redirectWithMessage(backTo, "notice", "会员套餐已保存")
+}
+
+export async function saveDailyReportTemplateAction(formData: FormData) {
+  const admin = await requireAdmin()
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    "/admin/operations/daily",
+  )
+  const id = optionalUuidString(formData, "id", "日报模板 ID")
+
+  let values: typeof bizDailyReportTemplate.$inferInsert
+
+  try {
+    values = {
+      templateName: requiredString(formData, "templateName", "模板名称", 160),
+      status: selectValue(formData, "status", "状态", entityStatuses),
+      titlePattern: requiredString(formData, "titlePattern", "标题模板", 200),
+      summaryPattern: optionalString(
+        formData,
+        "summaryPattern",
+        "摘要模板",
+        500,
+      ),
+      channelLimit: optionalInteger(formData, "channelLimit", "频道数", 8, 1),
+      itemLimitPerChannel: optionalInteger(
+        formData,
+        "itemLimitPerChannel",
+        "单频道条目数",
+        5,
+        1,
+      ),
+      autoPublish: formString(formData, "autoPublish") === "true",
+      requireReview: formString(formData, "requireReview") === "true",
+      scheduleTime: scheduleTimeString(formData),
+      sort: optionalInteger(formData, "sort", "排序", 0),
+    }
+  } catch (error) {
+    const message =
+      error instanceof AdminFormError ? error.message : "日报模板保存失败"
+    redirectWithMessage(backTo, "error", message)
+  }
+
+  if (id) {
+    await getDb()
+      .update(bizDailyReportTemplate)
+      .set({
+        ...values,
+        updatedAt: new Date(),
+      })
+      .where(eq(bizDailyReportTemplate.id, id))
+  } else {
+    await getDb().insert(bizDailyReportTemplate).values(values)
+  }
+
+  await recordAdminOperation({
+    action: id ? "daily_template.update" : "daily_template.create",
+    adminId: admin.id,
+    summary: `保存日报模板 ${values.templateName}`,
+    targetId: id,
+    targetType: "biz_daily_report_template",
+  })
+
+  revalidatePath("/daily")
+  revalidatePath("/admin/operations/daily")
+  redirectWithMessage(backTo, "notice", "日报模板已保存")
 }
 
 export async function saveHomeModuleAction(formData: FormData) {

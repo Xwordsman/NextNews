@@ -105,7 +105,7 @@ export default async function TopicDetailPage({
                 </div>
                 <a
                   className="mt-3 block font-serif text-xl font-semibold leading-7 text-slate-950 no-underline transition-colors hover:text-brand"
-                  href={item.url}
+                  href={`/go/${item.id}`}
                   rel="noreferrer"
                   target="_blank"
                 >
