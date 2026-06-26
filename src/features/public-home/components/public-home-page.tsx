@@ -18,6 +18,7 @@ import {
   primaryNavItems as defaultPrimaryNavItems,
   type HomeSource,
 } from "../mock-data"
+import type { HomeModule } from "../queries"
 
 const lightBodyBackground = `
   radial-gradient(circle at top left, rgba(255, 116, 116, 0.18), transparent 26rem),
@@ -68,6 +69,7 @@ function getSourceCardBackground(source: HomeSource, isDarkMode: boolean) {
 type PublicHomePageProps = {
   initialSources?: HomeSource[]
   categoryNavItems?: typeof defaultCategoryNavItems
+  homeModules?: HomeModule[]
   moreNavItems?: typeof defaultMoreNavItems
   primaryNavItems?: typeof defaultPrimaryNavItems
 }
@@ -105,6 +107,7 @@ function NavPill({
 
 export function PublicHomePage({
   categoryNavItems = defaultCategoryNavItems,
+  homeModules = [],
   initialSources,
   moreNavItems = defaultMoreNavItems,
   primaryNavItems = defaultPrimaryNavItems,
@@ -116,7 +119,7 @@ export function PublicHomePage({
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [draggedId, setDraggedId] = useState<string | null>(null)
-  const searchRef = useRef<HTMLDivElement>(null)
+  const searchRef = useRef<HTMLFormElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const gridRef = useRef<HTMLDivElement>(null)
   const draggedIdRef = useRef<string | null>(null)
@@ -142,6 +145,12 @@ export function PublicHomePage({
     (total, source) => total + source.items.length,
     0,
   )
+  const moduleByKey = useMemo(
+    () => new Map(homeModules.map((module) => [module.moduleKey, module])),
+    [homeModules],
+  )
+  const hotSitesModule = moduleByKey.get("hot-sites")
+  const liveRankingsModule = moduleByKey.get("live-rankings")
 
   useEffect(() => {
     function handleDocumentClick(event: MouseEvent) {
@@ -307,7 +316,8 @@ export function PublicHomePage({
             </div>
 
             <div className="flex justify-self-end gap-2 max-xl:justify-self-start max-sm:w-full max-sm:flex-wrap">
-              <div
+              <form
+                action="/search"
                 className={`flex h-11 items-center overflow-hidden rounded-full text-slate-500 transition-all duration-200 dark:text-slate-400 max-sm:max-w-full ${
                   isSearchOpen
                     ? "w-72 border border-slate-200 bg-white dark:border-line dark:bg-white/[0.06]"
@@ -330,6 +340,7 @@ export function PublicHomePage({
                       ? "opacity-100"
                       : "pointer-events-none opacity-0"
                   }`}
+                  name="q"
                   onChange={(event) => setQuery(event.target.value)}
                   onKeyDown={(event) => {
                     if (event.key === "Escape" && !query.trim()) {
@@ -342,7 +353,7 @@ export function PublicHomePage({
                   type="search"
                   value={query}
                 />
-              </div>
+              </form>
 
               <button
                 aria-label="刷新全部榜单"
@@ -375,216 +386,227 @@ export function PublicHomePage({
           </header>
 
           <main className="grid gap-6 pt-6">
-            <section
-              aria-labelledby="hotSitesTitle"
-              className="grid gap-[18px] rounded-2xl border border-slate-200 bg-white px-[22px] py-5 shadow-sm transition-colors duration-300 dark:border-line dark:bg-white/[0.05] dark:shadow-none max-sm:p-[18px]"
-              style={{
-                background: isDarkMode
-                  ? darkPanelBackground
-                  : lightPanelBackground,
-              }}
-            >
-              <div className="flex items-baseline gap-2">
-                <h1
-                  className="font-serif text-[28px] leading-none tracking-normal"
-                  id="hotSitesTitle"
-                >
-                  热门站点
-                </h1>
-                <span className="text-lg text-slate-400 dark:text-slate-500">
-                  /
-                </span>
-                <p className="m-0 text-xs font-bold uppercase tracking-[0.08em] text-brand">
-                  Hot Sites
-                </p>
-              </div>
-              <div
-                aria-label="热门站点列表"
-                className="flex gap-3 overflow-x-auto px-0.5 pb-2.5 pt-0.5 [scrollbar-color:rgba(255,255,255,0.22)_transparent]"
+            {hotSitesModule ? (
+              <section
+                aria-labelledby="hotSitesTitle"
+                className="grid gap-[18px] rounded-2xl border border-slate-200 bg-white px-[22px] py-5 shadow-sm transition-colors duration-300 dark:border-line dark:bg-white/[0.05] dark:shadow-none max-sm:p-[18px]"
+                style={{
+                  background: isDarkMode
+                    ? darkPanelBackground
+                    : lightPanelBackground,
+                }}
               >
-                {railSources.map((source) => (
-                  <button
-                    aria-label={`${source.name} ${source.tag}`}
-                    className="grid min-h-28 w-[92px] shrink-0 cursor-pointer place-items-center gap-2 rounded-lg bg-transparent px-2 py-3 text-center text-slate-950 transition duration-200 hover:-translate-y-0.5 hover:bg-slate-900/10 focus-visible:-translate-y-0.5 focus-visible:bg-slate-900/10 focus-visible:outline-none dark:text-slate-50 dark:hover:bg-white/10 dark:focus-visible:bg-white/10"
-                    key={source.id}
-                    type="button"
+                <div className="flex items-baseline gap-2">
+                  <h1
+                    className="font-serif text-[28px] leading-none tracking-normal"
+                    id="hotSitesTitle"
                   >
-                    <span
-                      className="grid h-12 w-12 place-items-center rounded-[14px] border border-line text-xl font-extrabold text-white shadow-[0_12px_24px_rgba(0,0,0,0.22)]"
-                      style={{ background: source.logoColor }}
-                    >
-                      {source.logo}
-                    </span>
-                    <span className="block max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
-                      <strong className="block max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-sm leading-tight">
-                        {source.name}
-                      </strong>
-                      <span className="mt-1 block max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">
-                        {source.tag}
-                      </span>
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </section>
-
-            <section aria-label="热榜看板">
-              <div className="mb-4 flex items-end justify-between gap-6 max-sm:grid">
-                <div>
+                    {hotSitesModule.title}
+                  </h1>
+                  <span className="text-lg text-slate-400 dark:text-slate-500">
+                    /
+                  </span>
                   <p className="m-0 text-xs font-bold uppercase tracking-[0.08em] text-brand">
-                    Sources
+                    {hotSitesModule.subtitle ?? "Hot Sites"}
                   </p>
-                  <h2 className="m-0 font-serif text-[28px] tracking-normal">
-                    实时热榜
-                  </h2>
                 </div>
-                <p className="m-0 max-w-[420px] leading-7 text-slate-500 dark:text-slate-400">
-                  拖动卡片可调整你的阅读顺序，点击星标可加入关注。
-                </p>
-              </div>
+                <div
+                  aria-label="热门站点列表"
+                  className="flex gap-3 overflow-x-auto px-0.5 pb-2.5 pt-0.5 [scrollbar-color:rgba(255,255,255,0.22)_transparent]"
+                >
+                  {railSources
+                    .slice(0, hotSitesModule.displayLimit)
+                    .map((source) => (
+                      <button
+                        aria-label={`${source.name} ${source.tag}`}
+                        className="grid min-h-28 w-[92px] shrink-0 cursor-pointer place-items-center gap-2 rounded-lg bg-transparent px-2 py-3 text-center text-slate-950 transition duration-200 hover:-translate-y-0.5 hover:bg-slate-900/10 focus-visible:-translate-y-0.5 focus-visible:bg-slate-900/10 focus-visible:outline-none dark:text-slate-50 dark:hover:bg-white/10 dark:focus-visible:bg-white/10"
+                        key={source.id}
+                        type="button"
+                      >
+                        <span
+                          className="grid h-12 w-12 place-items-center rounded-[14px] border border-line text-xl font-extrabold text-white shadow-[0_12px_24px_rgba(0,0,0,0.22)]"
+                          style={{ background: source.logoColor }}
+                        >
+                          {source.logo}
+                        </span>
+                        <span className="block max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
+                          <strong className="block max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-sm leading-tight">
+                            {source.name}
+                          </strong>
+                          <span className="mt-1 block max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">
+                            {source.tag}
+                          </span>
+                        </span>
+                      </button>
+                    ))}
+                </div>
+              </section>
+            ) : null}
 
-              <div
-                className="grid grid-cols-4 gap-6 max-xl:grid-cols-2 max-sm:grid-cols-1"
-                ref={gridRef}
-              >
-                {filteredSources.length === 0 ? (
-                  <div className="col-span-full rounded-[14px] border border-dashed border-slate-300 p-12 text-center text-slate-500 dark:border-line dark:text-slate-400">
-                    没有找到匹配的热榜，换个关键词或分类试试。
+            {liveRankingsModule ? (
+              <section aria-label="热榜看板">
+                <div className="mb-4 flex items-end justify-between gap-6 max-sm:grid">
+                  <div>
+                    <p className="m-0 text-xs font-bold uppercase tracking-[0.08em] text-brand">
+                      {liveRankingsModule.subtitle ?? "Sources"}
+                    </p>
+                    <h2 className="m-0 font-serif text-[28px] tracking-normal">
+                      {liveRankingsModule.title}
+                    </h2>
                   </div>
-                ) : (
-                  filteredSources.map((source) => (
-                    <article
-                      className={`min-h-[390px] rounded-[14px] border border-slate-200 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 dark:border-white/[0.08] dark:shadow-[0_18px_50px_rgba(0,0,0,0.26)] dark:hover:border-white/20 ${
-                        draggedId === source.id ? "opacity-50" : ""
-                      }`}
-                      data-source-card
-                      draggable
-                      key={source.id}
-                      onDragEnd={(event) => {
-                        draggedIdRef.current = null
-                        lastDragOverIdRef.current = null
-                        setDraggedId(null)
-                        event.currentTarget.classList.remove("opacity-50")
-                      }}
-                      onDragOver={(event) => {
-                        event.preventDefault()
-                        moveDraggedSource(source.id)
-                      }}
-                      onDragStart={(event) => {
-                        draggedIdRef.current = source.id
-                        lastDragOverIdRef.current = null
-                        setDraggedId(source.id)
-                        event.dataTransfer.effectAllowed = "move"
-                      }}
-                      style={{
-                        background: getSourceCardBackground(source, isDarkMode),
-                      }}
-                    >
-                      <div className="mb-3.5 flex items-center justify-between gap-3">
-                        <div className="flex min-w-0 items-center gap-2.5">
-                          <span
-                            className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-extrabold text-white"
-                            style={{ background: source.logoColor }}
-                          >
-                            {source.logo}
-                          </span>
-                          <span className="min-w-0">
-                            <span className="flex min-w-0 items-center gap-2">
-                              <strong className="block overflow-hidden text-ellipsis whitespace-nowrap text-xl">
-                                {source.name}
-                              </strong>
-                              <span className="max-w-[82px] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap rounded-md border border-slate-200 bg-white/70 px-1.5 py-0.5 text-xs text-slate-600 dark:border-white/[0.14] dark:bg-white/[0.08] dark:text-blue-100">
-                                {source.tag}
-                              </span>
-                            </span>
-                            <small className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
-                              {source.tag === "实时热搜"
-                                ? "正在追踪"
-                                : "12 分钟内更新"}
-                            </small>
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-0.5">
-                          <button
-                            aria-label="刷新该榜单"
-                            className="grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-transparent text-slate-500 transition-colors hover:border-slate-200 hover:bg-slate-900/10 hover:text-slate-950 dark:text-slate-400 dark:hover:border-line dark:hover:bg-white/10 dark:hover:text-slate-50"
-                            onClick={(event) =>
-                              animateCard(
-                                event.currentTarget.closest("article"),
-                              )
-                            }
-                            type="button"
-                          >
-                            <RefreshCw
-                              aria-hidden="true"
-                              size={22}
-                              strokeWidth={2}
-                            />
-                          </button>
-                          <button
-                            aria-label={
-                              source.favorite ? "取消收藏来源" : "收藏来源"
-                            }
-                            aria-pressed={source.favorite}
-                            className="grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-transparent text-slate-500 transition-colors hover:bg-slate-900/10 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-50"
-                            onClick={() => toggleFavorite(source.id)}
-                            type="button"
-                          >
-                            <Star
-                              aria-hidden="true"
-                              className={
-                                source.favorite
-                                  ? "fill-[#f5bb48] text-[#f5bb48]"
-                                  : "fill-none"
-                              }
-                              size={22}
-                              strokeWidth={2}
-                            />
-                          </button>
-                        </div>
-                      </div>
+                  <p className="m-0 max-w-[420px] leading-7 text-slate-500 dark:text-slate-400">
+                    拖动卡片可调整你的阅读顺序，点击星标可加入关注。
+                  </p>
+                </div>
 
-                      <ol className="grid max-h-[310px] gap-2 overflow-auto rounded-xl bg-slate-50 p-2 dark:bg-black/25 [scrollbar-color:rgba(255,255,255,0.22)_transparent]">
-                        {source.items.map((item, index) => (
-                          <li
-                            className="grid list-none grid-cols-[30px_1fr_auto] items-start gap-2.5"
-                            key={`${source.id}-${item.title}`}
-                          >
-                            <span className="grid min-h-[30px] place-items-center rounded-md bg-slate-900/10 text-slate-600 dark:bg-white/10 dark:text-white/80">
-                              {index + 1}
-                            </span>
-                            <span className="min-w-0">
-                              {item.url ? (
-                                <a
-                                  className="block text-[15px] font-semibold leading-6 text-slate-900 no-underline transition-colors hover:text-brand focus-visible:text-brand focus-visible:outline-none dark:text-white/90"
-                                  href={item.url}
-                                  rel="noreferrer"
-                                  target="_blank"
-                                >
-                                  {item.title}
-                                </a>
-                              ) : (
-                                <strong className="block text-[15px] leading-6 text-slate-900 dark:text-white/90">
-                                  {item.title}
-                                </strong>
-                              )}
-                              <small className="text-slate-500 dark:text-white/50">
-                                {item.meta}
-                              </small>
-                            </span>
-                            {item.badge ? (
-                              <span className="rounded-md bg-[#f5bb48] px-1.5 py-0.5 text-[11px] font-bold text-[#23180a]">
-                                {item.badge}
+                <div
+                  className="grid grid-cols-4 gap-6 max-xl:grid-cols-2 max-sm:grid-cols-1"
+                  ref={gridRef}
+                >
+                  {filteredSources.length === 0 ? (
+                    <div className="col-span-full rounded-[14px] border border-dashed border-slate-300 p-12 text-center text-slate-500 dark:border-line dark:text-slate-400">
+                      没有找到匹配的热榜，换个关键词或分类试试。
+                    </div>
+                  ) : (
+                    filteredSources
+                      .slice(0, liveRankingsModule.displayLimit)
+                      .map((source) => (
+                        <article
+                          className={`min-h-[390px] rounded-[14px] border border-slate-200 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 dark:border-white/[0.08] dark:shadow-[0_18px_50px_rgba(0,0,0,0.26)] dark:hover:border-white/20 ${
+                            draggedId === source.id ? "opacity-50" : ""
+                          }`}
+                          data-source-card
+                          draggable
+                          key={source.id}
+                          onDragEnd={(event) => {
+                            draggedIdRef.current = null
+                            lastDragOverIdRef.current = null
+                            setDraggedId(null)
+                            event.currentTarget.classList.remove("opacity-50")
+                          }}
+                          onDragOver={(event) => {
+                            event.preventDefault()
+                            moveDraggedSource(source.id)
+                          }}
+                          onDragStart={(event) => {
+                            draggedIdRef.current = source.id
+                            lastDragOverIdRef.current = null
+                            setDraggedId(source.id)
+                            event.dataTransfer.effectAllowed = "move"
+                          }}
+                          style={{
+                            background: getSourceCardBackground(
+                              source,
+                              isDarkMode,
+                            ),
+                          }}
+                        >
+                          <div className="mb-3.5 flex items-center justify-between gap-3">
+                            <div className="flex min-w-0 items-center gap-2.5">
+                              <span
+                                className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-extrabold text-white"
+                                style={{ background: source.logoColor }}
+                              >
+                                {source.logo}
                               </span>
-                            ) : null}
-                          </li>
-                        ))}
-                      </ol>
-                    </article>
-                  ))
-                )}
-              </div>
-            </section>
+                              <span className="min-w-0">
+                                <span className="flex min-w-0 items-center gap-2">
+                                  <strong className="block overflow-hidden text-ellipsis whitespace-nowrap text-xl">
+                                    {source.name}
+                                  </strong>
+                                  <span className="max-w-[82px] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap rounded-md border border-slate-200 bg-white/70 px-1.5 py-0.5 text-xs text-slate-600 dark:border-white/[0.14] dark:bg-white/[0.08] dark:text-blue-100">
+                                    {source.tag}
+                                  </span>
+                                </span>
+                                <small className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
+                                  {source.tag === "实时热搜"
+                                    ? "正在追踪"
+                                    : "12 分钟内更新"}
+                                </small>
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-0.5">
+                              <button
+                                aria-label="刷新该榜单"
+                                className="grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-transparent text-slate-500 transition-colors hover:border-slate-200 hover:bg-slate-900/10 hover:text-slate-950 dark:text-slate-400 dark:hover:border-line dark:hover:bg-white/10 dark:hover:text-slate-50"
+                                onClick={(event) =>
+                                  animateCard(
+                                    event.currentTarget.closest("article"),
+                                  )
+                                }
+                                type="button"
+                              >
+                                <RefreshCw
+                                  aria-hidden="true"
+                                  size={22}
+                                  strokeWidth={2}
+                                />
+                              </button>
+                              <button
+                                aria-label={
+                                  source.favorite ? "取消收藏来源" : "收藏来源"
+                                }
+                                aria-pressed={source.favorite}
+                                className="grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-transparent text-slate-500 transition-colors hover:bg-slate-900/10 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-50"
+                                onClick={() => toggleFavorite(source.id)}
+                                type="button"
+                              >
+                                <Star
+                                  aria-hidden="true"
+                                  className={
+                                    source.favorite
+                                      ? "fill-[#f5bb48] text-[#f5bb48]"
+                                      : "fill-none"
+                                  }
+                                  size={22}
+                                  strokeWidth={2}
+                                />
+                              </button>
+                            </div>
+                          </div>
+
+                          <ol className="grid max-h-[310px] gap-2 overflow-auto rounded-xl bg-slate-50 p-2 dark:bg-black/25 [scrollbar-color:rgba(255,255,255,0.22)_transparent]">
+                            {source.items.map((item, index) => (
+                              <li
+                                className="grid list-none grid-cols-[30px_1fr_auto] items-start gap-2.5"
+                                key={`${source.id}-${item.title}`}
+                              >
+                                <span className="grid min-h-[30px] place-items-center rounded-md bg-slate-900/10 text-slate-600 dark:bg-white/10 dark:text-white/80">
+                                  {index + 1}
+                                </span>
+                                <span className="min-w-0">
+                                  {item.url ? (
+                                    <a
+                                      className="block text-[15px] font-semibold leading-6 text-slate-900 no-underline transition-colors hover:text-brand focus-visible:text-brand focus-visible:outline-none dark:text-white/90"
+                                      href={item.url}
+                                      rel="noreferrer"
+                                      target="_blank"
+                                    >
+                                      {item.title}
+                                    </a>
+                                  ) : (
+                                    <strong className="block text-[15px] leading-6 text-slate-900 dark:text-white/90">
+                                      {item.title}
+                                    </strong>
+                                  )}
+                                  <small className="text-slate-500 dark:text-white/50">
+                                    {item.meta}
+                                  </small>
+                                </span>
+                                {item.badge ? (
+                                  <span className="rounded-md bg-[#f5bb48] px-1.5 py-0.5 text-[11px] font-bold text-[#23180a]">
+                                    {item.badge}
+                                  </span>
+                                ) : null}
+                              </li>
+                            ))}
+                          </ol>
+                        </article>
+                      ))
+                  )}
+                </div>
+              </section>
+            ) : null}
           </main>
 
           <footer className="mt-10 grid grid-cols-[1fr_auto_1fr] items-center gap-4 border-t border-slate-200 py-6 text-sm text-slate-500 dark:border-line dark:text-slate-400 max-lg:grid-cols-1 max-lg:justify-items-center max-lg:text-center">

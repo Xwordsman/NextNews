@@ -9,8 +9,10 @@ import {
   bizChannel,
   bizSite,
   relUserChannelSubscription,
+  userNotification,
   userTrackingRule,
 } from "@/server/db/schema"
+import { recordTrackingMatchesForRule } from "@/server/tracking/matches"
 
 function formString(formData: FormData, key: string) {
   return String(formData.get(key) ?? "").trim()
@@ -127,7 +129,7 @@ export async function createTrackingRuleAction(formData: FormData) {
     redirect(withNotice(backTo, "追踪关键词不能超过 160 个字符"))
   }
 
-  await getDb()
+  const [rule] = await getDb()
     .insert(userTrackingRule)
     .values({
       userId: user.id,
@@ -145,6 +147,11 @@ export async function createTrackingRuleAction(formData: FormData) {
         updatedAt: new Date(),
       },
     })
+    .returning({ id: userTrackingRule.id })
+
+  if (rule) {
+    await recordTrackingMatchesForRule(rule.id)
+  }
 
   revalidatePath("/tracking")
   revalidatePath("/account")
@@ -169,4 +176,48 @@ export async function deleteTrackingRuleAction(formData: FormData) {
   revalidatePath("/tracking")
   revalidatePath("/account")
   redirect(withNotice(backTo, "追踪规则已删除"))
+}
+
+export async function markNotificationReadAction(formData: FormData) {
+  const user = await requireUser()
+  const id = formString(formData, "id")
+  const backTo = safeBackTo(formString(formData, "backTo") || "/notifications")
+
+  if (!id) {
+    redirect(withNotice(backTo, "通知参数缺失"))
+  }
+
+  await getDb()
+    .update(userNotification)
+    .set({
+      isRead: true,
+      readAt: new Date(),
+    })
+    .where(
+      and(eq(userNotification.id, id), eq(userNotification.userId, user.id)),
+    )
+
+  revalidatePath("/notifications")
+  redirect(withNotice(backTo, "通知已标记为已读"))
+}
+
+export async function markAllNotificationsReadAction(formData: FormData) {
+  const user = await requireUser()
+  const backTo = safeBackTo(formString(formData, "backTo") || "/notifications")
+
+  await getDb()
+    .update(userNotification)
+    .set({
+      isRead: true,
+      readAt: new Date(),
+    })
+    .where(
+      and(
+        eq(userNotification.userId, user.id),
+        eq(userNotification.isRead, false),
+      ),
+    )
+
+  revalidatePath("/notifications")
+  redirect(withNotice(backTo, "全部通知已标记为已读"))
 }

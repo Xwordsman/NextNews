@@ -9,6 +9,7 @@ export default async function HomePage() {
   return (
     <PublicHomePage
       categoryNavItems={data.categoryNavItems}
+      homeModules={data.homeModules}
       initialSources={data.sources}
     />
   )

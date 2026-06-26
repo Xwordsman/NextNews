@@ -90,7 +90,15 @@ export default async function ChannelPage({
         </div>
 
         <aside className="h-fit rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm">
-          <h2 className="font-serif text-2xl font-semibold">历史快照</h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-serif text-2xl font-semibold">历史快照</h2>
+            <Link
+              className="text-sm font-semibold text-slate-500 no-underline transition-colors hover:text-slate-950"
+              href={`/channels/${siteSlug}/${channelSlug}/history`}
+            >
+              归档
+            </Link>
+          </div>
           {channel.snapshots.length === 0 ? (
             <p className="mt-4 text-sm leading-6 text-slate-500">
               暂无历史快照。

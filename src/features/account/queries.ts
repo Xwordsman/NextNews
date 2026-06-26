@@ -6,15 +6,12 @@ import {
   bizSite,
   bizSnapshotItem,
   relUserChannelSubscription,
+  userNotification,
+  userTrackingMatch,
   userTrackingRule,
 } from "@/server/db/schema"
 import type { PublicRankItem } from "@/features/public-content/queries"
-import {
-  listLatestPublicOperationItems,
-  matchesKeywords,
-  parseKeywords,
-  type PublicOperationItem,
-} from "@/features/public-operations/queries"
+import { parseKeywords } from "@/server/content/keywords"
 
 export type UserSubscription = {
   subscriptionId: string
@@ -47,7 +44,29 @@ export type UserTrackingRule = {
   createdAt: Date
   updatedAt: Date
   keywords: string[]
-  matches: PublicOperationItem[]
+  matches: UserTrackingMatch[]
+}
+
+export type UserTrackingMatch = {
+  id: string
+  title: string
+  url: string
+  matchedKeyword: string
+  isRead: boolean
+  matchedAt: Date
+  channelName: string
+  siteName: string
+  channelHref: string
+}
+
+export type UserNotification = {
+  id: string
+  notificationType: string
+  title: string
+  body: string | null
+  href: string | null
+  isRead: boolean
+  createdAt: Date
 }
 
 export async function isChannelSubscribed(userId: string, channelId: string) {
@@ -212,22 +231,77 @@ export async function getUserTrackingDashboard(
     return []
   }
 
-  const latestItems = await listLatestPublicOperationItems(240)
+  const matches = await db
+    .select({
+      id: userTrackingMatch.id,
+      ruleId: userTrackingMatch.ruleId,
+      title: userTrackingMatch.title,
+      url: userTrackingMatch.url,
+      matchedKeyword: userTrackingMatch.matchedKeyword,
+      isRead: userTrackingMatch.isRead,
+      matchedAt: userTrackingMatch.matchedAt,
+      channelName: bizChannel.channelName,
+      siteName: bizSite.siteName,
+      siteSlug: bizSite.slug,
+      channelSlug: bizChannel.slug,
+    })
+    .from(userTrackingMatch)
+    .innerJoin(
+      bizSnapshotItem,
+      eq(userTrackingMatch.snapshotItemId, bizSnapshotItem.id),
+    )
+    .innerJoin(bizChannel, eq(bizSnapshotItem.channelId, bizChannel.id))
+    .innerJoin(bizSite, eq(bizChannel.siteId, bizSite.id))
+    .where(eq(userTrackingMatch.userId, userId))
+    .orderBy(desc(userTrackingMatch.matchedAt))
+    .limit(240)
+
+  const matchesByRuleId = new Map<string, UserTrackingMatch[]>()
+
+  for (const match of matches) {
+    const ruleMatches = matchesByRuleId.get(match.ruleId) ?? []
+    ruleMatches.push({
+      id: match.id,
+      title: match.title,
+      url: match.url,
+      matchedKeyword: match.matchedKeyword,
+      isRead: match.isRead,
+      matchedAt: match.matchedAt,
+      channelName: match.channelName,
+      siteName: match.siteName,
+      channelHref: `/channels/${match.siteSlug}/${match.channelSlug}`,
+    })
+    matchesByRuleId.set(match.ruleId, ruleMatches)
+  }
 
   return rules.map((rule) => {
     const keywords = parseKeywords(rule.keyword)
-    const matches = rule.isEnabled
-      ? latestItems
-          .filter((item) => matchesKeywords(item, keywords))
-          .slice(0, 8)
-      : []
 
     return {
       ...rule,
       keywords,
-      matches,
+      matches: (matchesByRuleId.get(rule.id) ?? []).slice(0, 8),
     }
   })
+}
+
+export async function getUserNotifications(
+  userId: string,
+): Promise<UserNotification[]> {
+  return getDb()
+    .select({
+      id: userNotification.id,
+      notificationType: userNotification.notificationType,
+      title: userNotification.title,
+      body: userNotification.body,
+      href: userNotification.href,
+      isRead: userNotification.isRead,
+      createdAt: userNotification.createdAt,
+    })
+    .from(userNotification)
+    .where(eq(userNotification.userId, userId))
+    .orderBy(desc(userNotification.createdAt))
+    .limit(100)
 }
 
 function toPublicRankItem(item: PublicRankItem): PublicRankItem {

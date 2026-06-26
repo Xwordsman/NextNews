@@ -10,7 +10,10 @@ import {
   formatDateTime,
 } from "@/features/admin-content/components/admin-ui"
 import { updateTrackingRuleEnabledAction } from "@/features/admin-content/actions"
-import { listAdminTrackingRules } from "@/features/admin-content/queries"
+import {
+  listAdminTrackingMatches,
+  listAdminTrackingRules,
+} from "@/features/admin-content/queries"
 import {
   getErrorMessage,
   getNoticeMessage,
@@ -24,8 +27,9 @@ export default async function AdminUserTrackingPage({
 }: {
   searchParams: AdminSearchParams
 }) {
-  const [rules, errorMessage, noticeMessage] = await Promise.all([
+  const [rules, matches, errorMessage, noticeMessage] = await Promise.all([
     listAdminTrackingRules(),
+    listAdminTrackingMatches(),
     getErrorMessage(searchParams),
     getNoticeMessage(searchParams),
   ])
@@ -113,6 +117,65 @@ export default async function AdminUserTrackingPage({
                       />
                       <RunButton label={rule.isEnabled ? "停用" : "启用"} />
                     </form>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </AdminTable>
+        )}
+      </AdminSection>
+
+      <AdminSection>
+        {matches.length === 0 ? (
+          <AdminEmptyState
+            description="追踪规则命中内容后，这里会显示落库记录。"
+            title="还没有追踪命中"
+          />
+        ) : (
+          <AdminTable>
+            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
+              <tr>
+                <th className="px-5 py-3">命中内容</th>
+                <th className="px-5 py-3">用户</th>
+                <th className="px-5 py-3">规则</th>
+                <th className="px-5 py-3">状态</th>
+                <th className="px-5 py-3">时间</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200">
+              {matches.map((match) => (
+                <tr className="hover:bg-slate-50/80" key={match.id}>
+                  <td className="max-w-[520px] px-5 py-4">
+                    <a
+                      className="font-semibold text-slate-950 no-underline transition-colors hover:text-brand"
+                      href={match.url}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      {match.title}
+                    </a>
+                    <div className="mt-1 text-xs text-slate-500">
+                      命中：{match.matchedKeyword}
+                    </div>
+                  </td>
+                  <td className="px-5 py-4">
+                    <div className="font-semibold">{match.userDisplayName}</div>
+                    <div className="mt-1 text-xs text-slate-500">
+                      {match.userEmail}
+                    </div>
+                  </td>
+                  <td className="px-5 py-4 text-sm text-slate-500">
+                    {match.ruleKeyword}
+                  </td>
+                  <td className="px-5 py-4">
+                    <BooleanBadge
+                      active={!match.isRead}
+                      activeLabel="未读"
+                      inactiveLabel="已读"
+                    />
+                  </td>
+                  <td className="px-5 py-4 text-sm text-slate-500">
+                    {formatDateTime(match.matchedAt)}
                   </td>
                 </tr>
               ))}

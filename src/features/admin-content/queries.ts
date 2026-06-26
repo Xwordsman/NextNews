@@ -7,15 +7,22 @@ import {
   bizChannelSnapshot,
   bizContentBlock,
   bizDailyReport,
+  bizHomeModule,
+  bizRankingConfig,
   bizSite,
   bizSnapshotItem,
   bizTopic,
   logCrawlRun,
+  relRankingChannel,
   relChannelCategory,
+  relTopicSnapshotItem,
   relUserChannelSubscription,
   sysUser,
+  userNotification,
+  userTrackingMatch,
   userTrackingRule,
 } from "@/server/db/schema"
+import { matchesKeywords, parseKeywords } from "@/server/content/keywords"
 import { serverEnv } from "@/server/env"
 
 type CrawlRunStatus = typeof logCrawlRun.$inferSelect.status
@@ -629,6 +636,249 @@ export async function listAdminTrackingRules() {
     .from(userTrackingRule)
     .innerJoin(sysUser, eq(userTrackingRule.userId, sysUser.id))
     .orderBy(desc(userTrackingRule.createdAt))
+    .limit(100)
+}
+
+export async function listAdminHomeModules() {
+  const { defaultHomeModules } = await import("@/server/home/modules")
+  const rows = await getDb()
+    .select({
+      id: bizHomeModule.id,
+      moduleKey: bizHomeModule.moduleKey,
+      title: bizHomeModule.title,
+      subtitle: bizHomeModule.subtitle,
+      status: bizHomeModule.status,
+      sort: bizHomeModule.sort,
+      displayLimit: bizHomeModule.displayLimit,
+      updatedAt: bizHomeModule.updatedAt,
+    })
+    .from(bizHomeModule)
+    .where(isNull(bizHomeModule.deletedAt))
+    .orderBy(asc(bizHomeModule.sort))
+
+  const rowByKey = new Map(rows.map((row) => [row.moduleKey, row]))
+
+  return defaultHomeModules
+    .map((module) => {
+      const saved = rowByKey.get(module.moduleKey)
+
+      return {
+        id: saved?.id ?? null,
+        moduleKey: module.moduleKey,
+        title: saved?.title ?? module.title,
+        subtitle: saved?.subtitle ?? module.subtitle,
+        status: saved?.status ?? "active",
+        sort: saved?.sort ?? module.sort,
+        displayLimit: saved?.displayLimit ?? module.displayLimit,
+        updatedAt: saved?.updatedAt ?? null,
+      }
+    })
+    .sort((a, b) => a.sort - b.sort)
+}
+
+export async function listAdminRankingConfigs() {
+  const db = getDb()
+  const configs = await db
+    .select({
+      id: bizRankingConfig.id,
+      configName: bizRankingConfig.configName,
+      slug: bizRankingConfig.slug,
+      description: bizRankingConfig.description,
+      status: bizRankingConfig.status,
+      isDefault: bizRankingConfig.isDefault,
+      timeWindowHours: bizRankingConfig.timeWindowHours,
+      itemLimit: bizRankingConfig.itemLimit,
+      perChannelLimit: bizRankingConfig.perChannelLimit,
+      sort: bizRankingConfig.sort,
+      updatedAt: bizRankingConfig.updatedAt,
+    })
+    .from(bizRankingConfig)
+    .where(isNull(bizRankingConfig.deletedAt))
+    .orderBy(desc(bizRankingConfig.isDefault), asc(bizRankingConfig.sort))
+
+  if (configs.length === 0) {
+    return []
+  }
+
+  const rankingIds = configs.map((config) => config.id)
+  const channels = await db
+    .select({
+      rankingId: relRankingChannel.rankingId,
+      channelName: bizChannel.channelName,
+      siteName: bizSite.siteName,
+      weight: relRankingChannel.weight,
+    })
+    .from(relRankingChannel)
+    .innerJoin(bizChannel, eq(relRankingChannel.channelId, bizChannel.id))
+    .innerJoin(bizSite, eq(bizChannel.siteId, bizSite.id))
+    .where(inArray(relRankingChannel.rankingId, rankingIds))
+    .orderBy(asc(relRankingChannel.sort))
+
+  const channelMap = new Map<string, typeof channels>()
+
+  for (const channel of channels) {
+    const items = channelMap.get(channel.rankingId) ?? []
+    items.push(channel)
+    channelMap.set(channel.rankingId, items)
+  }
+
+  return configs.map((config) => ({
+    ...config,
+    channels: channelMap.get(config.id) ?? [],
+  }))
+}
+
+export async function listAdminRankingChannelOptions() {
+  return getDb()
+    .select({
+      id: bizChannel.id,
+      channelName: bizChannel.channelName,
+      siteName: bizSite.siteName,
+      weight: bizChannel.weight,
+      status: bizChannel.status,
+      isPublic: bizChannel.isPublic,
+      lastSuccessAt: bizChannel.lastSuccessAt,
+    })
+    .from(bizChannel)
+    .innerJoin(bizSite, eq(bizChannel.siteId, bizSite.id))
+    .where(and(isNull(bizChannel.deletedAt), isNull(bizSite.deletedAt)))
+    .orderBy(asc(bizSite.sort), asc(bizChannel.sort))
+}
+
+export async function getAdminTopicOperation(id: string) {
+  if (!isUuid(id)) {
+    return null
+  }
+
+  const db = getDb()
+  const [topic] = await db
+    .select({
+      id: bizTopic.id,
+      topicName: bizTopic.topicName,
+      slug: bizTopic.slug,
+      description: bizTopic.description,
+      keywords: bizTopic.keywords,
+      status: bizTopic.status,
+      isHomeVisible: bizTopic.isHomeVisible,
+      sort: bizTopic.sort,
+      updatedAt: bizTopic.updatedAt,
+    })
+    .from(bizTopic)
+    .where(and(eq(bizTopic.id, id), isNull(bizTopic.deletedAt)))
+    .limit(1)
+
+  if (!topic) {
+    return null
+  }
+
+  const keywords = parseKeywords(topic.keywords || topic.topicName)
+  const [manualItems, latestItems] = await Promise.all([
+    db
+      .select({
+        relationId: relTopicSnapshotItem.id,
+        snapshotItemId: bizSnapshotItem.id,
+        title: bizSnapshotItem.title,
+        url: bizSnapshotItem.url,
+        rankNo: bizSnapshotItem.rankNo,
+        siteName: bizSite.siteName,
+        channelName: bizChannel.channelName,
+        sort: relTopicSnapshotItem.sort,
+        isPinned: relTopicSnapshotItem.isPinned,
+        createdAt: relTopicSnapshotItem.createdAt,
+      })
+      .from(relTopicSnapshotItem)
+      .innerJoin(
+        bizSnapshotItem,
+        eq(relTopicSnapshotItem.snapshotItemId, bizSnapshotItem.id),
+      )
+      .innerJoin(bizChannel, eq(bizSnapshotItem.channelId, bizChannel.id))
+      .innerJoin(bizSite, eq(bizChannel.siteId, bizSite.id))
+      .where(eq(relTopicSnapshotItem.topicId, topic.id))
+      .orderBy(
+        desc(relTopicSnapshotItem.isPinned),
+        asc(relTopicSnapshotItem.sort),
+      ),
+    db
+      .select({
+        snapshotItemId: bizSnapshotItem.id,
+        title: bizSnapshotItem.title,
+        url: bizSnapshotItem.url,
+        rankNo: bizSnapshotItem.rankNo,
+        summary: bizSnapshotItem.summary,
+        tag: bizSnapshotItem.tag,
+        siteName: bizSite.siteName,
+        channelName: bizChannel.channelName,
+        createdAt: bizSnapshotItem.createdAt,
+      })
+      .from(bizSnapshotItem)
+      .innerJoin(bizChannel, eq(bizSnapshotItem.channelId, bizChannel.id))
+      .innerJoin(bizSite, eq(bizChannel.siteId, bizSite.id))
+      .where(
+        and(
+          isNull(bizChannel.deletedAt),
+          isNull(bizSite.deletedAt),
+          eq(bizChannel.status, "active"),
+          eq(bizChannel.isPublic, true),
+        ),
+      )
+      .orderBy(desc(bizSnapshotItem.createdAt))
+      .limit(300),
+  ])
+
+  const manualIds = new Set(manualItems.map((item) => item.snapshotItemId))
+  const candidates = latestItems
+    .filter((item) => !manualIds.has(item.snapshotItemId))
+    .filter((item) => matchesKeywords(item, keywords))
+    .slice(0, 30)
+
+  return {
+    topic: {
+      ...topic,
+      keywords,
+    },
+    manualItems,
+    candidates,
+  }
+}
+
+export async function listAdminTrackingMatches() {
+  return getDb()
+    .select({
+      id: userTrackingMatch.id,
+      title: userTrackingMatch.title,
+      url: userTrackingMatch.url,
+      matchedKeyword: userTrackingMatch.matchedKeyword,
+      isRead: userTrackingMatch.isRead,
+      matchedAt: userTrackingMatch.matchedAt,
+      userEmail: sysUser.email,
+      userDisplayName: sysUser.displayName,
+      ruleKeyword: userTrackingRule.keyword,
+    })
+    .from(userTrackingMatch)
+    .innerJoin(sysUser, eq(userTrackingMatch.userId, sysUser.id))
+    .innerJoin(
+      userTrackingRule,
+      eq(userTrackingMatch.ruleId, userTrackingRule.id),
+    )
+    .orderBy(desc(userTrackingMatch.matchedAt))
+    .limit(100)
+}
+
+export async function listAdminNotifications() {
+  return getDb()
+    .select({
+      id: userNotification.id,
+      notificationType: userNotification.notificationType,
+      title: userNotification.title,
+      body: userNotification.body,
+      isRead: userNotification.isRead,
+      createdAt: userNotification.createdAt,
+      userEmail: sysUser.email,
+      userDisplayName: sysUser.displayName,
+    })
+    .from(userNotification)
+    .innerJoin(sysUser, eq(userNotification.userId, sysUser.id))
+    .orderBy(desc(userNotification.createdAt))
     .limit(100)
 }
 

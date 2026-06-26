@@ -1,4 +1,4 @@
-import { asc, and, desc, eq, inArray, isNull } from "drizzle-orm"
+import { asc, and, desc, eq, gte, inArray, isNull, lte } from "drizzle-orm"
 import { getDb } from "@/server/db/client"
 import {
   bizCategory,
@@ -228,6 +228,82 @@ export async function getPublicChannelSnapshot(
     channel,
     snapshot,
     items: await listSnapshotItems(snapshot.id),
+  }
+}
+
+export async function getPublicChannelHistory(
+  siteSlug: string,
+  channelSlug: string,
+  options: { month?: string; year?: string } = {},
+) {
+  const channel = await getPublicChannel(siteSlug, channelSlug)
+
+  if (!channel) {
+    return null
+  }
+
+  const db = getDb()
+  const filters = [eq(bizChannelSnapshot.channelId, channel.id)]
+  const normalizedYear = options.year?.match(/^\d{4}$/)
+    ? options.year
+    : undefined
+  const normalizedMonth = options.month?.match(/^\d{4}-\d{2}$/)
+    ? options.month
+    : undefined
+
+  if (normalizedMonth) {
+    filters.push(gte(bizChannelSnapshot.snapshotDate, `${normalizedMonth}-01`))
+    filters.push(lte(bizChannelSnapshot.snapshotDate, `${normalizedMonth}-31`))
+  } else if (normalizedYear) {
+    filters.push(
+      gte(bizChannelSnapshot.snapshotDate, `${normalizedYear}-01-01`),
+    )
+    filters.push(
+      lte(bizChannelSnapshot.snapshotDate, `${normalizedYear}-12-31`),
+    )
+  }
+
+  const [snapshots, allSnapshots] = await Promise.all([
+    db
+      .select({
+        id: bizChannelSnapshot.id,
+        snapshotTime: bizChannelSnapshot.snapshotTime,
+        snapshotDate: bizChannelSnapshot.snapshotDate,
+        itemCount: bizChannelSnapshot.itemCount,
+        status: bizChannelSnapshot.status,
+      })
+      .from(bizChannelSnapshot)
+      .where(and(...filters))
+      .orderBy(desc(bizChannelSnapshot.snapshotTime))
+      .limit(180),
+    db
+      .select({
+        snapshotDate: bizChannelSnapshot.snapshotDate,
+      })
+      .from(bizChannelSnapshot)
+      .where(eq(bizChannelSnapshot.channelId, channel.id))
+      .orderBy(desc(bizChannelSnapshot.snapshotDate)),
+  ])
+
+  const years = Array.from(
+    new Set(allSnapshots.map((snapshot) => snapshot.snapshotDate.slice(0, 4))),
+  )
+  const months = Array.from(
+    new Set(allSnapshots.map((snapshot) => snapshot.snapshotDate.slice(0, 7))),
+  )
+
+  return {
+    channel,
+    filters: {
+      month: normalizedMonth,
+      year: normalizedYear,
+    },
+    months,
+    snapshots: snapshots.map((snapshot) => ({
+      ...snapshot,
+      href: `/channels/${channel.siteSlug}/${channel.slug}/snapshots/${snapshot.id}`,
+    })),
+    years,
   }
 }
 

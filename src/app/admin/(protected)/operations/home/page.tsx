@@ -1,20 +1,31 @@
 import {
   AdminEmptyState,
+  AdminNotice,
   AdminPageHeader,
   AdminSection,
   AdminTable,
   BooleanBadge,
-  EditLink,
   StatusBadge,
-  ViewLink,
   formatDateTime,
 } from "@/features/admin-content/components/admin-ui"
-import { listAdminHomeChannels } from "@/features/admin-content/queries"
+import { saveHomeModuleAction } from "@/features/admin-content/actions"
+import {
+  listAdminHomeChannels,
+  listAdminHomeModules,
+} from "@/features/admin-content/queries"
 
 export const dynamic = "force-dynamic"
 
-export default async function AdminHomeOperationPage() {
-  const channels = await listAdminHomeChannels()
+export default async function AdminHomeOperationPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ notice?: string }>
+}) {
+  const query = await searchParams
+  const [channels, modules] = await Promise.all([
+    listAdminHomeChannels(),
+    listAdminHomeModules(),
+  ])
   const activePublicChannels = channels.filter(
     (channel) => channel.status === "active" && channel.isPublic,
   )
@@ -27,6 +38,86 @@ export default async function AdminHomeOperationPage() {
         eyebrow="Operations"
         title="首页配置"
       />
+      <AdminNotice message={query?.notice} />
+
+      <AdminSection>
+        <div className="border-b border-slate-200 bg-slate-50 px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+          首页模块
+        </div>
+        <div className="grid gap-4 p-5">
+          {modules.map((module) => (
+            <form
+              action={saveHomeModuleAction}
+              className="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 lg:grid-cols-[1fr_1fr_120px_120px_120px_auto]"
+              key={module.moduleKey}
+            >
+              <input
+                name="backTo"
+                type="hidden"
+                value="/admin/operations/home"
+              />
+              <input name="moduleKey" type="hidden" value={module.moduleKey} />
+              <label className="grid gap-2 text-sm font-semibold text-slate-700">
+                标题
+                <input
+                  className={inputClassName}
+                  defaultValue={module.title}
+                  name="title"
+                  required
+                />
+              </label>
+              <label className="grid gap-2 text-sm font-semibold text-slate-700">
+                副标题
+                <input
+                  className={inputClassName}
+                  defaultValue={module.subtitle ?? ""}
+                  name="subtitle"
+                />
+              </label>
+              <label className="grid gap-2 text-sm font-semibold text-slate-700">
+                状态
+                <select
+                  className={inputClassName}
+                  defaultValue={module.status}
+                  name="status"
+                >
+                  <option value="active">启用</option>
+                  <option value="draft">草稿</option>
+                  <option value="disabled">停用</option>
+                </select>
+              </label>
+              <label className="grid gap-2 text-sm font-semibold text-slate-700">
+                数量
+                <input
+                  className={inputClassName}
+                  defaultValue={module.displayLimit}
+                  min={1}
+                  name="displayLimit"
+                  type="number"
+                />
+              </label>
+              <label className="grid gap-2 text-sm font-semibold text-slate-700">
+                排序
+                <input
+                  className={inputClassName}
+                  defaultValue={module.sort}
+                  min={0}
+                  name="sort"
+                  type="number"
+                />
+              </label>
+              <div className="flex items-end">
+                <button
+                  className="inline-flex min-h-10 cursor-pointer items-center rounded-full bg-slate-950 px-4 text-sm font-semibold text-white transition-colors hover:bg-black"
+                  type="submit"
+                >
+                  保存
+                </button>
+              </div>
+            </form>
+          ))}
+        </div>
+      </AdminSection>
 
       <div className="grid gap-3 sm:grid-cols-3">
         <MetricCard label="首页频道" value={channels.length} />
@@ -91,11 +182,18 @@ export default async function AdminHomeOperationPage() {
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex flex-wrap gap-2">
-                      <ViewLink
+                      <a
+                        className="inline-flex min-h-9 items-center rounded-full border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 no-underline transition-colors hover:bg-slate-900 hover:text-white"
                         href={`/channels/${channel.siteSlug}/${channel.channelSlug}`}
-                        label="前台"
-                      />
-                      <EditLink href={`/admin/channels/${channel.id}/edit`} />
+                      >
+                        前台
+                      </a>
+                      <a
+                        className="inline-flex min-h-9 items-center rounded-full border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 no-underline transition-colors hover:bg-slate-900 hover:text-white"
+                        href={`/admin/channels/${channel.id}/edit`}
+                      >
+                        编辑
+                      </a>
                     </div>
                   </td>
                 </tr>
@@ -107,6 +205,9 @@ export default async function AdminHomeOperationPage() {
     </div>
   )
 }
+
+const inputClassName =
+  "min-h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium outline-none transition-colors focus:border-slate-400"
 
 function MetricCard({ label, value }: { label: string; value: number }) {
   return (

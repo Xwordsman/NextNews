@@ -41,6 +41,7 @@ export const adminNavigation: AdminNavigationGroup[] = [
       { title: "首页配置", href: "/admin/operations/home" },
       { title: "导航配置", href: "/admin/operations/nav" },
       { title: "热门站点", href: "/admin/operations/sites" },
+      { title: "榜中榜配置", href: "/admin/operations/rankings" },
       { title: "日报配置", href: "/admin/operations/daily" },
       { title: "话题配置", href: "/admin/operations/topics" },
     ],
@@ -51,6 +52,7 @@ export const adminNavigation: AdminNavigationGroup[] = [
       { title: "用户列表", href: "/admin/users" },
       { title: "频道订阅", href: "/admin/users/subscriptions" },
       { title: "追踪规则", href: "/admin/users/tracking" },
+      { title: "站内通知", href: "/admin/users/notifications" },
     ],
   },
   {

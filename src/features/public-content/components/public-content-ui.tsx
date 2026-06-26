@@ -1,5 +1,11 @@
 import Link from "next/link"
-import { ArrowLeft, ExternalLink, Newspaper, UserRound } from "lucide-react"
+import {
+  ArrowLeft,
+  Bell,
+  ExternalLink,
+  Newspaper,
+  UserRound,
+} from "lucide-react"
 import type { PublicRankItem } from "../queries"
 
 export function PublicContentShell({
@@ -40,6 +46,13 @@ export function PublicTopBar() {
         >
           <UserRound aria-hidden="true" size={16} />
           个人中心
+        </Link>
+        <Link
+          className="inline-flex min-h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-900 hover:text-white"
+          href="/notifications"
+        >
+          <Bell aria-hidden="true" size={16} />
+          通知
         </Link>
         <Link
           className="inline-flex min-h-10 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-900 hover:text-white"

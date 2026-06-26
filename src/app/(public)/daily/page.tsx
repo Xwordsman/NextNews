@@ -112,8 +112,9 @@ export default async function DailyPage() {
           <h2 className="font-serif text-2xl font-semibold">历史日报</h2>
           <div className="mt-4 grid gap-3">
             {data.reports.map((report) => (
-              <div
-                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 px-4 py-3"
+              <Link
+                className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 px-4 py-3 text-slate-950 no-underline transition-colors hover:bg-slate-50"
+                href={`/daily/${report.reportDate}`}
                 key={report.id}
               >
                 <div>
@@ -125,7 +126,7 @@ export default async function DailyPage() {
                 <span className="text-sm text-slate-500">
                   {formatDateTime(report.publishedAt)}
                 </span>
-              </div>
+              </Link>
             ))}
           </div>
         </section>

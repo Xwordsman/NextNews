@@ -45,9 +45,12 @@ export default async function TopicsPage() {
             >
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="font-serif text-2xl font-semibold">
+                  <Link
+                    className="font-serif text-2xl font-semibold text-slate-950 no-underline transition-colors hover:text-brand"
+                    href={`/topics/${topic.slug}`}
+                  >
                     {topic.topicName}
-                  </h2>
+                  </Link>
                   <span className="rounded-full bg-slate-100 px-2.5 py-1 font-mono text-xs font-semibold text-slate-500">
                     {topic.slug}
                   </span>
@@ -108,6 +111,12 @@ export default async function TopicsPage() {
                   ))}
                 </ol>
               )}
+              <Link
+                className="inline-flex min-h-10 w-fit items-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 no-underline transition-colors hover:bg-slate-900 hover:text-white"
+                href={`/topics/${topic.slug}`}
+              >
+                查看全部线索
+              </Link>
             </article>
           ))}
         </section>

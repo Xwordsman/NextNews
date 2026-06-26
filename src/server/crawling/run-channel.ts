@@ -9,6 +9,7 @@ import {
   bizSnapshotItem,
   logCrawlRun,
 } from "@/server/db/schema"
+import { recordTrackingMatchesForSnapshot } from "@/server/tracking/matches"
 import type { NewsItem } from "@/types"
 import { fetchRssItems } from "./rss"
 
@@ -224,6 +225,14 @@ export async function runChannelCrawl(
         snapshotId: result.snapshotId,
       })
       .where(eq(logCrawlRun.id, reservation.runId))
+
+    if (result.createdSnapshot) {
+      try {
+        await recordTrackingMatchesForSnapshot(result.snapshotId)
+      } catch (error) {
+        console.error("[nextnews] tracking match processing failed", error)
+      }
+    }
 
     return {
       channelId,

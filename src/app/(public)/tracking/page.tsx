@@ -73,6 +73,18 @@ export default async function TrackingPage({
         title="追踪"
       />
 
+      <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/90 px-5 py-4 shadow-sm">
+        <p className="text-sm font-semibold text-slate-700">
+          命中结果会在采集入库后自动记录；开启通知的规则也会写入站内通知。
+        </p>
+        <Link
+          className="inline-flex min-h-10 items-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 no-underline transition-colors hover:bg-slate-900 hover:text-white"
+          href="/notifications"
+        >
+          查看通知
+        </Link>
+      </section>
+
       {query?.notice ? (
         <p
           className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700"
@@ -205,6 +217,11 @@ export default async function TrackingPage({
                         >
                           {item.siteName} / {item.channelName}
                         </Link>
+                        <span className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
+                          <span>命中：{item.matchedKeyword}</span>
+                          <span>{formatDateTime(item.matchedAt)}</span>
+                          {!item.isRead ? <span>未读</span> : null}
+                        </span>
                       </span>
                       <ExternalLink
                         aria-hidden="true"

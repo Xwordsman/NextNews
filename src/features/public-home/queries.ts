@@ -4,10 +4,12 @@ import {
   bizCategory,
   bizChannel,
   bizContentBlock,
+  bizHomeModule,
   bizSite,
   bizSnapshotItem,
   relChannelCategory,
 } from "@/server/db/schema"
+import { defaultHomeModules } from "@/server/home/modules"
 import type { HomeSource } from "./mock-data"
 
 type NavItem = {
@@ -29,12 +31,22 @@ const palettes = [
 export type PublicHomeData = {
   sources: HomeSource[]
   categoryNavItems: NavItem[]
+  homeModules: HomeModule[]
+}
+
+export type HomeModule = {
+  moduleKey: string
+  title: string
+  subtitle: string | null
+  displayLimit: number
+  sort: number
+  status: "draft" | "active" | "disabled"
 }
 
 export async function getPublicHomeData(): Promise<PublicHomeData> {
   const db = getDb()
 
-  const [channels, categories] = await Promise.all([
+  const [channels, categories, homeModules] = await Promise.all([
     db
       .select({
         id: bizChannel.id,
@@ -75,6 +87,7 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
       )
       .orderBy(asc(bizCategory.sort), asc(bizCategory.categoryName))
       .limit(9),
+    listHomeModules(),
   ])
 
   if (channels.length === 0) {
@@ -84,6 +97,7 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
         label: category.categoryName,
         href: `/categories/${category.slug}`,
       })),
+      homeModules,
     }
   }
 
@@ -182,7 +196,41 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
       label: category.categoryName,
       href: `/categories/${category.slug}`,
     })),
+    homeModules,
   }
+}
+
+async function listHomeModules(): Promise<HomeModule[]> {
+  const rows = await getDb()
+    .select({
+      moduleKey: bizHomeModule.moduleKey,
+      title: bizHomeModule.title,
+      subtitle: bizHomeModule.subtitle,
+      status: bizHomeModule.status,
+      sort: bizHomeModule.sort,
+      displayLimit: bizHomeModule.displayLimit,
+    })
+    .from(bizHomeModule)
+    .where(isNull(bizHomeModule.deletedAt))
+    .orderBy(asc(bizHomeModule.sort))
+
+  const moduleByKey = new Map(rows.map((row) => [row.moduleKey, row]))
+
+  return defaultHomeModules
+    .map((module) => {
+      const saved = moduleByKey.get(module.moduleKey)
+
+      return {
+        moduleKey: module.moduleKey,
+        title: saved?.title ?? module.title,
+        subtitle: saved?.subtitle ?? module.subtitle,
+        status: saved?.status ?? "active",
+        sort: saved?.sort ?? module.sort,
+        displayLimit: saved?.displayLimit ?? module.displayLimit,
+      }
+    })
+    .filter((module) => module.status === "active")
+    .sort((a, b) => a.sort - b.sort)
 }
 
 function pickPalette(key: string) {

@@ -8,6 +8,7 @@
     "dev": "next dev --turbopack",
     "build": "next build --webpack",
     "start": "next start",
+    "test": "tsx --test \"src/**/*.test.ts\"",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "check": "pnpm typecheck && pnpm lint",

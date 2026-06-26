@@ -1,6 +1,6 @@
 "use server"
 
-import { and, eq, isNull } from "drizzle-orm"
+import { and, eq, inArray, isNull } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { requireAdmin } from "@/server/auth/session"
@@ -13,11 +13,15 @@ import {
   bizChannel,
   bizContentBlock,
   bizDailyReport,
+  bizHomeModule,
+  bizRankingConfig,
   bizSnapshotItem,
   bizSite,
   bizTopic,
   logCrawlRun,
+  relRankingChannel,
   relChannelCategory,
+  relTopicSnapshotItem,
   userTrackingRule,
 } from "@/server/db/schema"
 import {
@@ -174,6 +178,33 @@ function parseTopicForm(formData: FormData) {
   }
 }
 
+function parseRankingConfigForm(formData: FormData) {
+  return {
+    configName: requiredString(formData, "configName", "榜单名称", 160),
+    slug: slugString(formData, "slug", "榜单 slug"),
+    description: optionalString(formData, "description", "榜单描述", 500),
+    status: selectValue(formData, "status", "状态", entityStatuses),
+    isDefault: booleanField(formData, "isDefault"),
+    timeWindowHours: optionalInteger(
+      formData,
+      "timeWindowHours",
+      "时间窗口",
+      24,
+      1,
+    ),
+    itemLimit: optionalInteger(formData, "itemLimit", "展示数量", 50, 1),
+    perChannelLimit: optionalInteger(
+      formData,
+      "perChannelLimit",
+      "单频道数量",
+      10,
+      1,
+    ),
+    sort: optionalInteger(formData, "sort", "排序", 0),
+    channelIds: uuidList(formData, "channelIds", "参与频道"),
+  }
+}
+
 async function replaceChannelCategories(
   channelId: string,
   categoryIds: string[],
@@ -194,6 +225,42 @@ async function replaceChannelCategories(
       categoryId,
       sort: index + 1,
     })),
+  )
+}
+
+async function replaceRankingChannels(rankingId: string, channelIds: string[]) {
+  const db = getDb()
+
+  await db
+    .delete(relRankingChannel)
+    .where(eq(relRankingChannel.rankingId, rankingId))
+
+  if (channelIds.length === 0) {
+    return
+  }
+
+  const channels = await db
+    .select({
+      id: bizChannel.id,
+      weight: bizChannel.weight,
+      sort: bizChannel.sort,
+    })
+    .from(bizChannel)
+    .where(inArray(bizChannel.id, channelIds))
+
+  const channelMap = new Map(channels.map((channel) => [channel.id, channel]))
+
+  await db.insert(relRankingChannel).values(
+    channelIds.map((channelId, index) => {
+      const channel = channelMap.get(channelId)
+
+      return {
+        rankingId,
+        channelId,
+        weight: channel?.weight ?? 0,
+        sort: channel?.sort ?? index + 1,
+      }
+    }),
   )
 }
 
@@ -661,6 +728,149 @@ export async function updateDailyReportStatusAction(formData: FormData) {
   redirectWithMessage(backTo, "notice", "日报状态已更新")
 }
 
+export async function saveHomeModuleAction(formData: FormData) {
+  await requireAdmin()
+
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    "/admin/operations/home",
+  )
+  const moduleKey = requiredString(formData, "moduleKey", "模块 key", 120)
+  const title = requiredString(formData, "title", "模块标题", 160)
+  const subtitle = optionalString(formData, "subtitle", "模块副标题", 160)
+  const status = selectValue(formData, "status", "状态", entityStatuses)
+  const sort = optionalInteger(formData, "sort", "排序", 0)
+  const displayLimit = optionalInteger(
+    formData,
+    "displayLimit",
+    "展示数量",
+    8,
+    1,
+  )
+  const now = new Date()
+
+  await getDb()
+    .insert(bizHomeModule)
+    .values({
+      moduleKey,
+      title,
+      subtitle,
+      status,
+      sort,
+      displayLimit,
+    })
+    .onConflictDoUpdate({
+      target: bizHomeModule.moduleKey,
+      set: {
+        title,
+        subtitle,
+        status,
+        sort,
+        displayLimit,
+        deletedAt: null,
+        updatedAt: now,
+      },
+    })
+
+  revalidatePath("/")
+  revalidatePath("/admin/operations/home")
+  redirectWithMessage(backTo, "notice", "首页模块已保存")
+}
+
+export async function createRankingConfigAction(formData: FormData) {
+  await requireAdmin()
+
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    "/admin/operations/rankings",
+  )
+  let values: ReturnType<typeof parseRankingConfigForm>
+
+  try {
+    values = parseRankingConfigForm(formData)
+  } catch (error) {
+    const message =
+      error instanceof AdminFormError ? error.message : "榜中榜保存失败"
+    redirectWithMessage(backTo, "error", message)
+  }
+
+  const { channelIds, ...configValues } = values
+  const db = getDb()
+
+  try {
+    const [config] = await db
+      .insert(bizRankingConfig)
+      .values(configValues)
+      .returning({ id: bizRankingConfig.id })
+
+    if (configValues.isDefault) {
+      await db
+        .update(bizRankingConfig)
+        .set({ isDefault: false, updatedAt: new Date() })
+        .where(
+          and(
+            eq(bizRankingConfig.isDefault, true),
+            isNull(bizRankingConfig.deletedAt),
+          ),
+        )
+      await db
+        .update(bizRankingConfig)
+        .set({ isDefault: true, updatedAt: new Date() })
+        .where(eq(bizRankingConfig.id, config.id))
+    }
+
+    await replaceRankingChannels(config.id, channelIds)
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      redirectWithMessage(backTo, "error", "榜单 slug 已存在")
+    }
+
+    throw error
+  }
+
+  revalidatePath("/rankings")
+  revalidatePath("/admin/operations/rankings")
+  redirectWithMessage(backTo, "notice", "榜中榜配置已创建")
+}
+
+export async function updateRankingConfigStatusAction(formData: FormData) {
+  await requireAdmin()
+
+  const id = uuidString(formData, "id", "榜单 ID")
+  const status = selectValue(formData, "status", "状态", entityStatuses)
+  const isDefault = formString(formData, "isDefault") === "true"
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    "/admin/operations/rankings",
+  )
+  const db = getDb()
+
+  if (isDefault) {
+    await db
+      .update(bizRankingConfig)
+      .set({ isDefault: false, updatedAt: new Date() })
+      .where(
+        and(
+          eq(bizRankingConfig.isDefault, true),
+          isNull(bizRankingConfig.deletedAt),
+        ),
+      )
+  }
+
+  await db
+    .update(bizRankingConfig)
+    .set({
+      status,
+      isDefault,
+      updatedAt: new Date(),
+    })
+    .where(eq(bizRankingConfig.id, id))
+
+  revalidatePath("/rankings")
+  revalidatePath("/admin/operations/rankings")
+  redirectWithMessage(backTo, "notice", "榜中榜状态已更新")
+}
+
 export async function createTopicAction(formData: FormData) {
   await requireAdmin()
 
@@ -691,6 +901,61 @@ export async function createTopicAction(formData: FormData) {
   revalidatePath("/topics")
   revalidatePath("/admin/operations/topics")
   redirectWithMessage(backTo, "notice", "话题已创建")
+}
+
+export async function addTopicSnapshotItemAction(formData: FormData) {
+  const admin = await requireAdmin()
+
+  const topicId = uuidString(formData, "topicId", "话题 ID")
+  const snapshotItemId = uuidString(formData, "snapshotItemId", "内容 ID")
+  const sort = optionalInteger(formData, "sort", "排序", 0)
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    `/admin/operations/topics/${topicId}`,
+  )
+
+  await getDb()
+    .insert(relTopicSnapshotItem)
+    .values({
+      topicId,
+      snapshotItemId,
+      sort,
+      isPinned: true,
+      createdBy: admin.id,
+    })
+    .onConflictDoUpdate({
+      target: [
+        relTopicSnapshotItem.topicId,
+        relTopicSnapshotItem.snapshotItemId,
+      ],
+      set: {
+        isPinned: true,
+        sort,
+      },
+    })
+
+  revalidatePath("/topics")
+  revalidatePath(backTo)
+  redirectWithMessage(backTo, "notice", "已加入话题关联")
+}
+
+export async function removeTopicSnapshotItemAction(formData: FormData) {
+  await requireAdmin()
+
+  const id = uuidString(formData, "id", "关联 ID")
+  const topicId = uuidString(formData, "topicId", "话题 ID")
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    `/admin/operations/topics/${topicId}`,
+  )
+
+  await getDb()
+    .delete(relTopicSnapshotItem)
+    .where(eq(relTopicSnapshotItem.id, id))
+
+  revalidatePath("/topics")
+  revalidatePath(backTo)
+  redirectWithMessage(backTo, "notice", "已移除话题关联")
 }
 
 export async function updateTopicStatusAction(formData: FormData) {

@@ -233,6 +233,74 @@ export const relUserChannelSubscription = pgTable(
   ],
 )
 
+export const bizHomeModule = pgTable(
+  "biz_home_module",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    moduleKey: varchar("module_key", { length: 120 }).notNull(),
+    title: varchar("title", { length: 160 }).notNull(),
+    subtitle: text("subtitle"),
+    status: entityStatusEnum("status").default("active").notNull(),
+    sort: integer("sort").default(0).notNull(),
+    displayLimit: integer("display_limit").default(8).notNull(),
+    config: jsonb("config").$type<Record<string, unknown>>().default(emptyJson),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("uk_biz_home_module_key").on(table.moduleKey),
+    index("idx_biz_home_module_status_sort").on(table.status, table.sort),
+  ],
+)
+
+export const bizRankingConfig = pgTable(
+  "biz_ranking_config",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    configName: varchar("config_name", { length: 160 }).notNull(),
+    slug: varchar("slug", { length: 180 }).notNull(),
+    description: text("description"),
+    status: entityStatusEnum("status").default("active").notNull(),
+    isDefault: boolean("is_default").default(false).notNull(),
+    timeWindowHours: integer("time_window_hours").default(24).notNull(),
+    itemLimit: integer("item_limit").default(50).notNull(),
+    perChannelLimit: integer("per_channel_limit").default(10).notNull(),
+    sort: integer("sort").default(0).notNull(),
+    extra: jsonb("extra").$type<Record<string, unknown>>().default(emptyJson),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("uk_biz_ranking_config_slug").on(table.slug),
+    index("idx_biz_ranking_config_status_sort").on(table.status, table.sort),
+    index("idx_biz_ranking_config_default").on(table.isDefault),
+  ],
+)
+
+export const relRankingChannel = pgTable(
+  "rel_ranking_channel",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    rankingId: uuid("ranking_id")
+      .notNull()
+      .references(() => bizRankingConfig.id),
+    channelId: uuid("channel_id")
+      .notNull()
+      .references(() => bizChannel.id),
+    weight: integer("weight").default(0).notNull(),
+    sort: integer("sort").default(0).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("uk_rel_ranking_channel").on(table.rankingId, table.channelId),
+    index("idx_rel_ranking_channel_ranking_sort").on(
+      table.rankingId,
+      table.sort,
+    ),
+    index("idx_rel_ranking_channel_channel").on(table.channelId),
+  ],
+)
+
 export const bizDailyReport = pgTable(
   "biz_daily_report",
   {
@@ -302,6 +370,31 @@ export const userTrackingRule = pgTable(
       table.keyword,
     ),
     index("idx_user_tracking_rule_user").on(table.userId, table.isEnabled),
+  ],
+)
+
+export const userNotification = pgTable(
+  "user_notification",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => sysUser.id),
+    notificationType: varchar("notification_type", { length: 80 }).notNull(),
+    title: varchar("title", { length: 200 }).notNull(),
+    body: text("body"),
+    href: text(),
+    sourceType: varchar("source_type", { length: 80 }),
+    sourceId: uuid("source_id"),
+    isRead: boolean("is_read").default(false).notNull(),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("idx_user_notification_user_time").on(table.userId, table.createdAt),
+    index("idx_user_notification_unread").on(table.userId, table.isRead),
   ],
 )
 
@@ -430,6 +523,74 @@ export const bizSnapshotItem = pgTable(
       table.createdAt,
     ),
     index("idx_biz_snapshot_item_url_hash").on(table.urlHash),
+  ],
+)
+
+export const relTopicSnapshotItem = pgTable(
+  "rel_topic_snapshot_item",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    topicId: uuid("topic_id")
+      .notNull()
+      .references(() => bizTopic.id),
+    snapshotItemId: uuid("snapshot_item_id")
+      .notNull()
+      .references(() => bizSnapshotItem.id),
+    sort: integer("sort").default(0).notNull(),
+    isPinned: boolean("is_pinned").default(true).notNull(),
+    note: text("note"),
+    createdBy: uuid("created_by").references(() => sysUser.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("uk_rel_topic_snapshot_item").on(
+      table.topicId,
+      table.snapshotItemId,
+    ),
+    index("idx_rel_topic_snapshot_item_topic_sort").on(
+      table.topicId,
+      table.sort,
+    ),
+    index("idx_rel_topic_snapshot_item_snapshot").on(table.snapshotItemId),
+  ],
+)
+
+export const userTrackingMatch = pgTable(
+  "user_tracking_match",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    ruleId: uuid("rule_id")
+      .notNull()
+      .references(() => userTrackingRule.id),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => sysUser.id),
+    snapshotItemId: uuid("snapshot_item_id")
+      .notNull()
+      .references(() => bizSnapshotItem.id),
+    title: text("title").notNull(),
+    url: text("url").notNull(),
+    matchedKeyword: varchar("matched_keyword", { length: 160 }).notNull(),
+    isRead: boolean("is_read").default(false).notNull(),
+    matchedAt: timestamp("matched_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("uk_user_tracking_match_rule_item").on(
+      table.ruleId,
+      table.snapshotItemId,
+    ),
+    index("idx_user_tracking_match_user_time").on(
+      table.userId,
+      table.matchedAt,
+    ),
+    index("idx_user_tracking_match_rule_time").on(
+      table.ruleId,
+      table.matchedAt,
+    ),
   ],
 )
 

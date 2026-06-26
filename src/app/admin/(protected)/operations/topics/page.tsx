@@ -1,4 +1,5 @@
 import type { ReactNode } from "react"
+import Link from "next/link"
 import {
   AdminAlert,
   AdminEmptyState,
@@ -168,6 +169,12 @@ export default async function AdminTopicsOperationPage({
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex flex-wrap gap-2">
+                      <Link
+                        className="inline-flex min-h-9 items-center rounded-full border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 no-underline transition-colors hover:bg-slate-900 hover:text-white"
+                        href={`/admin/operations/topics/${topic.id}`}
+                      >
+                        管理内容
+                      </Link>
                       <form action={updateTopicStatusAction}>
                         <input name="id" type="hidden" value={topic.id} />
                         <input

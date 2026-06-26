@@ -36,11 +36,17 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 用户能力
   rel_user_channel_subscription
   user_tracking_rule
+  user_tracking_match
+  user_notification
 
 运营与审核
   biz_content_block
   biz_daily_report
+  biz_home_module
+  biz_ranking_config
+  rel_ranking_channel
   biz_topic
+  rel_topic_snapshot_item
 ```
 
 ## sys_user
@@ -369,6 +375,111 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 - `uk_biz_topic_slug`
 - `idx_biz_topic_status_sort`
 
+## 阶段 10 新增运营表
+
+### biz_home_module
+
+首页模块配置表。后台可以控制首页模块是否启用、标题、副标题、排序和展示数量。
+
+关键字段：
+
+- `module_key`
+- `title`
+- `subtitle`
+- `status`
+- `sort`
+- `display_limit`
+- `config`
+
+关键索引：
+
+- `uk_biz_home_module_key`
+- `idx_biz_home_module_status_sort`
+
+### biz_ranking_config / rel_ranking_channel
+
+榜中榜配置表和榜中榜频道关系表。一个榜中榜配置可以绑定多个频道，并为每个频道设置权重和排序。
+
+关键字段：
+
+- `config_name`
+- `slug`
+- `description`
+- `status`
+- `is_default`
+- `time_window_hours`
+- `item_limit`
+- `per_channel_limit`
+- `channel_id`
+- `weight`
+
+说明：
+
+- 前台 `/rankings` 优先读取 active 且默认的榜中榜配置。
+- 榜中榜只聚合已入库快照，不实时请求第三方站点。
+- 排名分数由频道权重、原榜排名和快照新鲜度综合计算。
+
+### rel_topic_snapshot_item
+
+话题和快照条目的人工关联表。后台可以把重要内容手动挂载到指定话题，前台话题详情页会把人工关联内容放在自动匹配内容之前。
+
+关键字段：
+
+- `topic_id`
+- `snapshot_item_id`
+- `sort`
+- `is_pinned`
+- `note`
+- `created_by`
+
+关键索引：
+
+- `uk_rel_topic_snapshot_item`
+- `idx_rel_topic_snapshot_item_topic_sort`
+- `idx_rel_topic_snapshot_item_snapshot`
+
+### user_tracking_match
+
+用户追踪命中记录表。Worker 写入新快照后，会把命中的追踪规则结果落库，避免每次打开 `/tracking` 都重新扫最新内容。
+
+关键字段：
+
+- `rule_id`
+- `user_id`
+- `snapshot_item_id`
+- `title`
+- `url`
+- `matched_keyword`
+- `is_read`
+- `matched_at`
+
+关键索引：
+
+- `uk_user_tracking_match_rule_item`
+- `idx_user_tracking_match_user_time`
+- `idx_user_tracking_match_rule_time`
+
+### user_notification
+
+站内通知表。当前主要承载追踪命中通知，后续可以扩展订阅提醒、系统消息和会员提醒。
+
+关键字段：
+
+- `user_id`
+- `notification_type`
+- `title`
+- `body`
+- `href`
+- `source_type`
+- `source_id`
+- `is_read`
+- `read_at`
+
+关键索引：
+
+- `idx_user_notification_user_time`
+- `idx_user_notification_unread`
+
 ## 后续规划表
 
 ```txt
@@ -379,10 +490,9 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 
 日报增强
   biz_daily_report_item
-  rel_topic_item
 
-追踪
-  biz_track_match
+会员与搜索
+  会员历史权限与搜索索引扩展
 ```
 
 ## 大表策略
