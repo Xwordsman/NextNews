@@ -1,10 +1,12 @@
 import { closeDatabaseConnection } from "@/server/db/client"
 import { runDueChannelCrawls } from "@/server/crawling/scheduler"
 import { getInstallState } from "@/server/install/service"
+import { processDueSystemJobs } from "@/server/jobs/queue"
 
 const pollIntervalMs =
   Number(process.env.WORKER_POLL_INTERVAL_SECONDS ?? 30) * 1000
 const batchSize = Number(process.env.CRAWL_BATCH_SIZE ?? 5)
+const jobBatchSize = Number(process.env.JOB_BATCH_SIZE ?? batchSize)
 
 let stopping = false
 let lastInstallWaitLogAt = 0
@@ -22,7 +24,7 @@ async function main() {
     `[nextnews-worker] bootstrap started at ${new Date().toISOString()}`,
   )
   console.log(
-    `[nextnews-worker] polling every ${pollIntervalMs / 1000}s, batch size ${batchSize}`,
+    `[nextnews-worker] polling every ${pollIntervalMs / 1000}s, crawl batch size ${batchSize}, job batch size ${jobBatchSize}`,
   )
 
   while (!stopping) {
@@ -54,6 +56,23 @@ async function main() {
       for (const error of result.errors) {
         console.error(
           `[nextnews-worker] channel=${error.channelId} failed: ${error.message}`,
+        )
+      }
+
+      const jobResult = await processDueSystemJobs({ limit: jobBatchSize })
+
+      if (
+        !jobResult.disabled &&
+        (jobResult.processedCount > 0 || jobResult.failedCount > 0)
+      ) {
+        console.log(
+          `[nextnews-worker] jobs processed=${jobResult.processedCount} success=${jobResult.successCount} skipped=${jobResult.skippedCount} retry=${jobResult.retriedCount} failed=${jobResult.failedCount}`,
+        )
+      }
+
+      for (const error of jobResult.errors) {
+        console.error(
+          `[nextnews-worker] job=${error.jobId} type=${error.jobType} failed: ${error.message}`,
         )
       }
     } catch (error) {

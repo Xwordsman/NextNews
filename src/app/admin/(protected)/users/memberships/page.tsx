@@ -10,7 +10,12 @@ import {
   StatusBadge,
   formatDateTime,
 } from "@/features/admin-content/components/admin-ui"
-import { saveMembershipPlanAction } from "@/features/admin-content/actions"
+import {
+  cancelMembershipOrderAction,
+  markMembershipOrderPaidAction,
+  refundMembershipOrderAction,
+  saveMembershipPlanAction,
+} from "@/features/admin-content/actions"
 import {
   listAdminMembershipOrders,
   listAdminMembershipPlans,
@@ -38,7 +43,7 @@ export default async function AdminMembershipsPage({
   return (
     <div className="grid gap-6">
       <AdminPageHeader
-        description="管理可售会员套餐和支付订单预留。是否在前台启用商业化，由基础设置中的“会员商业化”开关控制。"
+        description="管理可售会员套餐和支付订单。前台是否展示会员入口，由基础设置中的会员商业化开关控制。"
         eyebrow="Membership"
         title="会员商业化"
       />
@@ -51,7 +56,7 @@ export default async function AdminMembershipsPage({
           <div>
             <h2 className="text-base font-semibold">新增套餐</h2>
             <p className="mt-1 text-sm leading-6 text-slate-500">
-              套餐保存后不会自动展示给前台，仍受系统商业化开关和套餐启用状态共同控制。
+              套餐保存后仍受系统商业化开关和套餐启用状态共同控制。
             </p>
           </div>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -264,7 +269,7 @@ export default async function AdminMembershipsPage({
       <AdminSection>
         {orders.length === 0 ? (
           <AdminEmptyState
-            description="前台用户选择套餐后会生成待支付订单。实际支付网关可以后续接入。"
+            description="前台用户选择套餐后会生成待支付订单。当前版本支持后台人工确认支付。"
             title="暂无会员订单"
           />
         ) : (
@@ -276,6 +281,7 @@ export default async function AdminMembershipsPage({
                 <th className="px-5 py-3">金额</th>
                 <th className="px-5 py-3">状态</th>
                 <th className="px-5 py-3">时间</th>
+                <th className="px-5 py-3">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
@@ -303,6 +309,11 @@ export default async function AdminMembershipsPage({
                     创建：{formatDateTime(order.createdAt)}
                     <br />
                     支付：{formatDateTime(order.paidAt)}
+                    <br />
+                    到期：{formatDateTime(order.expiresAt)}
+                  </td>
+                  <td className="px-5 py-4">
+                    <OrderActions orderId={order.id} status={order.status} />
                   </td>
                 </tr>
               ))}
@@ -310,6 +321,51 @@ export default async function AdminMembershipsPage({
           </AdminTable>
         )}
       </AdminSection>
+    </div>
+  )
+}
+
+function OrderActions({
+  orderId,
+  status,
+}: {
+  orderId: string
+  status: string
+}) {
+  return (
+    <div className="flex min-w-[220px] flex-wrap gap-2">
+      {status === "pending" ? (
+        <>
+          <form action={markMembershipOrderPaidAction}>
+            <input name="id" type="hidden" value={orderId} />
+            <input
+              name="backTo"
+              type="hidden"
+              value="/admin/users/memberships"
+            />
+            <RunButton label="确认支付" />
+          </form>
+          <form action={cancelMembershipOrderAction}>
+            <input name="id" type="hidden" value={orderId} />
+            <input
+              name="backTo"
+              type="hidden"
+              value="/admin/users/memberships"
+            />
+            <RunButton label="取消订单" />
+          </form>
+        </>
+      ) : null}
+      {status === "paid" ? (
+        <form action={refundMembershipOrderAction}>
+          <input name="id" type="hidden" value={orderId} />
+          <input name="backTo" type="hidden" value="/admin/users/memberships" />
+          <RunButton label="标记退款" />
+        </form>
+      ) : null}
+      {status !== "pending" && status !== "paid" ? (
+        <span className="text-sm text-slate-500">无需操作</span>
+      ) : null}
     </div>
   )
 }

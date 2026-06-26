@@ -9,6 +9,7 @@ import {
   isNull,
   lte,
   or,
+  sql,
 } from "drizzle-orm"
 import { getDb } from "@/server/db/client"
 import {
@@ -26,6 +27,7 @@ import {
 } from "@/server/db/schema"
 import { getPublicHomeData } from "@/features/public-home/queries"
 import { matchesKeywords, parseKeywords } from "@/server/content/keywords"
+import { normalizeSearchTerms } from "@/server/search/terms"
 
 export type PublicOperationItem = {
   id: string
@@ -554,7 +556,31 @@ export async function searchPublicContents(
     return []
   }
 
-  const pattern = `%${keyword}%`
+  const terms = normalizeSearchTerms(keyword)
+  const patterns = Array.from(new Set([keyword, ...terms])).map(
+    (term) => `%${term}%`,
+  )
+  const phrasePattern = `%${keyword}%`
+  const prefixPattern = `${keyword}%`
+  const matchConditions = patterns.flatMap((pattern) => [
+    ilike(bizSnapshotItem.title, pattern),
+    ilike(bizSnapshotItem.summary, pattern),
+    ilike(bizSnapshotItem.tag, pattern),
+    ilike(bizChannel.channelName, pattern),
+    ilike(bizSite.siteName, pattern),
+  ])
+  const rankExpression = sql<number>`
+    (
+      case when lower(${bizSnapshotItem.title}) = lower(${keyword}) then 1200 else 0 end +
+      case when ${bizSnapshotItem.title} ilike ${prefixPattern} then 800 else 0 end +
+      case when ${bizSnapshotItem.title} ilike ${phrasePattern} then 520 else 0 end +
+      case when ${bizSnapshotItem.summary} ilike ${phrasePattern} then 220 else 0 end +
+      case when ${bizSnapshotItem.tag} ilike ${phrasePattern} then 180 else 0 end +
+      case when ${bizChannel.channelName} ilike ${phrasePattern} then 160 else 0 end +
+      case when ${bizSite.siteName} ilike ${phrasePattern} then 120 else 0 end +
+      greatest(0, 100 - coalesce(${bizSnapshotItem.rankNo}, 100))
+    )
+  `
   const conditions = [
     isNull(bizContentBlock.id),
     isNull(bizChannel.deletedAt),
@@ -563,13 +589,7 @@ export async function searchPublicContents(
     eq(bizChannel.isPublic, true),
     eq(bizSite.status, "active"),
     eq(bizSite.isVisible, true),
-    or(
-      ilike(bizSnapshotItem.title, pattern),
-      ilike(bizSnapshotItem.summary, pattern),
-      ilike(bizSnapshotItem.tag, pattern),
-      ilike(bizChannel.channelName, pattern),
-      ilike(bizSite.siteName, pattern),
-    ),
+    or(...matchConditions),
   ]
 
   if (filters.siteSlug) {
@@ -604,6 +624,7 @@ export async function searchPublicContents(
       siteSlug: bizSite.slug,
       channelSlug: bizChannel.slug,
       snapshotTime: bizChannelSnapshot.snapshotTime,
+      searchRank: rankExpression,
     })
     .from(bizSnapshotItem)
     .innerJoin(bizChannel, eq(bizSnapshotItem.channelId, bizChannel.id))
@@ -620,7 +641,11 @@ export async function searchPublicContents(
       ),
     )
     .where(and(...conditions))
-    .orderBy(desc(bizChannelSnapshot.snapshotTime), asc(bizSnapshotItem.rankNo))
+    .orderBy(
+      desc(rankExpression),
+      desc(bizChannelSnapshot.snapshotTime),
+      asc(bizSnapshotItem.rankNo),
+    )
     .limit(100)
     .then((items) =>
       items.map((item) => ({

@@ -9,7 +9,10 @@ import {
   StatusBadge,
   formatDateTime,
 } from "@/features/admin-content/components/admin-ui"
-import { saveUserMembershipAction } from "@/features/admin-content/actions"
+import {
+  saveUserMembershipAction,
+  updateUserStatusAction,
+} from "@/features/admin-content/actions"
 import { listAdminUsers } from "@/features/admin-content/queries"
 import {
   getErrorMessage,
@@ -33,7 +36,7 @@ export default async function AdminUsersPage({
   return (
     <div className="grid gap-6">
       <AdminPageHeader
-        description="查看后台管理员和前台读者账号。当前版本前台用户用于频道订阅和个人动态。"
+        description="查看后台管理员和前台读者账号。前台用户用于频道订阅、追踪、收藏、阅读历史和会员权益。"
         eyebrow="Users"
         title="用户列表"
       />
@@ -44,7 +47,7 @@ export default async function AdminUsersPage({
       <AdminSection>
         {users.length === 0 ? (
           <AdminEmptyState
-            description="暂无用户。运行 seed 后会创建默认管理员。"
+            description="暂无用户。运行 seed 或完成安装后会创建默认管理员。"
             title="暂无用户"
           />
         ) : (
@@ -58,6 +61,7 @@ export default async function AdminUsersPage({
                 <th className="px-5 py-3">订阅数</th>
                 <th className="px-5 py-3">最后登录</th>
                 <th className="px-5 py-3">创建时间</th>
+                <th className="px-5 py-3">账号操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
@@ -132,6 +136,20 @@ export default async function AdminUsersPage({
                   </td>
                   <td className="px-5 py-4">
                     {formatDateTime(user.createdAt)}
+                  </td>
+                  <td className="px-5 py-4">
+                    <form action={updateUserStatusAction}>
+                      <input name="userId" type="hidden" value={user.id} />
+                      <input name="backTo" type="hidden" value="/admin/users" />
+                      <input
+                        name="status"
+                        type="hidden"
+                        value={user.status === "active" ? "disabled" : "active"}
+                      />
+                      <RunButton
+                        label={user.status === "active" ? "停用" : "启用"}
+                      />
+                    </form>
                   </td>
                 </tr>
               ))}

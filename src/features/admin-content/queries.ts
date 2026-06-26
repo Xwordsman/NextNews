@@ -968,39 +968,96 @@ export async function listAdminMembershipOrders() {
 
 export async function getAdminSearchAnalytics() {
   const db = getDb()
+  const trendDays = getRecentDateKeys(14)
+  const trendSince = dateKeyToStart(trendDays[0] ?? formatDateKey(new Date()))
+  const searchTrendDate = sql<string>`to_char(date_trunc('day', ${logSearchQuery.createdAt} AT TIME ZONE 'Asia/Shanghai'), 'YYYY-MM-DD')`
 
-  const [recentLogs, hotKeywords] = await Promise.all([
-    db
-      .select({
-        id: logSearchQuery.id,
-        keyword: logSearchQuery.keyword,
-        siteSlug: logSearchQuery.siteSlug,
-        channelId: logSearchQuery.channelId,
-        dateFrom: logSearchQuery.dateFrom,
-        dateTo: logSearchQuery.dateTo,
-        resultCount: logSearchQuery.resultCount,
-        createdAt: logSearchQuery.createdAt,
-        userEmail: sysUser.email,
-        userDisplayName: sysUser.displayName,
-      })
-      .from(logSearchQuery)
-      .leftJoin(sysUser, eq(logSearchQuery.userId, sysUser.id))
-      .orderBy(desc(logSearchQuery.createdAt))
-      .limit(100),
-    db
-      .select({
-        keyword: logSearchQuery.keyword,
-        searchCount: count(),
-        averageResultCount: sql<number>`round(avg(${logSearchQuery.resultCount}))`,
-        lastSearchedAt: sql<Date>`max(${logSearchQuery.createdAt})`,
-      })
-      .from(logSearchQuery)
-      .groupBy(logSearchQuery.keyword)
-      .orderBy(desc(count()), desc(sql`max(${logSearchQuery.createdAt})`))
-      .limit(30),
-  ])
+  const [recentLogs, hotKeywords, trendRows, zeroResultKeywords] =
+    await Promise.all([
+      db
+        .select({
+          id: logSearchQuery.id,
+          keyword: logSearchQuery.keyword,
+          siteSlug: logSearchQuery.siteSlug,
+          channelId: logSearchQuery.channelId,
+          dateFrom: logSearchQuery.dateFrom,
+          dateTo: logSearchQuery.dateTo,
+          resultCount: logSearchQuery.resultCount,
+          createdAt: logSearchQuery.createdAt,
+          userEmail: sysUser.email,
+          userDisplayName: sysUser.displayName,
+        })
+        .from(logSearchQuery)
+        .leftJoin(sysUser, eq(logSearchQuery.userId, sysUser.id))
+        .orderBy(desc(logSearchQuery.createdAt))
+        .limit(100),
+      db
+        .select({
+          keyword: logSearchQuery.keyword,
+          searchCount: count(),
+          averageResultCount: sql<number>`round(avg(${logSearchQuery.resultCount}))`,
+          zeroResultCount: sql<number>`sum(case when ${logSearchQuery.resultCount} = 0 then 1 else 0 end)`,
+          lastSearchedAt: sql<Date>`max(${logSearchQuery.createdAt})`,
+        })
+        .from(logSearchQuery)
+        .groupBy(logSearchQuery.keyword)
+        .orderBy(desc(count()), desc(sql`max(${logSearchQuery.createdAt})`))
+        .limit(30),
+      db
+        .select({
+          date: searchTrendDate,
+          searchCount: count(),
+          averageResultCount: sql<number>`round(avg(${logSearchQuery.resultCount}))`,
+          zeroResultCount: sql<number>`sum(case when ${logSearchQuery.resultCount} = 0 then 1 else 0 end)`,
+        })
+        .from(logSearchQuery)
+        .where(gte(logSearchQuery.createdAt, trendSince))
+        .groupBy(searchTrendDate)
+        .orderBy(asc(searchTrendDate)),
+      db
+        .select({
+          keyword: logSearchQuery.keyword,
+          searchCount: count(),
+          lastSearchedAt: sql<Date>`max(${logSearchQuery.createdAt})`,
+        })
+        .from(logSearchQuery)
+        .where(eq(logSearchQuery.resultCount, 0))
+        .groupBy(logSearchQuery.keyword)
+        .orderBy(desc(count()), desc(sql`max(${logSearchQuery.createdAt})`))
+        .limit(20),
+    ])
 
-  return { hotKeywords, recentLogs }
+  const trendByDate = new Map(trendRows.map((row) => [row.date, row]))
+  const trend = trendDays.map((date) => {
+    const row = trendByDate.get(date)
+
+    return {
+      date,
+      averageResultCount: Number(row?.averageResultCount ?? 0),
+      searchCount: Number(row?.searchCount ?? 0),
+      zeroResultCount: Number(row?.zeroResultCount ?? 0),
+    }
+  })
+  const totalSearches = trend.reduce((sum, item) => sum + item.searchCount, 0)
+  const totalZeroResults = trend.reduce(
+    (sum, item) => sum + item.zeroResultCount,
+    0,
+  )
+
+  return {
+    hotKeywords,
+    quality: {
+      totalSearches,
+      totalZeroResults,
+      zeroResultRate:
+        totalSearches === 0
+          ? 0
+          : Math.round((totalZeroResults / totalSearches) * 1000) / 10,
+    },
+    recentLogs,
+    trend,
+    zeroResultKeywords,
+  }
 }
 
 export async function listAdminDailyReportTemplates() {
@@ -1137,6 +1194,14 @@ export async function getAdminOperationsAnalytics() {
   const db = getDb()
   const today = new Date()
   today.setHours(0, 0, 0, 0)
+  const trendDays = getRecentDateKeys(14)
+  const trendSince = dateKeyToStart(trendDays[0] ?? formatDateKey(new Date()))
+  const snapshotTrendDate = sql<string>`to_char(date_trunc('day', ${bizChannelSnapshot.snapshotTime} AT TIME ZONE 'Asia/Shanghai'), 'YYYY-MM-DD')`
+  const itemTrendDate = sql<string>`to_char(date_trunc('day', ${bizSnapshotItem.createdAt} AT TIME ZONE 'Asia/Shanghai'), 'YYYY-MM-DD')`
+  const crawlTrendDate = sql<string>`to_char(date_trunc('day', ${logCrawlRun.startedAt} AT TIME ZONE 'Asia/Shanghai'), 'YYYY-MM-DD')`
+  const searchTrendDate = sql<string>`to_char(date_trunc('day', ${logSearchQuery.createdAt} AT TIME ZONE 'Asia/Shanghai'), 'YYYY-MM-DD')`
+  const notificationTrendDate = sql<string>`to_char(date_trunc('day', ${userNotification.createdAt} AT TIME ZONE 'Asia/Shanghai'), 'YYYY-MM-DD')`
+  const readTrendDate = sql<string>`to_char(date_trunc('day', ${userReadHistory.lastReadAt} AT TIME ZONE 'Asia/Shanghai'), 'YYYY-MM-DD')`
 
   const [
     [activeChannelCount],
@@ -1155,6 +1220,13 @@ export async function getAdminOperationsAnalytics() {
     [bookmarkCount],
     [todayReadCount],
     [pendingJobCount],
+    [failedJobCount],
+    snapshotTrendRows,
+    itemTrendRows,
+    failedRunTrendRows,
+    searchTrendRows,
+    notificationTrendRows,
+    readTrendRows,
     failedRows,
     channelRows,
   ] = await Promise.all([
@@ -1232,6 +1304,69 @@ export async function getAdminOperationsAnalytics() {
       .from(sysJobQueue)
       .where(eq(sysJobQueue.status, "pending")),
     db
+      .select({ value: count() })
+      .from(sysJobQueue)
+      .where(eq(sysJobQueue.status, "failed")),
+    db
+      .select({
+        date: snapshotTrendDate,
+        value: count(),
+      })
+      .from(bizChannelSnapshot)
+      .where(gte(bizChannelSnapshot.snapshotTime, trendSince))
+      .groupBy(snapshotTrendDate)
+      .orderBy(asc(snapshotTrendDate)),
+    db
+      .select({
+        date: itemTrendDate,
+        value: count(),
+      })
+      .from(bizSnapshotItem)
+      .where(gte(bizSnapshotItem.createdAt, trendSince))
+      .groupBy(itemTrendDate)
+      .orderBy(asc(itemTrendDate)),
+    db
+      .select({
+        date: crawlTrendDate,
+        value: count(),
+      })
+      .from(logCrawlRun)
+      .where(
+        and(
+          eq(logCrawlRun.status, "failed"),
+          gte(logCrawlRun.startedAt, trendSince),
+        ),
+      )
+      .groupBy(crawlTrendDate)
+      .orderBy(asc(crawlTrendDate)),
+    db
+      .select({
+        date: searchTrendDate,
+        value: count(),
+      })
+      .from(logSearchQuery)
+      .where(gte(logSearchQuery.createdAt, trendSince))
+      .groupBy(searchTrendDate)
+      .orderBy(asc(searchTrendDate)),
+    db
+      .select({
+        date: notificationTrendDate,
+        value: count(),
+      })
+      .from(userNotification)
+      .where(gte(userNotification.createdAt, trendSince))
+      .groupBy(notificationTrendDate)
+      .orderBy(asc(notificationTrendDate)),
+    db
+      .select({
+        date: readTrendDate,
+        value: count(),
+      })
+      .from(userReadHistory)
+      .where(gte(userReadHistory.lastReadAt, trendSince))
+      .groupBy(readTrendDate)
+      .orderBy(asc(readTrendDate)),
+    db
       .select({
         channelId: logCrawlRun.channelId,
         value: count(),
@@ -1250,6 +1385,7 @@ export async function getAdminOperationsAnalytics() {
         siteName: bizSite.siteName,
         channelName: bizChannel.channelName,
         definitionKey: bizChannel.definitionKey,
+        crawlIntervalSeconds: bizChannel.crawlIntervalSeconds,
         isCrawlEnabled: bizChannel.isCrawlEnabled,
         lastCrawlAt: bizChannel.lastCrawlAt,
         lastSuccessAt: bizChannel.lastSuccessAt,
@@ -1276,30 +1412,45 @@ export async function getAdminOperationsAnalytics() {
   const failedCountByChannelId = new Map(
     failedRows.map((row) => [row.channelId, Number(row.value)]),
   )
+  const dailyTrend = trendDays.map((date) => ({
+    date,
+    failedRuns: valueForDate(failedRunTrendRows, date),
+    items: valueForDate(itemTrendRows, date),
+    notifications: valueForDate(notificationTrendRows, date),
+    reads: valueForDate(readTrendRows, date),
+    searches: valueForDate(searchTrendRows, date),
+    snapshots: valueForDate(snapshotTrendRows, date),
+  }))
+  const channelHealth = channelRows.map((channel) => ({
+    ...channel,
+    todayFailedRuns: failedCountByChannelId.get(channel.id) ?? 0,
+  }))
+  const stats = {
+    activeChannels: Number(activeChannelCount?.value ?? 0),
+    homeChannels: Number(homeChannelCount?.value ?? 0),
+    todaySnapshots: Number(todaySnapshotCount?.value ?? 0),
+    todayItems: Number(todayItemCount?.value ?? 0),
+    todayFailedRuns: Number(todayFailedRunCount?.value ?? 0),
+    users: Number(userCount?.value ?? 0),
+    subscriptions: Number(subscriptionCount?.value ?? 0),
+    activeMemberships: Number(activeMembershipCount?.value ?? 0),
+    todayNotifications: Number(todayNotificationCount?.value ?? 0),
+    unreadNotifications: Number(unreadNotificationCount?.value ?? 0),
+    todayTrackingMatches: Number(todayTrackingMatchCount?.value ?? 0),
+    activeDailyReports: Number(activeDailyReportCount?.value ?? 0),
+    todaySearches: Number(todaySearchCount?.value ?? 0),
+    bookmarks: Number(bookmarkCount?.value ?? 0),
+    todayReads: Number(todayReadCount?.value ?? 0),
+    pendingJobs: Number(pendingJobCount?.value ?? 0),
+    failedJobs: Number(failedJobCount?.value ?? 0),
+  }
+  const alerts = buildOperationsAlerts({ channelHealth, stats })
 
   return {
-    stats: {
-      activeChannels: Number(activeChannelCount?.value ?? 0),
-      homeChannels: Number(homeChannelCount?.value ?? 0),
-      todaySnapshots: Number(todaySnapshotCount?.value ?? 0),
-      todayItems: Number(todayItemCount?.value ?? 0),
-      todayFailedRuns: Number(todayFailedRunCount?.value ?? 0),
-      users: Number(userCount?.value ?? 0),
-      subscriptions: Number(subscriptionCount?.value ?? 0),
-      activeMemberships: Number(activeMembershipCount?.value ?? 0),
-      todayNotifications: Number(todayNotificationCount?.value ?? 0),
-      unreadNotifications: Number(unreadNotificationCount?.value ?? 0),
-      todayTrackingMatches: Number(todayTrackingMatchCount?.value ?? 0),
-      activeDailyReports: Number(activeDailyReportCount?.value ?? 0),
-      todaySearches: Number(todaySearchCount?.value ?? 0),
-      bookmarks: Number(bookmarkCount?.value ?? 0),
-      todayReads: Number(todayReadCount?.value ?? 0),
-      pendingJobs: Number(pendingJobCount?.value ?? 0),
-    },
-    channelHealth: channelRows.map((channel) => ({
-      ...channel,
-      todayFailedRuns: failedCountByChannelId.get(channel.id) ?? 0,
-    })),
+    alerts,
+    channelHealth,
+    dailyTrend,
+    stats,
   }
 }
 
@@ -1445,6 +1596,132 @@ export async function listAdminUserSubscriptions() {
     .innerJoin(bizSite, eq(bizChannel.siteId, bizSite.id))
     .orderBy(desc(relUserChannelSubscription.createdAt))
     .limit(100)
+}
+
+function valueForDate(
+  rows: Array<{ date: string; value: number | string | bigint }>,
+  date: string,
+) {
+  return Number(rows.find((row) => row.date === date)?.value ?? 0)
+}
+
+function buildOperationsAlerts(input: {
+  channelHealth: Array<{
+    channelName: string
+    crawlIntervalSeconds: number
+    isCrawlEnabled: boolean
+    lastSuccessAt: Date | null
+    siteName: string
+    status: string
+    todayFailedRuns: number
+  }>
+  stats: {
+    failedJobs: number
+    pendingJobs: number
+    todayFailedRuns: number
+    unreadNotifications: number
+  }
+}) {
+  const alerts: Array<{
+    description: string
+    level: "critical" | "info" | "warning"
+    title: string
+  }> = []
+
+  if (input.stats.failedJobs > 0) {
+    alerts.push({
+      description: `系统队列中有 ${input.stats.failedJobs} 个失败任务，需要在操作日志页面排查或重试。`,
+      level: "critical",
+      title: "队列存在失败任务",
+    })
+  }
+
+  if (input.stats.pendingJobs > 50) {
+    alerts.push({
+      description: `当前有 ${input.stats.pendingJobs} 个待处理任务，可能需要增加 Worker 或缩短轮询间隔。`,
+      level: "warning",
+      title: "队列积压偏高",
+    })
+  }
+
+  if (input.stats.todayFailedRuns > 0) {
+    alerts.push({
+      description: `今天已有 ${input.stats.todayFailedRuns} 次采集失败，请优先查看失败记录。`,
+      level: "warning",
+      title: "今日采集失败",
+    })
+  }
+
+  const now = Date.now()
+  const staleChannels = input.channelHealth
+    .filter((channel) => {
+      if (
+        channel.status !== "active" ||
+        !channel.isCrawlEnabled ||
+        channel.todayFailedRuns > 0
+      ) {
+        return false
+      }
+
+      if (!channel.lastSuccessAt) {
+        return true
+      }
+
+      const thresholdMs = Math.max(
+        24 * 60 * 60 * 1000,
+        channel.crawlIntervalSeconds * 2 * 1000,
+      )
+
+      return now - channel.lastSuccessAt.getTime() > thresholdMs
+    })
+    .slice(0, 5)
+
+  if (staleChannels.length > 0) {
+    alerts.push({
+      description: staleChannels
+        .map((channel) => `${channel.siteName}/${channel.channelName}`)
+        .join("、"),
+      level: "warning",
+      title: "频道长时间未成功采集",
+    })
+  }
+
+  if (alerts.length === 0) {
+    alerts.push({
+      description: "采集、队列和通知核心指标暂无明显异常。",
+      level: "info",
+      title: "系统运行正常",
+    })
+  }
+
+  return alerts
+}
+
+function getRecentDateKeys(days: number) {
+  const result: string[] = []
+  const base = new Date()
+  base.setHours(0, 0, 0, 0)
+
+  for (let index = days - 1; index >= 0; index -= 1) {
+    const date = new Date(base)
+    date.setDate(base.getDate() - index)
+    result.push(formatDateKey(date))
+  }
+
+  return result
+}
+
+function formatDateKey(value: Date) {
+  return new Intl.DateTimeFormat("en-CA", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+  }).format(value)
+}
+
+function dateKeyToStart(value: string) {
+  return new Date(`${value}T00:00:00+08:00`)
 }
 
 function isUuid(value: string) {

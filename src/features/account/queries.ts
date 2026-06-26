@@ -5,6 +5,7 @@ import {
   bizContentBlock,
   bizSite,
   bizSnapshotItem,
+  membershipOrder,
   relUserChannelSubscription,
   userBookmark,
   userNotification,
@@ -69,6 +70,18 @@ export type UserNotification = {
   body: string | null
   href: string | null
   isRead: boolean
+  createdAt: Date
+}
+
+export type UserMembershipOrder = {
+  id: string
+  planKey: string
+  planName: string
+  amountCents: number
+  currency: string
+  status: string
+  paidAt: Date | null
+  expiresAt: Date | null
   createdAt: Date
 }
 
@@ -328,6 +341,27 @@ export async function getUserNotifications(
     .where(eq(userNotification.userId, userId))
     .orderBy(desc(userNotification.createdAt))
     .limit(100)
+}
+
+export async function getUserMembershipOrders(
+  userId: string,
+): Promise<UserMembershipOrder[]> {
+  return getDb()
+    .select({
+      id: membershipOrder.id,
+      planKey: membershipOrder.planKey,
+      planName: membershipOrder.planName,
+      amountCents: membershipOrder.amountCents,
+      currency: membershipOrder.currency,
+      status: membershipOrder.status,
+      paidAt: membershipOrder.paidAt,
+      expiresAt: membershipOrder.expiresAt,
+      createdAt: membershipOrder.createdAt,
+    })
+    .from(membershipOrder)
+    .where(eq(membershipOrder.userId, userId))
+    .orderBy(desc(membershipOrder.createdAt))
+    .limit(20)
 }
 
 export async function getUserBookmarks(

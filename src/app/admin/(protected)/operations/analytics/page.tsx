@@ -37,11 +37,11 @@ export default async function AdminOperationsAnalyticsPage() {
       detail: "今天写入的快照条目",
     },
     {
-      label: "失败任务",
+      label: "失败采集",
       value: data.stats.todayFailedRuns,
       detail: "今天失败的采集运行",
     },
-    { label: "用户", value: data.stats.users, detail: "后台与前台账户" },
+    { label: "用户", value: data.stats.users, detail: "后台与前台账号" },
     {
       label: "频道订阅",
       value: data.stats.subscriptions,
@@ -92,6 +92,19 @@ export default async function AdminOperationsAnalyticsPage() {
       value: data.stats.pendingJobs,
       detail: "系统任务队列中的 pending 任务",
     },
+    {
+      label: "失败队列",
+      value: data.stats.failedJobs,
+      detail: "需要排查或手动重试的 failed 任务",
+    },
+  ]
+  const trendMetrics = [
+    { key: "snapshots", label: "快照", tone: "bg-slate-900" },
+    { key: "items", label: "内容", tone: "bg-blue-600" },
+    { key: "searches", label: "搜索", tone: "bg-emerald-600" },
+    { key: "notifications", label: "通知", tone: "bg-amber-500" },
+    { key: "reads", label: "阅读", tone: "bg-violet-600" },
+    { key: "failedRuns", label: "失败", tone: "bg-red-500" },
   ]
 
   return (
@@ -111,6 +124,20 @@ export default async function AdminOperationsAnalyticsPage() {
         </Link>
       </div>
 
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        {data.alerts.map((alert) => (
+          <article
+            className={`rounded-2xl border p-4 shadow-sm ${alertClassName(
+              alert.level,
+            )}`}
+            key={`${alert.level}-${alert.title}`}
+          >
+            <p className="text-sm font-semibold">{alert.title}</p>
+            <p className="mt-2 text-sm leading-6">{alert.description}</p>
+          </article>
+        ))}
+      </section>
+
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {stats.map((item) => (
           <article
@@ -127,6 +154,28 @@ export default async function AdminOperationsAnalyticsPage() {
       </section>
 
       <AdminSection>
+        <div className="grid gap-5 p-5">
+          <div>
+            <h2 className="text-base font-semibold">14 天趋势</h2>
+            <p className="mt-1 text-sm text-slate-500">
+              用于观察采集、搜索、通知和阅读是否出现持续异常。
+            </p>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-3">
+            {trendMetrics.map((metric) => (
+              <TrendPanel
+                key={metric.key}
+                metricKey={metric.key}
+                rows={data.dailyTrend}
+                title={metric.label}
+                tone={metric.tone}
+              />
+            ))}
+          </div>
+        </div>
+      </AdminSection>
+
+      <AdminSection>
         {data.channelHealth.length === 0 ? (
           <AdminEmptyState
             description="创建频道并完成采集后，这里会显示最新快照和失败任务。"
@@ -139,7 +188,7 @@ export default async function AdminOperationsAnalyticsPage() {
                 <th className="px-5 py-3">频道</th>
                 <th className="px-5 py-3">状态</th>
                 <th className="px-5 py-3">采集</th>
-                <th className="px-5 py-3">最新成功</th>
+                <th className="px-5 py-3">最近成功</th>
                 <th className="px-5 py-3">最新快照</th>
                 <th className="px-5 py-3">今日失败</th>
               </tr>
@@ -170,7 +219,9 @@ export default async function AdminOperationsAnalyticsPage() {
                   </td>
                   <td className="px-5 py-4 text-sm text-slate-500">
                     {channel.snapshotId
-                      ? `${formatDateTime(channel.snapshotTime)} / ${channel.snapshotItemCount ?? 0} 条`
+                      ? `${formatDateTime(channel.snapshotTime)} / ${
+                          channel.snapshotItemCount ?? 0
+                        } 条`
                       : "暂无快照"}
                   </td>
                   <td className="px-5 py-4 text-sm font-semibold text-slate-700">
@@ -184,4 +235,62 @@ export default async function AdminOperationsAnalyticsPage() {
       </AdminSection>
     </div>
   )
+}
+
+function TrendPanel({
+  metricKey,
+  rows,
+  title,
+  tone,
+}: {
+  metricKey: string
+  rows: Array<Record<string, number | string>>
+  title: string
+  tone: string
+}) {
+  const values = rows.map((row) => Number(row[metricKey] ?? 0))
+  const maxValue = Math.max(1, ...values)
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-semibold text-slate-700">{title}</p>
+        <p className="font-mono text-xs text-slate-500">
+          {values.reduce((sum, value) => sum + value, 0)}
+        </p>
+      </div>
+      <div className="mt-4 flex h-20 items-end gap-1.5">
+        {rows.map((row) => {
+          const value = Number(row[metricKey] ?? 0)
+
+          return (
+            <div
+              className="flex min-w-0 flex-1 items-end"
+              key={`${metricKey}-${row.date}`}
+              title={`${row.date}: ${value}`}
+            >
+              <span
+                className={`block w-full rounded-t ${tone}`}
+                style={{
+                  height: `${Math.max(4, Math.round((value / maxValue) * 72))}px`,
+                }}
+              />
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function alertClassName(level: "critical" | "info" | "warning") {
+  if (level === "critical") {
+    return "border-red-200 bg-red-50 text-red-800"
+  }
+
+  if (level === "warning") {
+    return "border-amber-200 bg-amber-50 text-amber-800"
+  }
+
+  return "border-emerald-200 bg-emerald-50 text-emerald-800"
 }

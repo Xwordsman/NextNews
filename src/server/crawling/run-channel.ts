@@ -229,8 +229,10 @@ export async function runChannelCrawl(
       .where(eq(logCrawlRun.id, reservation.runId))
 
     if (result.createdSnapshot) {
+      let shouldProcessInline = true
+
       try {
-        await enqueueSystemJob({
+        const jobResult = await enqueueSystemJob({
           jobType: "snapshot.created",
           payload: {
             channelId,
@@ -238,23 +240,29 @@ export async function runChannelCrawl(
             snapshotId: result.snapshotId,
           },
         })
+        shouldProcessInline = !jobResult.enqueued
       } catch (error) {
         console.error("[nextnews] snapshot job enqueue failed", error)
       }
 
-      try {
-        await recordTrackingMatchesForSnapshot(result.snapshotId)
-      } catch (error) {
-        console.error("[nextnews] tracking match processing failed", error)
-      }
+      if (shouldProcessInline) {
+        try {
+          await recordTrackingMatchesForSnapshot(result.snapshotId)
+        } catch (trackingError) {
+          console.error(
+            "[nextnews] tracking match processing failed",
+            trackingError,
+          )
+        }
 
-      try {
-        await recordSubscriptionNotificationsForSnapshot(result.snapshotId)
-      } catch (error) {
-        console.error(
-          "[nextnews] subscription notification processing failed",
-          error,
-        )
+        try {
+          await recordSubscriptionNotificationsForSnapshot(result.snapshotId)
+        } catch (notificationError) {
+          console.error(
+            "[nextnews] subscription notification processing failed",
+            notificationError,
+          )
+        }
       }
     }
 

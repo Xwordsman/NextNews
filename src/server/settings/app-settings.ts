@@ -45,6 +45,31 @@ export const appSettingDefinitions = [
     isPublic: false,
   },
   {
+    key: "notification.subscription_top_change_only",
+    label: "仅榜单变化提醒",
+    description:
+      "开启后，订阅通知只在频道 Top N 出现足够多新条目时生成，减少无意义刷新提醒。",
+    type: "boolean",
+    defaultValue: "false",
+    isPublic: false,
+  },
+  {
+    key: "notification.subscription_top_rank_limit",
+    label: "提醒比较名次",
+    description: "订阅通知策略比较前 N 名榜单条目，默认比较前 10 名。",
+    type: "number",
+    defaultValue: "10",
+    isPublic: false,
+  },
+  {
+    key: "notification.subscription_min_new_top_items",
+    label: "最少新增条目",
+    description: "仅榜单变化提醒开启时，Top N 至少出现多少个新条目才通知。",
+    type: "number",
+    defaultValue: "1",
+    isPublic: false,
+  },
+  {
     key: "daily.auto_generate_enabled",
     label: "日报自动生成",
     description: "开启后 Worker 可以按模板自动创建当日草稿或发布日报。",

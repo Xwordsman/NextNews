@@ -1,8 +1,9 @@
-import { and, eq, gte, inArray } from "drizzle-orm"
+import { and, asc, desc, eq, gte, inArray, lt } from "drizzle-orm"
 import { getDb } from "@/server/db/client"
 import {
   bizChannel,
   bizChannelSnapshot,
+  bizSnapshotItem,
   bizSite,
   relUserChannelSubscription,
   userNotification,
@@ -12,6 +13,7 @@ import {
   settingBoolean,
   settingNumber,
 } from "@/server/settings/app-settings"
+import { shouldNotifyForTopChanges } from "./notification-strategy"
 
 export async function recordSubscriptionNotificationsForSnapshot(
   snapshotId: string,
@@ -27,6 +29,7 @@ export async function recordSubscriptionNotificationsForSnapshot(
     .select({
       id: bizChannelSnapshot.id,
       itemCount: bizChannelSnapshot.itemCount,
+      snapshotTime: bizChannelSnapshot.snapshotTime,
       channelId: bizChannel.id,
       channelName: bizChannel.channelName,
       channelSlug: bizChannel.slug,
@@ -41,6 +44,42 @@ export async function recordSubscriptionNotificationsForSnapshot(
 
   if (!snapshot) {
     return { insertedCount: 0 }
+  }
+
+  const topChangeOnly = settingBoolean(
+    settings,
+    "notification.subscription_top_change_only",
+  )
+
+  if (topChangeOnly) {
+    const rankLimit = settingNumber(
+      settings,
+      "notification.subscription_top_rank_limit",
+      10,
+    )
+    const [currentItems, previousItems] = await Promise.all([
+      listSnapshotTopItems(snapshot.id, rankLimit),
+      listPreviousSnapshotTopItems({
+        channelId: snapshot.channelId,
+        currentSnapshotTime: snapshot.snapshotTime,
+        rankLimit,
+      }),
+    ])
+    const decision = shouldNotifyForTopChanges({
+      currentItems,
+      minNewTopItems: settingNumber(
+        settings,
+        "notification.subscription_min_new_top_items",
+        1,
+      ),
+      previousItems,
+      rankLimit,
+      topChangeOnly,
+    })
+
+    if (!decision.shouldNotify) {
+      return { insertedCount: 0, skippedReason: "top_change_threshold" }
+    }
   }
 
   const subscriptions = await db
@@ -124,4 +163,42 @@ export async function recordSubscriptionNotificationsForSnapshot(
   await db.insert(userNotification).values(values)
 
   return { insertedCount: values.length }
+}
+
+async function listPreviousSnapshotTopItems(input: {
+  channelId: string
+  currentSnapshotTime: Date
+  rankLimit: number
+}) {
+  const [snapshot] = await getDb()
+    .select({ id: bizChannelSnapshot.id })
+    .from(bizChannelSnapshot)
+    .where(
+      and(
+        eq(bizChannelSnapshot.channelId, input.channelId),
+        eq(bizChannelSnapshot.status, "active"),
+        lt(bizChannelSnapshot.snapshotTime, input.currentSnapshotTime),
+      ),
+    )
+    .orderBy(desc(bizChannelSnapshot.snapshotTime))
+    .limit(1)
+
+  if (!snapshot) {
+    return []
+  }
+
+  return listSnapshotTopItems(snapshot.id, input.rankLimit)
+}
+
+async function listSnapshotTopItems(snapshotId: string, rankLimit: number) {
+  return getDb()
+    .select({
+      rankNo: bizSnapshotItem.rankNo,
+      url: bizSnapshotItem.url,
+      urlHash: bizSnapshotItem.urlHash,
+    })
+    .from(bizSnapshotItem)
+    .where(eq(bizSnapshotItem.snapshotId, snapshotId))
+    .orderBy(asc(bizSnapshotItem.rankNo), asc(bizSnapshotItem.createdAt))
+    .limit(Math.max(1, rankLimit))
 }

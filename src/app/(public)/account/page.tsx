@@ -4,7 +4,10 @@ import {
   ChannelSubscriptionControl,
   SubscriptionNotifyControl,
 } from "@/features/account/components/subscription-controls"
-import { getUserSubscriptions } from "@/features/account/queries"
+import {
+  getUserMembershipOrders,
+  getUserSubscriptions,
+} from "@/features/account/queries"
 import {
   PublicContentShell,
   PublicTopBar,
@@ -27,10 +30,11 @@ export default async function AccountPage({
 }) {
   const user = await requireUser()
   const query = await searchParams
-  const [subscriptions, access, commerceEnabled] = await Promise.all([
+  const [subscriptions, access, commerceEnabled, orders] = await Promise.all([
     getUserSubscriptions(user.id),
     getHistoryAccessForUser(user.id),
     isCommerceEnabled(),
+    getUserMembershipOrders(user.id),
   ])
 
   return (
@@ -127,6 +131,72 @@ export default async function AccountPage({
           </p>
         </Link>
       </section>
+
+      {commerceEnabled ? (
+        <section className="rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.08em] text-brand">
+                Orders
+              </p>
+              <h2 className="mt-2 font-serif text-2xl font-semibold">
+                我的会员订单
+              </h2>
+            </div>
+            <Link
+              className="inline-flex min-h-10 items-center rounded-full bg-slate-950 px-4 text-sm font-semibold text-white no-underline transition-colors hover:bg-black"
+              href="/membership"
+            >
+              选择套餐
+            </Link>
+          </div>
+          {orders.length === 0 ? (
+            <p className="mt-4 rounded-xl bg-slate-50 px-4 py-5 text-sm text-slate-500">
+              暂无会员订单。创建订单后，管理员确认支付即可生效。
+            </p>
+          ) : (
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full min-w-[680px] text-left text-sm">
+                <thead className="border-b border-slate-200 text-xs uppercase tracking-[0.08em] text-slate-500">
+                  <tr>
+                    <th className="py-3 pr-4">套餐</th>
+                    <th className="py-3 pr-4">金额</th>
+                    <th className="py-3 pr-4">状态</th>
+                    <th className="py-3 pr-4">创建时间</th>
+                    <th className="py-3 pr-4">到期时间</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {orders.map((order) => (
+                    <tr key={order.id}>
+                      <td className="py-3 pr-4">
+                        <div className="font-semibold">{order.planName}</div>
+                        <div className="mt-1 font-mono text-xs text-slate-500">
+                          {order.planKey}
+                        </div>
+                      </td>
+                      <td className="py-3 pr-4 text-slate-600">
+                        {formatMoney(order.amountCents, order.currency)}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <span className="inline-flex min-h-7 items-center rounded-full border border-slate-200 bg-slate-100 px-2.5 text-xs font-semibold text-slate-600">
+                          {order.status}
+                        </span>
+                      </td>
+                      <td className="py-3 pr-4 text-slate-500">
+                        {formatDateTime(order.createdAt)}
+                      </td>
+                      <td className="py-3 pr-4 text-slate-500">
+                        {formatDateTime(order.expiresAt)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      ) : null}
 
       <section className="grid gap-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
@@ -230,4 +300,12 @@ export default async function AccountPage({
       </section>
     </PublicContentShell>
   )
+}
+
+function formatMoney(priceCents: number, currency: string) {
+  if (priceCents === 0) {
+    return "免费"
+  }
+
+  return `${currency} ${(priceCents / 100).toFixed(2)}`
 }

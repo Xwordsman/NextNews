@@ -4,6 +4,7 @@ import { and, eq, inArray, isNull } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { recordAdminOperation } from "@/server/admin/operation-log"
+import { hashPassword, verifyPassword } from "@/server/auth/password"
 import { requireAdmin } from "@/server/auth/session"
 import { getChannelDefinition } from "@/server/channels/registry"
 import { hashContentUrl, normalizeContentUrl } from "@/server/content/hash"
@@ -26,9 +27,16 @@ import {
   relRankingChannel,
   relChannelCategory,
   relTopicSnapshotItem,
+  sysJobQueue,
+  sysUser,
   userMembership,
   userTrackingRule,
 } from "@/server/db/schema"
+import {
+  cancelMembershipOrder,
+  markMembershipOrderPaid,
+  refundMembershipOrder,
+} from "@/server/membership/orders"
 import {
   appSettingDefinitions,
   saveAppSettings,
@@ -49,6 +57,7 @@ import {
 
 const entityStatuses = ["draft", "active", "disabled"] as const
 const membershipStatuses = ["active", "expired", "canceled"] as const
+const userStatuses = ["active", "disabled"] as const
 
 function redirectWithError(pathname: string, error: unknown): never {
   const message =
@@ -881,6 +890,36 @@ export async function saveUserMembershipAction(formData: FormData) {
   redirectWithMessage(backTo, "notice", "会员权益已保存")
 }
 
+export async function updateUserStatusAction(formData: FormData) {
+  const admin = await requireAdmin()
+  const userId = uuidString(formData, "userId", "用户 ID")
+  const status = selectValue(formData, "status", "用户状态", userStatuses)
+  const backTo = safeAdminBackTo(formString(formData, "backTo"), "/admin/users")
+
+  if (admin.id === userId && status === "disabled") {
+    redirectWithMessage(backTo, "error", "不能停用当前登录的管理员")
+  }
+
+  await getDb()
+    .update(sysUser)
+    .set({
+      status,
+      updatedAt: new Date(),
+    })
+    .where(eq(sysUser.id, userId))
+
+  await recordAdminOperation({
+    action: "user.status.update",
+    adminId: admin.id,
+    summary: `更新用户状态为 ${status}`,
+    targetId: userId,
+    targetType: "sys_user",
+  })
+
+  revalidatePath("/admin/users")
+  redirectWithMessage(backTo, "notice", "用户状态已更新")
+}
+
 export async function saveSystemSettingsAction(formData: FormData) {
   const admin = await requireAdmin()
   const backTo = safeAdminBackTo(
@@ -903,6 +942,123 @@ export async function saveSystemSettingsAction(formData: FormData) {
   })
 
   redirectWithMessage(backTo, "notice", "系统设置已保存")
+}
+
+export async function retrySystemJobAction(formData: FormData) {
+  const admin = await requireAdmin()
+  const id = uuidString(formData, "id", "任务 ID")
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    "/admin/settings/operations",
+  )
+
+  await getDb()
+    .update(sysJobQueue)
+    .set({
+      status: "pending",
+      attempts: 0,
+      availableAt: new Date(),
+      lockedAt: null,
+      finishedAt: null,
+      errorMessage: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(sysJobQueue.id, id))
+
+  await recordAdminOperation({
+    action: "system_job.retry",
+    adminId: admin.id,
+    summary: `重试系统任务 ${id}`,
+    targetId: id,
+    targetType: "sys_job_queue",
+  })
+
+  revalidatePath("/admin/settings/operations")
+  redirectWithMessage(backTo, "notice", "任务已重新放回队列")
+}
+
+export async function cancelSystemJobAction(formData: FormData) {
+  const admin = await requireAdmin()
+  const id = uuidString(formData, "id", "任务 ID")
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    "/admin/settings/operations",
+  )
+
+  await getDb()
+    .update(sysJobQueue)
+    .set({
+      status: "canceled",
+      lockedAt: null,
+      finishedAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(sysJobQueue.id, id))
+
+  await recordAdminOperation({
+    action: "system_job.cancel",
+    adminId: admin.id,
+    summary: `取消系统任务 ${id}`,
+    targetId: id,
+    targetType: "sys_job_queue",
+  })
+
+  revalidatePath("/admin/settings/operations")
+  redirectWithMessage(backTo, "notice", "任务已取消")
+}
+
+export async function changeAdminPasswordAction(formData: FormData) {
+  const admin = await requireAdmin()
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    "/admin/settings/security",
+  )
+  const currentPassword = formString(formData, "currentPassword")
+  const newPassword = formString(formData, "newPassword")
+  const confirmPassword = formString(formData, "confirmPassword")
+
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    redirectWithMessage(backTo, "error", "请完整填写密码表单")
+  }
+
+  if (newPassword.length < 10) {
+    redirectWithMessage(backTo, "error", "新密码至少需要 10 个字符")
+  }
+
+  if (newPassword !== confirmPassword) {
+    redirectWithMessage(backTo, "error", "两次输入的新密码不一致")
+  }
+
+  const [user] = await getDb()
+    .select({
+      passwordHash: sysUser.passwordHash,
+    })
+    .from(sysUser)
+    .where(eq(sysUser.id, admin.id))
+    .limit(1)
+
+  if (!user || !verifyPassword(currentPassword, user.passwordHash)) {
+    redirectWithMessage(backTo, "error", "当前密码不正确")
+  }
+
+  await getDb()
+    .update(sysUser)
+    .set({
+      passwordHash: hashPassword(newPassword),
+      updatedAt: new Date(),
+    })
+    .where(eq(sysUser.id, admin.id))
+
+  await recordAdminOperation({
+    action: "admin.password.update",
+    adminId: admin.id,
+    summary: "管理员修改登录密码",
+    targetId: admin.id,
+    targetType: "sys_user",
+  })
+
+  revalidatePath("/admin/settings/security")
+  redirectWithMessage(backTo, "notice", "管理员密码已更新")
 }
 
 export async function saveMembershipPlanAction(formData: FormData) {
@@ -972,6 +1128,95 @@ export async function saveMembershipPlanAction(formData: FormData) {
   revalidatePath("/membership")
   revalidatePath("/admin/users/memberships")
   redirectWithMessage(backTo, "notice", "会员套餐已保存")
+}
+
+export async function markMembershipOrderPaidAction(formData: FormData) {
+  const admin = await requireAdmin()
+  const id = uuidString(formData, "id", "会员订单 ID")
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    "/admin/users/memberships",
+  )
+
+  try {
+    await markMembershipOrderPaid(id)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "订单确认失败"
+    redirectWithMessage(backTo, "error", message)
+  }
+
+  await recordAdminOperation({
+    action: "membership_order.mark_paid",
+    adminId: admin.id,
+    summary: `确认会员订单已支付 ${id}`,
+    targetId: id,
+    targetType: "membership_order",
+  })
+
+  revalidatePath("/account")
+  revalidatePath("/membership")
+  revalidatePath("/admin/users")
+  revalidatePath("/admin/users/memberships")
+  redirectWithMessage(backTo, "notice", "订单已确认支付，会员权益已生效")
+}
+
+export async function cancelMembershipOrderAction(formData: FormData) {
+  const admin = await requireAdmin()
+  const id = uuidString(formData, "id", "会员订单 ID")
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    "/admin/users/memberships",
+  )
+
+  try {
+    await cancelMembershipOrder(id)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "订单取消失败"
+    redirectWithMessage(backTo, "error", message)
+  }
+
+  await recordAdminOperation({
+    action: "membership_order.cancel",
+    adminId: admin.id,
+    summary: `取消会员订单 ${id}`,
+    targetId: id,
+    targetType: "membership_order",
+  })
+
+  revalidatePath("/account")
+  revalidatePath("/membership")
+  revalidatePath("/admin/users/memberships")
+  redirectWithMessage(backTo, "notice", "订单已取消")
+}
+
+export async function refundMembershipOrderAction(formData: FormData) {
+  const admin = await requireAdmin()
+  const id = uuidString(formData, "id", "会员订单 ID")
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    "/admin/users/memberships",
+  )
+
+  try {
+    await refundMembershipOrder(id)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "订单退款失败"
+    redirectWithMessage(backTo, "error", message)
+  }
+
+  await recordAdminOperation({
+    action: "membership_order.refund",
+    adminId: admin.id,
+    summary: `退款会员订单 ${id}`,
+    targetId: id,
+    targetType: "membership_order",
+  })
+
+  revalidatePath("/account")
+  revalidatePath("/membership")
+  revalidatePath("/admin/users")
+  revalidatePath("/admin/users/memberships")
+  redirectWithMessage(backTo, "notice", "订单已标记退款")
 }
 
 export async function saveDailyReportTemplateAction(formData: FormData) {

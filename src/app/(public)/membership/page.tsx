@@ -32,7 +32,7 @@ export default async function MembershipPage({
     <PublicContentShell>
       <PublicTopBar />
       <PublicPageHero
-        description="会员商业化由后台开关控制。当前版本先提供套餐展示和待支付订单预留，真实支付网关后续再接入。"
+        description="会员商业化由后台开关控制。当前版本支持创建待支付订单，并由管理员在后台确认收款后开通权益。"
         eyebrow="Membership"
         meta={`${data.plans.length} 个可选套餐`}
         title="会员套餐"

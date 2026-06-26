@@ -62,6 +62,7 @@ export const adminNavigation: AdminNavigationGroup[] = [
     title: "系统设置",
     items: [
       { title: "基础设置", href: "/admin/settings" },
+      { title: "安全设置", href: "/admin/settings/security" },
       { title: "操作日志", href: "/admin/settings/operations" },
     ],
   },

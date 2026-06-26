@@ -307,7 +307,7 @@ export async function createMembershipOrderAction(formData: FormData) {
 
   revalidatePath("/account")
   revalidatePath("/membership")
-  redirect(withNotice("/account", "会员订单已创建，支付网关会在后续版本接入"))
+  redirect(withNotice("/account", "会员订单已创建，管理员确认收款后会自动生效"))
 }
 
 export async function toggleBookmarkAction(formData: FormData) {

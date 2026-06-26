@@ -3,9 +3,14 @@ import {
   AdminPageHeader,
   AdminSection,
   AdminTable,
+  RunButton,
   StatusBadge,
   formatDateTime,
 } from "@/features/admin-content/components/admin-ui"
+import {
+  cancelSystemJobAction,
+  retrySystemJobAction,
+} from "@/features/admin-content/actions"
 import { getAdminSystemOperations } from "@/features/admin-content/queries"
 
 export const dynamic = "force-dynamic"
@@ -16,7 +21,7 @@ export default async function AdminSystemOperationsPage() {
   return (
     <div className="grid gap-6">
       <AdminPageHeader
-        description="查看后台关键操作日志和系统任务队列状态。队列当前是预留能力，后续可接入 Redis 或数据库任务消费。"
+        description="查看后台关键操作日志和系统任务队列状态。队列任务由 Worker 消费，失败后可在这里手动重试或取消。"
         eyebrow="System"
         title="操作日志与任务队列"
       />
@@ -47,7 +52,7 @@ export default async function AdminSystemOperationsPage() {
       <AdminSection>
         {data.operationLogs.length === 0 ? (
           <AdminEmptyState
-            description="保存业务设置、会员套餐、日报模板等操作会写入这里。"
+            description="保存业务设置、会员套餐、队列操作等关键动作会写入这里。"
             title="暂无操作日志"
           />
         ) : (
@@ -100,7 +105,7 @@ export default async function AdminSystemOperationsPage() {
       <AdminSection>
         {data.jobs.length === 0 ? (
           <AdminEmptyState
-            description="开启异步任务队列后，通知、日报、统计等派生任务可以写入这里。"
+            description="开启异步任务队列后，通知、追踪等派生任务会写入这里。"
             title="暂无队列任务"
           />
         ) : (
@@ -112,6 +117,7 @@ export default async function AdminSystemOperationsPage() {
                 <th className="px-5 py-3">重试</th>
                 <th className="px-5 py-3">时间</th>
                 <th className="px-5 py-3">错误</th>
+                <th className="px-5 py-3">操作</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
@@ -139,12 +145,47 @@ export default async function AdminSystemOperationsPage() {
                   <td className="px-5 py-4 text-sm text-slate-500">
                     {job.errorMessage ?? "-"}
                   </td>
+                  <td className="px-5 py-4">
+                    <JobActions jobId={job.id} status={job.status} />
+                  </td>
                 </tr>
               ))}
             </tbody>
           </AdminTable>
         )}
       </AdminSection>
+    </div>
+  )
+}
+
+function JobActions({ jobId, status }: { jobId: string; status: string }) {
+  return (
+    <div className="flex min-w-[180px] flex-wrap gap-2">
+      {status === "failed" || status === "canceled" ? (
+        <form action={retrySystemJobAction}>
+          <input name="id" type="hidden" value={jobId} />
+          <input
+            name="backTo"
+            type="hidden"
+            value="/admin/settings/operations"
+          />
+          <RunButton label="重试" />
+        </form>
+      ) : null}
+      {status === "pending" || status === "running" ? (
+        <form action={cancelSystemJobAction}>
+          <input name="id" type="hidden" value={jobId} />
+          <input
+            name="backTo"
+            type="hidden"
+            value="/admin/settings/operations"
+          />
+          <RunButton label="取消" />
+        </form>
+      ) : null}
+      {status === "success" ? (
+        <span className="text-sm text-slate-500">已完成</span>
+      ) : null}
     </div>
   )
 }
