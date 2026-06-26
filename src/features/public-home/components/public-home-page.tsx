@@ -1,8 +1,10 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import {
+  ChevronDown,
+  ExternalLink,
   Moon,
   Newspaper,
   RefreshCw,
@@ -17,54 +19,9 @@ import {
   moreNavItems as defaultMoreNavItems,
   primaryNavItems as defaultPrimaryNavItems,
   type HomeSource,
+  type HomeStory,
 } from "../mock-data"
 import type { HomeModule } from "../queries"
-
-const lightBodyBackground = `
-  radial-gradient(circle at top left, rgba(255, 116, 116, 0.18), transparent 26rem),
-  radial-gradient(circle at top right, rgba(34, 197, 94, 0.12), transparent 30rem),
-  #f1f5f9
-`
-const darkBodyBackground = `
-  radial-gradient(circle at top left, rgba(255, 82, 82, 0.18), transparent 28rem),
-  radial-gradient(circle at top right, rgba(38, 216, 133, 0.12), transparent 32rem),
-  #0b1118
-`
-const lightPanelBackground =
-  "linear-gradient(120deg, rgba(78, 142, 232, 0.08), transparent 44%), rgba(255, 255, 255, 0.9)"
-const darkPanelBackground =
-  "linear-gradient(120deg, rgba(78, 142, 232, 0.12), transparent 44%), rgba(255, 255, 255, 0.05)"
-
-function hexToRgb(hex: string) {
-  const value = hex.replace("#", "")
-  const normalized =
-    value.length === 3
-      ? value
-          .split("")
-          .map((char) => char + char)
-          .join("")
-      : value
-  const numeric = Number.parseInt(normalized, 16)
-
-  return {
-    r: (numeric >> 16) & 255,
-    g: (numeric >> 8) & 255,
-    b: numeric & 255,
-  }
-}
-
-function getSourceCardBackground(source: HomeSource, isDarkMode: boolean) {
-  if (isDarkMode) {
-    return `linear-gradient(145deg, ${source.color}, rgba(18, 26, 38, 0.92))`
-  }
-
-  const { r, g, b } = hexToRgb(source.color)
-  return `
-    radial-gradient(circle at 16% 0%, rgba(${r}, ${g}, ${b}, 0.24), transparent 15rem),
-    linear-gradient(145deg, rgba(${r}, ${g}, ${b}, 0.18), rgba(255, 255, 255, 0.94) 46%, rgba(${r}, ${g}, ${b}, 0.12)),
-    #ffffff
-  `
-}
 
 type PublicHomePageProps = {
   initialSources?: HomeSource[]
@@ -95,8 +52,8 @@ function NavPill({
       aria-current={active ? "page" : undefined}
       className={
         active
-          ? "flex min-h-8 shrink-0 items-center rounded-full bg-slate-900 px-3 text-sm font-medium text-white no-underline transition-colors hover:bg-slate-800 focus-visible:bg-slate-800 focus-visible:outline-none dark:bg-white/10 dark:text-slate-50 dark:hover:bg-white/15 dark:focus-visible:bg-white/15"
-          : "flex min-h-8 shrink-0 items-center rounded-full px-3 text-sm font-medium text-slate-500 no-underline transition-colors hover:bg-slate-900/10 hover:text-slate-950 focus-visible:bg-slate-900/10 focus-visible:text-slate-950 focus-visible:outline-none dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-50 dark:focus-visible:bg-white/10 dark:focus-visible:text-slate-50"
+          ? "inline-flex min-h-9 shrink-0 items-center rounded-lg bg-slate-950 px-3 text-sm font-semibold text-white transition-colors hover:bg-slate-800 focus-visible:outline-none dark:bg-white dark:text-slate-950"
+          : "inline-flex min-h-9 shrink-0 items-center rounded-lg px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
       }
       href={href}
     >
@@ -116,15 +73,18 @@ export function PublicHomePage({
     cloneSources(initialSources ?? designSources),
   )
   const [query, setQuery] = useState("")
-  const [isSearchOpen, setIsSearchOpen] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [draggedId, setDraggedId] = useState<string | null>(null)
-  const searchRef = useRef<HTMLFormElement>(null)
-  const searchInputRef = useRef<HTMLInputElement>(null)
   const gridRef = useRef<HTMLDivElement>(null)
   const draggedIdRef = useRef<string | null>(null)
   const lastDragOverIdRef = useRef<string | null>(null)
 
+  const moduleByKey = useMemo(
+    () => new Map(homeModules.map((module) => [module.moduleKey, module])),
+    [homeModules],
+  )
+  const hotSitesModule = moduleByKey.get("hot-sites")
+  const liveRankingsModule = moduleByKey.get("live-rankings")
   const normalizedQuery = query.trim().toLowerCase()
   const filteredSources = useMemo(() => {
     if (!normalizedQuery) {
@@ -139,35 +99,15 @@ export function PublicHomePage({
       return text.includes(normalizedQuery)
     })
   }, [normalizedQuery, sources])
-
   const railSources = filteredSources.length ? filteredSources : sources
+  const visibleSources = liveRankingsModule
+    ? filteredSources.slice(0, liveRankingsModule.displayLimit)
+    : filteredSources
   const storyCount = filteredSources.reduce(
     (total, source) => total + source.items.length,
     0,
   )
-  const moduleByKey = useMemo(
-    () => new Map(homeModules.map((module) => [module.moduleKey, module])),
-    [homeModules],
-  )
-  const hotSitesModule = moduleByKey.get("hot-sites")
-  const liveRankingsModule = moduleByKey.get("live-rankings")
-
-  useEffect(() => {
-    function handleDocumentClick(event: MouseEvent) {
-      if (!searchRef.current?.contains(event.target as Node) && !query.trim()) {
-        setIsSearchOpen(false)
-      }
-    }
-
-    document.addEventListener("click", handleDocumentClick)
-    return () => document.removeEventListener("click", handleDocumentClick)
-  }, [query])
-
-  useEffect(() => {
-    if (isSearchOpen) {
-      searchInputRef.current?.focus()
-    }
-  }, [isSearchOpen])
+  const favoriteCount = sources.filter((source) => source.favorite).length
 
   function toggleFavorite(sourceId: string) {
     setSources((currentSources) =>
@@ -183,10 +123,10 @@ export function PublicHomePage({
     element?.animate(
       [
         { transform: "translateY(0)", opacity: 1 },
-        { transform: "translateY(-4px)", opacity: 0.72 },
+        { transform: "translateY(-3px)", opacity: 0.72 },
         { transform: "translateY(0)", opacity: 1 },
       ],
-      { duration: 320, easing: "ease-out" },
+      { duration: 260, easing: "ease-out" },
     )
   }
 
@@ -196,10 +136,10 @@ export function PublicHomePage({
       .forEach((card, index) => {
         card.animate(
           [
-            { opacity: 0.5, transform: "translateY(8px)" },
+            { opacity: 0.58, transform: "translateY(6px)" },
             { opacity: 1, transform: "translateY(0)" },
           ],
-          { duration: 260, delay: index * 24, easing: "ease-out" },
+          { duration: 220, delay: index * 18, easing: "ease-out" },
         )
       })
   }
@@ -237,436 +177,529 @@ export function PublicHomePage({
 
   return (
     <div className={isDarkMode ? "dark" : undefined}>
-      <div
-        className="min-h-screen min-w-[320px] bg-slate-100 text-slate-950 antialiased transition-colors duration-300 dark:bg-ink dark:text-slate-50"
-        style={{
-          background: isDarkMode ? darkBodyBackground : lightBodyBackground,
-        }}
-      >
-        <div className="mx-auto w-full max-w-[1720px] px-6 py-6 max-sm:px-3 max-sm:py-3">
-          <header className="sticky top-4 z-20 flex items-center justify-between gap-6 rounded-2xl border border-slate-200 bg-white/85 px-[18px] py-3 shadow-sm backdrop-blur-xl transition-colors duration-300 dark:border-line dark:bg-ink/80 dark:shadow-none max-xl:flex-wrap max-sm:top-2 max-sm:px-3">
-            <div className="flex min-w-0 flex-1 items-center gap-6 max-xl:flex-wrap">
-              <Link
-                aria-label="NextNews 首页"
-                className="inline-flex shrink-0 items-center gap-3 text-slate-950 no-underline dark:text-slate-50"
-                href="/"
-              >
-                <span className="grid h-10 w-10 place-items-center rounded-lg bg-gradient-to-br from-red-500 to-orange-400 text-white">
-                  <Newspaper aria-hidden="true" size={22} strokeWidth={2} />
-                </span>
-                <span>
-                  <strong className="block font-serif text-2xl leading-none tracking-normal">
-                    NextNews
-                  </strong>
-                  <small className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
-                    Open Source Radar
-                  </small>
-                </span>
-              </Link>
-
-              <div className="flex min-w-0 flex-1 items-center gap-3 max-lg:w-full max-lg:flex-wrap">
-                <nav
-                  aria-label="站点导航"
-                  className="flex min-w-0 flex-nowrap items-center gap-1 max-sm:w-full max-sm:flex-wrap"
-                >
-                  {primaryNavItems.map((item) => (
-                    <NavPill
-                      active={item.href === "/"}
-                      href={item.href}
-                      key={item.href}
-                      label={item.label}
-                    />
-                  ))}
-                </nav>
-
-                <span
-                  aria-hidden="true"
-                  className="h-7 w-px shrink-0 bg-slate-200 dark:bg-white/10 max-sm:hidden"
-                />
-
-                <nav
-                  aria-label="频道分类"
-                  className="flex min-w-0 flex-nowrap items-center gap-1 text-sm font-medium text-slate-500 dark:text-slate-400 max-lg:flex-wrap max-sm:w-full"
-                >
-                  {categoryNavItems.map((item) => (
-                    <NavPill
-                      href={item.href}
-                      key={item.href}
-                      label={item.label}
-                    />
-                  ))}
-                  <details className="relative shrink-0">
-                    <summary className="flex min-h-8 cursor-pointer list-none items-center rounded-full px-3 transition-colors hover:bg-slate-900/10 hover:text-slate-950 focus-visible:bg-slate-900/10 focus-visible:text-slate-950 focus-visible:outline-none dark:hover:bg-white/10 dark:hover:text-slate-50 dark:focus-visible:bg-white/10 dark:focus-visible:text-slate-50">
-                      更多
-                    </summary>
-                    <div className="absolute right-0 top-11 z-30 grid min-w-28 gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-line dark:bg-slate-950">
-                      {moreNavItems.map((item) => (
-                        <Link
-                          className="rounded-lg px-3 py-2 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-slate-50"
-                          href={item.href}
-                          key={item.href}
-                        >
-                          {item.label}
-                        </Link>
-                      ))}
-                    </div>
-                  </details>
-                </nav>
-              </div>
-            </div>
-
-            <div className="flex justify-self-end gap-2 max-xl:justify-self-start max-sm:w-full max-sm:flex-wrap">
-              <form
-                action="/search"
-                className={`flex h-11 items-center overflow-hidden rounded-full text-slate-500 transition-all duration-200 dark:text-slate-400 max-sm:max-w-full ${
-                  isSearchOpen
-                    ? "w-72 border border-slate-200 bg-white dark:border-line dark:bg-white/[0.06]"
-                    : "w-11 border border-transparent bg-transparent"
-                }`}
-                ref={searchRef}
-              >
-                <button
-                  aria-expanded={isSearchOpen}
-                  aria-label={isSearchOpen ? "聚焦搜索" : "展开搜索"}
-                  className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-full text-slate-500 transition-colors hover:bg-slate-900/10 hover:text-slate-950 focus-visible:bg-slate-900/10 focus-visible:text-slate-950 focus-visible:outline-none dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-50 dark:focus-visible:bg-white/10 dark:focus-visible:text-slate-50"
-                  onClick={() => setIsSearchOpen(true)}
-                  type="button"
-                >
-                  <Search aria-hidden="true" size={22} strokeWidth={2} />
-                </button>
-                <input
-                  className={`min-w-0 flex-1 border-0 bg-transparent pr-4 text-sm text-slate-950 outline-none transition-opacity duration-200 placeholder:text-slate-400 dark:text-slate-50 dark:placeholder:text-slate-500 ${
-                    isSearchOpen
-                      ? "opacity-100"
-                      : "pointer-events-none opacity-0"
-                  }`}
-                  name="q"
-                  onChange={(event) => setQuery(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Escape" && !query.trim()) {
-                      setIsSearchOpen(false)
-                      event.currentTarget.blur()
-                    }
-                  }}
-                  placeholder="搜索平台、标题、关键词"
-                  ref={searchInputRef}
-                  type="search"
-                  value={query}
-                />
-              </form>
-
-              <button
-                aria-label="刷新全部榜单"
-                className="grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-transparent text-slate-500 transition-colors hover:border-slate-200 hover:bg-slate-900/10 hover:text-slate-950 dark:text-slate-400 dark:hover:border-line dark:hover:bg-white/10 dark:hover:text-slate-50"
-                onClick={refreshAll}
-                type="button"
-              >
-                <RefreshCw aria-hidden="true" size={22} strokeWidth={2} />
-              </button>
-              <button
-                aria-label={isDarkMode ? "切换日间模式" : "切换夜间模式"}
-                className="grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-transparent text-slate-500 transition-colors hover:border-slate-200 hover:bg-slate-900/10 hover:text-slate-950 dark:text-slate-400 dark:hover:border-line dark:hover:bg-white/10 dark:hover:text-slate-50"
-                onClick={() => setIsDarkMode((current) => !current)}
-                type="button"
-              >
-                {isDarkMode ? (
-                  <Sun aria-hidden="true" size={22} strokeWidth={2} />
-                ) : (
-                  <Moon aria-hidden="true" size={22} strokeWidth={2} />
-                )}
-              </button>
-              <Link
-                aria-label="登录或注册"
-                className="grid h-11 w-11 place-items-center rounded-full border border-slate-200 bg-white text-slate-600 no-underline shadow-sm transition-colors hover:bg-slate-900 hover:text-white focus-visible:bg-slate-900 focus-visible:text-white focus-visible:outline-none dark:border-line dark:bg-white/[0.06] dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-slate-50 dark:focus-visible:bg-white/10 dark:focus-visible:text-slate-50"
-                href="/account"
-              >
-                <User aria-hidden="true" size={22} strokeWidth={2} />
-              </Link>
-            </div>
-          </header>
-
-          <main className="grid gap-6 pt-6">
-            {hotSitesModule ? (
-              <section
-                aria-labelledby="hotSitesTitle"
-                className="grid gap-[18px] rounded-2xl border border-slate-200 bg-white px-[22px] py-5 shadow-sm transition-colors duration-300 dark:border-line dark:bg-white/[0.05] dark:shadow-none max-sm:p-[18px]"
-                style={{
-                  background: isDarkMode
-                    ? darkPanelBackground
-                    : lightPanelBackground,
-                }}
-              >
-                <div className="flex items-baseline gap-2">
-                  <h1
-                    className="font-serif text-[28px] leading-none tracking-normal"
-                    id="hotSitesTitle"
-                  >
-                    {hotSitesModule.title}
-                  </h1>
-                  <span className="text-lg text-slate-400 dark:text-slate-500">
-                    /
-                  </span>
-                  <p className="m-0 text-xs font-bold uppercase tracking-[0.08em] text-brand">
-                    {hotSitesModule.subtitle ?? "Hot Sites"}
-                  </p>
-                </div>
-                <div
-                  aria-label="热门站点列表"
-                  className="flex gap-3 overflow-x-auto px-0.5 pb-2.5 pt-0.5 [scrollbar-color:rgba(255,255,255,0.22)_transparent]"
-                >
-                  {railSources
-                    .slice(0, hotSitesModule.displayLimit)
-                    .map((source) => (
-                      <button
-                        aria-label={`${source.name} ${source.tag}`}
-                        className="grid min-h-28 w-[92px] shrink-0 cursor-pointer place-items-center gap-2 rounded-lg bg-transparent px-2 py-3 text-center text-slate-950 transition duration-200 hover:-translate-y-0.5 hover:bg-slate-900/10 focus-visible:-translate-y-0.5 focus-visible:bg-slate-900/10 focus-visible:outline-none dark:text-slate-50 dark:hover:bg-white/10 dark:focus-visible:bg-white/10"
-                        key={source.id}
-                        type="button"
-                      >
-                        <span
-                          className="grid h-12 w-12 place-items-center rounded-[14px] border border-line text-xl font-extrabold text-white shadow-[0_12px_24px_rgba(0,0,0,0.22)]"
-                          style={{ background: source.logoColor }}
-                        >
-                          {source.logo}
-                        </span>
-                        <span className="block max-w-full overflow-hidden text-ellipsis whitespace-nowrap">
-                          <strong className="block max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-sm leading-tight">
-                            {source.name}
-                          </strong>
-                          <span className="mt-1 block max-w-full overflow-hidden text-ellipsis whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">
-                            {source.tag}
-                          </span>
-                        </span>
-                      </button>
-                    ))}
-                </div>
-              </section>
-            ) : null}
-
-            {liveRankingsModule ? (
-              <section aria-label="热榜看板">
-                <div className="mb-4 flex items-end justify-between gap-6 max-sm:grid">
-                  <div>
-                    <p className="m-0 text-xs font-bold uppercase tracking-[0.08em] text-brand">
-                      {liveRankingsModule.subtitle ?? "Sources"}
-                    </p>
-                    <h2 className="m-0 font-serif text-[28px] tracking-normal">
-                      {liveRankingsModule.title}
-                    </h2>
-                  </div>
-                  <p className="m-0 max-w-[420px] leading-7 text-slate-500 dark:text-slate-400">
-                    拖动卡片可调整你的阅读顺序，点击星标可加入关注。
-                  </p>
-                </div>
-
-                <div
-                  className="grid grid-cols-4 gap-6 max-xl:grid-cols-2 max-sm:grid-cols-1"
-                  ref={gridRef}
-                >
-                  {filteredSources.length === 0 ? (
-                    <div className="col-span-full rounded-[14px] border border-dashed border-slate-300 p-12 text-center text-slate-500 dark:border-line dark:text-slate-400">
-                      没有找到匹配的热榜，换个关键词或分类试试。
-                    </div>
-                  ) : (
-                    filteredSources
-                      .slice(0, liveRankingsModule.displayLimit)
-                      .map((source) => (
-                        <article
-                          className={`min-h-[390px] rounded-[14px] border border-slate-200 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 dark:border-white/[0.08] dark:shadow-[0_18px_50px_rgba(0,0,0,0.26)] dark:hover:border-white/20 ${
-                            draggedId === source.id ? "opacity-50" : ""
-                          }`}
-                          data-source-card
-                          draggable
-                          key={source.id}
-                          onDragEnd={(event) => {
-                            draggedIdRef.current = null
-                            lastDragOverIdRef.current = null
-                            setDraggedId(null)
-                            event.currentTarget.classList.remove("opacity-50")
-                          }}
-                          onDragOver={(event) => {
-                            event.preventDefault()
-                            moveDraggedSource(source.id)
-                          }}
-                          onDragStart={(event) => {
-                            draggedIdRef.current = source.id
-                            lastDragOverIdRef.current = null
-                            setDraggedId(source.id)
-                            event.dataTransfer.effectAllowed = "move"
-                          }}
-                          style={{
-                            background: getSourceCardBackground(
-                              source,
-                              isDarkMode,
-                            ),
-                          }}
-                        >
-                          <div className="mb-3.5 flex items-center justify-between gap-3">
-                            <div className="flex min-w-0 items-center gap-2.5">
-                              <span
-                                className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-extrabold text-white"
-                                style={{ background: source.logoColor }}
-                              >
-                                {source.logo}
-                              </span>
-                              <span className="min-w-0">
-                                <span className="flex min-w-0 items-center gap-2">
-                                  <strong className="block overflow-hidden text-ellipsis whitespace-nowrap text-xl">
-                                    {source.name}
-                                  </strong>
-                                  <span className="max-w-[82px] shrink-0 overflow-hidden text-ellipsis whitespace-nowrap rounded-md border border-slate-200 bg-white/70 px-1.5 py-0.5 text-xs text-slate-600 dark:border-white/[0.14] dark:bg-white/[0.08] dark:text-blue-100">
-                                    {source.tag}
-                                  </span>
-                                </span>
-                                <small className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
-                                  {source.tag === "实时热搜"
-                                    ? "正在追踪"
-                                    : "12 分钟内更新"}
-                                </small>
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-0.5">
-                              <button
-                                aria-label="刷新该榜单"
-                                className="grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-transparent text-slate-500 transition-colors hover:border-slate-200 hover:bg-slate-900/10 hover:text-slate-950 dark:text-slate-400 dark:hover:border-line dark:hover:bg-white/10 dark:hover:text-slate-50"
-                                onClick={(event) =>
-                                  animateCard(
-                                    event.currentTarget.closest("article"),
-                                  )
-                                }
-                                type="button"
-                              >
-                                <RefreshCw
-                                  aria-hidden="true"
-                                  size={22}
-                                  strokeWidth={2}
-                                />
-                              </button>
-                              <button
-                                aria-label={
-                                  source.favorite ? "取消收藏来源" : "收藏来源"
-                                }
-                                aria-pressed={source.favorite}
-                                className="grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-transparent text-slate-500 transition-colors hover:bg-slate-900/10 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-50"
-                                onClick={() => toggleFavorite(source.id)}
-                                type="button"
-                              >
-                                <Star
-                                  aria-hidden="true"
-                                  className={
-                                    source.favorite
-                                      ? "fill-[#f5bb48] text-[#f5bb48]"
-                                      : "fill-none"
-                                  }
-                                  size={22}
-                                  strokeWidth={2}
-                                />
-                              </button>
-                            </div>
-                          </div>
-
-                          <ol className="grid max-h-[310px] gap-2 overflow-auto rounded-xl bg-slate-50 p-2 dark:bg-black/25 [scrollbar-color:rgba(255,255,255,0.22)_transparent]">
-                            {source.items.map((item, index) => (
-                              <li
-                                className="grid list-none grid-cols-[30px_1fr_auto] items-start gap-2.5"
-                                key={`${source.id}-${item.title}`}
-                              >
-                                <span className="grid min-h-[30px] place-items-center rounded-md bg-slate-900/10 text-slate-600 dark:bg-white/10 dark:text-white/80">
-                                  {index + 1}
-                                </span>
-                                <span className="min-w-0">
-                                  {item.url ? (
-                                    <a
-                                      className="block text-[15px] font-semibold leading-6 text-slate-900 no-underline transition-colors hover:text-brand focus-visible:text-brand focus-visible:outline-none dark:text-white/90"
-                                      href={
-                                        item.id ? `/go/${item.id}` : item.url
-                                      }
-                                      rel="noreferrer"
-                                      target="_blank"
-                                    >
-                                      {item.title}
-                                    </a>
-                                  ) : (
-                                    <strong className="block text-[15px] leading-6 text-slate-900 dark:text-white/90">
-                                      {item.title}
-                                    </strong>
-                                  )}
-                                  <small className="text-slate-500 dark:text-white/50">
-                                    {item.meta}
-                                  </small>
-                                </span>
-                                {item.badge ? (
-                                  <span className="rounded-md bg-[#f5bb48] px-1.5 py-0.5 text-[11px] font-bold text-[#23180a]">
-                                    {item.badge}
-                                  </span>
-                                ) : null}
-                              </li>
-                            ))}
-                          </ol>
-                        </article>
-                      ))
-                  )}
-                </div>
-              </section>
-            ) : null}
-          </main>
-
-          <footer className="mt-10 grid grid-cols-[1fr_auto_1fr] items-center gap-4 border-t border-slate-200 py-6 text-sm text-slate-500 dark:border-line dark:text-slate-400 max-lg:grid-cols-1 max-lg:justify-items-center max-lg:text-center">
-            <div>
-              <strong className="block font-serif text-lg text-slate-900 dark:text-slate-50">
-                NextNews
-              </strong>
-              <span className="mt-1 block">
-                开源新闻聚合前端原型，聚合站点热榜与实时内容。
-              </span>
-            </div>
-
-            <div
-              aria-label="今日概览"
-              className="flex justify-center gap-4 whitespace-nowrap text-slate-500 dark:text-slate-400 max-sm:w-full max-sm:overflow-x-auto"
+      <div className="min-h-screen bg-[#f6f7f9] text-slate-950 antialiased transition-colors duration-200 dark:bg-[#0b1118] dark:text-slate-50">
+        <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl dark:border-white/10 dark:bg-[#0b1118]/90">
+          <div className="mx-auto flex w-full max-w-[1500px] items-center gap-4 px-4 py-3 sm:px-6">
+            <Link
+              aria-label="NextNews 首页"
+              className="inline-flex shrink-0 items-center gap-3"
+              href="/"
             >
-              <span>
-                <strong className="text-slate-950 dark:text-slate-50">
-                  {filteredSources.length}
-                </strong>{" "}
-                个来源
+              <span className="grid h-10 w-10 place-items-center rounded-lg bg-slate-950 text-white shadow-sm dark:bg-white dark:text-slate-950">
+                <Newspaper aria-hidden="true" size={21} strokeWidth={2} />
               </span>
               <span>
-                <strong className="text-slate-950 dark:text-slate-50">
-                  {storyCount}
-                </strong>{" "}
-                条热闻
+                <strong className="block text-xl font-bold leading-none tracking-normal">
+                  NextNews
+                </strong>
+                <span className="mt-1 block text-xs font-medium text-slate-500 dark:text-slate-400">
+                  新闻聚合
+                </span>
               </span>
-              <span>
-                <strong className="text-slate-950 dark:text-slate-50">
-                  12
-                </strong>{" "}
-                分钟内更新
-              </span>
-            </div>
+            </Link>
 
             <nav
-              aria-label="底部导航"
-              className="flex flex-wrap items-center justify-end gap-1 max-lg:justify-center"
+              aria-label="站点导航"
+              className="hidden min-w-0 flex-1 items-center gap-1 lg:flex"
             >
-              {[
-                { label: "关于", href: "/about" },
-                { label: "数据源", href: "/sources" },
-                { label: "隐私", href: "/privacy" },
-                { label: "GitHub", href: "https://github.com/" },
-              ].map((item) => (
-                <Link
-                  className="rounded-full px-3 py-2 no-underline transition-colors hover:bg-slate-900/10 hover:text-slate-950 focus-visible:bg-slate-900/10 focus-visible:text-slate-950 focus-visible:outline-none dark:hover:bg-white/10 dark:hover:text-slate-50"
+              {primaryNavItems.map((item) => (
+                <NavPill
+                  active={item.href === "/"}
                   href={item.href}
                   key={item.href}
-                >
-                  {item.label}
-                </Link>
+                  label={item.label}
+                />
               ))}
             </nav>
-          </footer>
-        </div>
+
+            <form
+              action="/search"
+              className="relative ml-auto hidden h-10 w-[320px] max-w-[34vw] items-center md:flex"
+            >
+              <Search
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 text-slate-400"
+                size={18}
+                strokeWidth={2}
+              />
+              <input
+                className="h-full w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm font-medium text-slate-950 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-400 focus:bg-white dark:border-white/10 dark:bg-white/[0.06] dark:text-white dark:placeholder:text-slate-500 dark:focus:border-white/25"
+                name="q"
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="搜索标题、频道或站点"
+                type="search"
+                value={query}
+              />
+            </form>
+
+            <button
+              aria-label="刷新全部榜单"
+              className="grid h-10 w-10 cursor-pointer place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-950 hover:text-white dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-300 dark:hover:bg-white dark:hover:text-slate-950"
+              onClick={refreshAll}
+              type="button"
+            >
+              <RefreshCw aria-hidden="true" size={18} strokeWidth={2} />
+            </button>
+            <button
+              aria-label={isDarkMode ? "切换日间模式" : "切换夜间模式"}
+              className="grid h-10 w-10 cursor-pointer place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-950 hover:text-white dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-300 dark:hover:bg-white dark:hover:text-slate-950"
+              onClick={() => setIsDarkMode((current) => !current)}
+              type="button"
+            >
+              {isDarkMode ? (
+                <Sun aria-hidden="true" size={18} strokeWidth={2} />
+              ) : (
+                <Moon aria-hidden="true" size={18} strokeWidth={2} />
+              )}
+            </button>
+            <Link
+              aria-label="个人中心"
+              className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-950 hover:text-white dark:border-white/10 dark:bg-white/[0.06] dark:text-slate-300 dark:hover:bg-white dark:hover:text-slate-950"
+              href="/account"
+            >
+              <User aria-hidden="true" size={18} strokeWidth={2} />
+            </Link>
+          </div>
+
+          <div className="mx-auto flex w-full max-w-[1500px] gap-3 overflow-x-auto border-t border-slate-100 px-4 py-2 sm:px-6 lg:hidden dark:border-white/10">
+            {primaryNavItems.map((item) => (
+              <NavPill
+                active={item.href === "/"}
+                href={item.href}
+                key={item.href}
+                label={item.label}
+              />
+            ))}
+          </div>
+
+          <div className="mx-auto flex w-full max-w-[1500px] items-center gap-2 overflow-x-auto border-t border-slate-100 px-4 py-2 sm:px-6 dark:border-white/10">
+            {categoryNavItems.map((item) => (
+              <NavPill href={item.href} key={item.href} label={item.label} />
+            ))}
+            {moreNavItems.length ? (
+              <details className="relative shrink-0">
+                <summary className="inline-flex min-h-9 cursor-pointer list-none items-center gap-1 rounded-lg px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white">
+                  更多
+                  <ChevronDown aria-hidden="true" size={15} strokeWidth={2} />
+                </summary>
+                <div className="absolute right-0 top-11 z-40 grid min-w-28 gap-1 rounded-lg border border-slate-200 bg-white p-2 shadow-lg dark:border-white/10 dark:bg-slate-950">
+                  {moreNavItems.map((item) => (
+                    <Link
+                      className="rounded-md px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
+                      href={item.href}
+                      key={item.href}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              </details>
+            ) : null}
+          </div>
+
+          <div className="mx-auto w-full max-w-[1500px] px-4 pb-3 sm:px-6 md:hidden">
+            <form action="/search" className="relative flex h-10 items-center">
+              <Search
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 text-slate-400"
+                size={18}
+                strokeWidth={2}
+              />
+              <input
+                className="h-full w-full rounded-lg border border-slate-200 bg-slate-50 pl-10 pr-3 text-sm font-medium text-slate-950 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-400 focus:bg-white dark:border-white/10 dark:bg-white/[0.06] dark:text-white"
+                name="q"
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="搜索标题、频道或站点"
+                type="search"
+                value={query}
+              />
+            </form>
+          </div>
+        </header>
+
+        <main className="mx-auto grid w-full max-w-[1500px] gap-5 px-4 py-5 sm:px-6 sm:py-6">
+          <section className="grid gap-4 border-b border-slate-200 pb-5 dark:border-white/10 lg:grid-cols-[1fr_auto] lg:items-end">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.12em] text-red-600 dark:text-red-400">
+                Live News Radar
+              </p>
+              <h1 className="mt-2 text-2xl font-bold tracking-normal text-slate-950 sm:text-3xl dark:text-white">
+                全网热点，按频道实时聚合
+              </h1>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-sm sm:min-w-[360px]">
+              <StatBlock label="来源" value={filteredSources.length} />
+              <StatBlock label="条目" value={storyCount} />
+              <StatBlock label="订阅" value={favoriteCount} />
+            </div>
+          </section>
+
+          {hotSitesModule ? (
+            <section aria-labelledby="hotSitesTitle" className="grid gap-3">
+              <SectionHeader
+                eyebrow={hotSitesModule.subtitle ?? "Hot Sites"}
+                id="hotSitesTitle"
+                title={hotSitesModule.title}
+              />
+              <div
+                aria-label="热门站点列表"
+                className="flex gap-3 overflow-x-auto pb-1"
+              >
+                {railSources
+                  .slice(0, hotSitesModule.displayLimit)
+                  .map((source) => (
+                    <HotSiteCard key={source.id} source={source} />
+                  ))}
+              </div>
+            </section>
+          ) : null}
+
+          {liveRankingsModule ? (
+            <section aria-labelledby="liveRankingsTitle" className="grid gap-3">
+              <SectionHeader
+                eyebrow={liveRankingsModule.subtitle ?? "Sources"}
+                id="liveRankingsTitle"
+                title={liveRankingsModule.title}
+              />
+              <div
+                className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+                ref={gridRef}
+              >
+                {visibleSources.length === 0 ? (
+                  <div className="col-span-full rounded-lg border border-dashed border-slate-300 bg-white px-6 py-12 text-center text-sm font-medium text-slate-500 dark:border-white/15 dark:bg-white/[0.04] dark:text-slate-400">
+                    没有找到匹配的热榜
+                  </div>
+                ) : (
+                  visibleSources.map((source) => (
+                    <SourceCard
+                      dragged={draggedId === source.id}
+                      key={source.id}
+                      onAnimateCard={animateCard}
+                      onDragEnd={() => {
+                        draggedIdRef.current = null
+                        lastDragOverIdRef.current = null
+                        setDraggedId(null)
+                      }}
+                      onDragOver={() => moveDraggedSource(source.id)}
+                      onDragStart={() => {
+                        draggedIdRef.current = source.id
+                        lastDragOverIdRef.current = null
+                        setDraggedId(source.id)
+                      }}
+                      onToggleFavorite={() => toggleFavorite(source.id)}
+                      source={source}
+                    />
+                  ))
+                )}
+              </div>
+            </section>
+          ) : null}
+        </main>
+
+        <footer className="mx-auto grid w-full max-w-[1500px] gap-4 border-t border-slate-200 px-4 py-6 text-sm text-slate-500 sm:px-6 lg:grid-cols-[1fr_auto_1fr] lg:items-center dark:border-white/10 dark:text-slate-400">
+          <div>
+            <strong className="block text-base font-bold text-slate-950 dark:text-white">
+              NextNews
+            </strong>
+            <span className="mt-1 block">开源新闻聚合与热榜快照系统</span>
+          </div>
+
+          <div
+            aria-label="今日概览"
+            className="flex flex-wrap justify-start gap-4 whitespace-nowrap lg:justify-center"
+          >
+            <span>
+              <strong className="text-slate-950 dark:text-white">
+                {filteredSources.length}
+              </strong>{" "}
+              个来源
+            </span>
+            <span>
+              <strong className="text-slate-950 dark:text-white">
+                {storyCount}
+              </strong>{" "}
+              条热门
+            </span>
+            <span>
+              <strong className="text-slate-950 dark:text-white">
+                {favoriteCount}
+              </strong>{" "}
+              个订阅
+            </span>
+          </div>
+
+          <nav
+            aria-label="底部导航"
+            className="flex flex-wrap items-center gap-1 lg:justify-end"
+          >
+            {[
+              { label: "关于", href: "/about" },
+              { label: "数据源", href: "/sources" },
+              { label: "隐私", href: "/privacy" },
+              { label: "GitHub", href: "https://github.com/" },
+            ].map((item) => (
+              <Link
+                className="rounded-lg px-3 py-2 font-medium transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:outline-none dark:hover:bg-white/10 dark:hover:text-white"
+                href={item.href}
+                key={item.href}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        </footer>
       </div>
     </div>
   )
+}
+
+function SectionHeader({
+  eyebrow,
+  id,
+  title,
+}: {
+  eyebrow: string
+  id: string
+  title: string
+}) {
+  return (
+    <div className="flex items-end justify-between gap-3">
+      <div>
+        <p className="text-xs font-bold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+          {eyebrow}
+        </p>
+        <h2
+          className="mt-1 text-xl font-bold tracking-normal text-slate-950 dark:text-white"
+          id={id}
+        >
+          {title}
+        </h2>
+      </div>
+    </div>
+  )
+}
+
+function StatBlock({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
+      <div className="text-xl font-bold leading-none text-slate-950 dark:text-white">
+        {value}
+      </div>
+      <div className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+        {label}
+      </div>
+    </div>
+  )
+}
+
+function HotSiteCard({ source }: { source: HomeSource }) {
+  const content = (
+    <>
+      <span
+        className="grid h-10 w-10 shrink-0 place-items-center rounded-lg text-sm font-bold text-white"
+        style={{ background: source.logoColor }}
+      >
+        {source.logo}
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate text-sm font-semibold text-slate-950 dark:text-white">
+          {source.name}
+        </span>
+        <span className="mt-1 block truncate text-xs font-medium text-slate-500 dark:text-slate-400">
+          {source.tag}
+        </span>
+      </span>
+    </>
+  )
+
+  if (!source.href) {
+    return (
+      <div className="flex min-h-16 w-[180px] shrink-0 items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 shadow-sm dark:border-white/10 dark:bg-white/[0.04]">
+        {content}
+      </div>
+    )
+  }
+
+  return (
+    <Link
+      className="flex min-h-16 w-[180px] shrink-0 items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50 focus-visible:outline-none dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-white/20 dark:hover:bg-white/[0.07]"
+      href={source.href}
+    >
+      {content}
+    </Link>
+  )
+}
+
+function SourceCard({
+  dragged,
+  onAnimateCard,
+  onDragEnd,
+  onDragOver,
+  onDragStart,
+  onToggleFavorite,
+  source,
+}: {
+  dragged: boolean
+  onAnimateCard: (element: Element | null) => void
+  onDragEnd: () => void
+  onDragOver: () => void
+  onDragStart: () => void
+  onToggleFavorite: () => void
+  source: HomeSource
+}) {
+  return (
+    <article
+      className={`group grid min-h-[380px] grid-rows-[auto_1fr] rounded-lg border border-slate-200 bg-white shadow-sm transition-colors hover:border-slate-300 dark:border-white/10 dark:bg-white/[0.04] dark:hover:border-white/20 ${
+        dragged ? "opacity-50" : ""
+      }`}
+      data-source-card
+      draggable
+      onDragEnd={onDragEnd}
+      onDragOver={(event) => {
+        event.preventDefault()
+        onDragOver()
+      }}
+      onDragStart={(event) => {
+        event.dataTransfer.effectAllowed = "move"
+        onDragStart()
+      }}
+      style={{ borderTopColor: source.logoColor, borderTopWidth: 3 }}
+    >
+      <div className="flex min-w-0 items-start justify-between gap-3 border-b border-slate-100 p-4 dark:border-white/10">
+        <div className="flex min-w-0 items-center gap-3">
+          <span
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-lg text-sm font-bold text-white"
+            style={{ background: source.logoColor }}
+          >
+            {source.logo}
+          </span>
+          <div className="min-w-0">
+            {source.href ? (
+              <Link
+                className="block truncate text-base font-bold text-slate-950 transition-colors hover:text-red-600 focus-visible:outline-none dark:text-white dark:hover:text-red-300"
+                href={source.href}
+              >
+                {source.name}
+              </Link>
+            ) : (
+              <h3 className="truncate text-base font-bold text-slate-950 dark:text-white">
+                {source.name}
+              </h3>
+            )}
+            <div className="mt-1 flex min-w-0 items-center gap-2">
+              <span className="truncate text-xs font-medium text-slate-500 dark:text-slate-400">
+                {source.tag}
+              </span>
+              <span className="h-1 w-1 shrink-0 rounded-full bg-slate-300 dark:bg-slate-600" />
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                {source.items.length} 条
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            aria-label="刷新该榜单"
+            className="grid h-9 w-9 cursor-pointer place-items-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"
+            onClick={(event) =>
+              onAnimateCard(event.currentTarget.closest("article"))
+            }
+            type="button"
+          >
+            <RefreshCw aria-hidden="true" size={17} strokeWidth={2} />
+          </button>
+          <button
+            aria-label={source.favorite ? "取消收藏来源" : "收藏来源"}
+            aria-pressed={source.favorite}
+            className="grid h-9 w-9 cursor-pointer place-items-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"
+            onClick={onToggleFavorite}
+            type="button"
+          >
+            <Star
+              aria-hidden="true"
+              className={
+                source.favorite ? "fill-amber-400 text-amber-400" : "fill-none"
+              }
+              size={17}
+              strokeWidth={2}
+            />
+          </button>
+        </div>
+      </div>
+
+      <ol className="grid content-start gap-1.5 overflow-auto p-3">
+        {source.items.map((item, index) => (
+          <StoryRow
+            item={item}
+            key={`${source.id}-${item.id ?? item.title}`}
+            rank={index + 1}
+          />
+        ))}
+      </ol>
+    </article>
+  )
+}
+
+function StoryRow({ item, rank }: { item: HomeStory; rank: number }) {
+  const href = item.id ? `/go/${item.id}` : item.url
+
+  return (
+    <li className="grid list-none grid-cols-[28px_1fr_auto] items-start gap-2 rounded-md px-1 py-1.5 transition-colors hover:bg-slate-50 dark:hover:bg-white/[0.05]">
+      <span
+        className={`grid h-7 place-items-center rounded-md text-xs font-bold ${rankClassName(
+          rank,
+        )}`}
+      >
+        {rank}
+      </span>
+      <span className="min-w-0">
+        {href ? (
+          <a
+            className="block truncate text-[15px] font-semibold leading-6 text-slate-900 transition-colors hover:text-red-600 focus-visible:outline-none dark:text-white/90 dark:hover:text-red-300"
+            href={href}
+            rel="noreferrer"
+            target="_blank"
+          >
+            {item.title}
+          </a>
+        ) : (
+          <strong className="block truncate text-[15px] font-semibold leading-6 text-slate-900 dark:text-white/90">
+            {item.title}
+          </strong>
+        )}
+        <span className="block truncate text-xs font-medium text-slate-500 dark:text-slate-400">
+          {item.meta}
+        </span>
+      </span>
+      {item.badge ? (
+        <span className="mt-1 inline-flex min-h-5 items-center rounded-md bg-amber-100 px-1.5 text-[11px] font-bold text-amber-800 dark:bg-amber-300/20 dark:text-amber-200">
+          {item.badge}
+        </span>
+      ) : href ? (
+        <ExternalLink
+          aria-hidden="true"
+          className="mt-1 text-slate-300 opacity-0 transition-opacity group-hover:opacity-100 dark:text-slate-600"
+          size={14}
+          strokeWidth={2}
+        />
+      ) : null}
+    </li>
+  )
+}
+
+function rankClassName(rank: number) {
+  if (rank === 1) {
+    return "bg-red-600 text-white"
+  }
+
+  if (rank === 2) {
+    return "bg-orange-100 text-orange-700 dark:bg-orange-300/20 dark:text-orange-200"
+  }
+
+  if (rank === 3) {
+    return "bg-amber-100 text-amber-700 dark:bg-amber-300/20 dark:text-amber-200"
+  }
+
+  return "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-300"
 }
