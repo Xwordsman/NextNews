@@ -7,6 +7,11 @@ import {
   formatDateTime,
 } from "@/features/public-content/components/public-content-ui"
 import { getPublicDailyReportDetail } from "@/features/public-operations/queries"
+import { getCurrentUser } from "@/server/auth/session"
+import {
+  canAccessSnapshotDate,
+  getHistoryAccessForUser,
+} from "@/server/membership/access"
 
 export const dynamic = "force-dynamic"
 
@@ -28,6 +33,13 @@ export default async function DailyDetailPage({
   params: Promise<{ reportDate: string }>
 }) {
   const { reportDate } = await params
+  const user = await getCurrentUser()
+  const access = await getHistoryAccessForUser(user?.id)
+
+  if (!canAccessSnapshotDate(reportDate, access)) {
+    notFound()
+  }
+
   const data = await getPublicDailyReportDetail(reportDate)
 
   if (!data) {
@@ -35,11 +47,12 @@ export default async function DailyDetailPage({
   }
 
   const { report } = data
+  const manualItems = data.manualItems
   const sources = data.sources.slice(0, report.channelLimit)
   const itemCount = sources.reduce(
     (total, source) =>
       total + source.items.slice(0, report.itemLimitPerChannel).length,
-    0,
+    manualItems.length,
   )
 
   return (
@@ -63,6 +76,59 @@ export default async function DailyDetailPage({
           返回日报
         </Link>
       </div>
+
+      {manualItems.length > 0 ? (
+        <section className="rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.08em] text-brand">
+                Editor Picks
+              </p>
+              <h2 className="mt-2 font-serif text-2xl font-semibold">
+                人工精选
+              </h2>
+            </div>
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">
+              {manualItems.length} 条
+            </span>
+          </div>
+          <ol className="mt-4 grid gap-3">
+            {manualItems.map((item, index) => (
+              <li
+                className="grid grid-cols-[34px_1fr] gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3"
+                key={item.id}
+              >
+                <span className="grid h-8 place-items-center rounded-lg bg-slate-950 font-mono text-xs font-semibold text-white">
+                  {index + 1}
+                </span>
+                <span className="min-w-0">
+                  <a
+                    className="font-semibold leading-6 text-slate-950 no-underline transition-colors hover:text-brand"
+                    href={item.url}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    {item.title}
+                  </a>
+                  {item.note ? (
+                    <span className="mt-1 block text-sm leading-6 text-slate-500">
+                      {item.note}
+                    </span>
+                  ) : null}
+                  <span className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
+                    <Link className="hover:text-brand" href={item.channelHref}>
+                      {item.siteName} / {item.channelName}
+                    </Link>
+                    {item.hotValue ? <span>{item.hotValue}</span> : null}
+                    {item.hotLabel ? <span>{item.hotLabel}</span> : null}
+                    <span>{formatDateTime(item.snapshotTime)}</span>
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
 
       {sources.length === 0 ? (
         <section className="rounded-2xl border border-dashed border-slate-300 bg-white/70 px-6 py-12 text-center">

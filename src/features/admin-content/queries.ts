@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, inArray, isNull } from "drizzle-orm"
+import { and, asc, count, desc, eq, gte, inArray, isNull } from "drizzle-orm"
 import { listChannelDefinitions } from "@/server/channels/registry"
 import { getDb } from "@/server/db/client"
 import {
@@ -7,6 +7,7 @@ import {
   bizChannelSnapshot,
   bizContentBlock,
   bizDailyReport,
+  bizDailyReportItem,
   bizHomeModule,
   bizRankingConfig,
   bizSite,
@@ -18,6 +19,7 @@ import {
   relTopicSnapshotItem,
   relUserChannelSubscription,
   sysUser,
+  userMembership,
   userNotification,
   userTrackingMatch,
   userTrackingRule,
@@ -921,26 +923,322 @@ export async function listAdminUsers() {
   const userIds = users.map((user) => user.id)
 
   if (userIds.length === 0) {
-    return users.map((user) => ({ ...user, subscriptionCount: 0 }))
+    return users.map((user) => ({
+      ...user,
+      membershipExpiresAt: null,
+      membershipHistoryDays: 30,
+      membershipPlanKey: "free",
+      membershipPlanName: "免费用户",
+      membershipStatus: null,
+      subscriptionCount: 0,
+    }))
   }
 
-  const subscriptionCounts = await db
-    .select({
-      userId: relUserChannelSubscription.userId,
-      value: count(),
-    })
-    .from(relUserChannelSubscription)
-    .where(inArray(relUserChannelSubscription.userId, userIds))
-    .groupBy(relUserChannelSubscription.userId)
+  const [subscriptionCounts, memberships] = await Promise.all([
+    db
+      .select({
+        userId: relUserChannelSubscription.userId,
+        value: count(),
+      })
+      .from(relUserChannelSubscription)
+      .where(inArray(relUserChannelSubscription.userId, userIds))
+      .groupBy(relUserChannelSubscription.userId),
+    db
+      .select({
+        userId: userMembership.userId,
+        planKey: userMembership.planKey,
+        planName: userMembership.planName,
+        status: userMembership.status,
+        historyDays: userMembership.historyDays,
+        expiresAt: userMembership.expiresAt,
+      })
+      .from(userMembership)
+      .where(inArray(userMembership.userId, userIds)),
+  ])
 
   const countByUserId = new Map(
     subscriptionCounts.map((row) => [row.userId, Number(row.value)]),
   )
+  const membershipByUserId = new Map(
+    memberships.map((membership) => [membership.userId, membership]),
+  )
 
   return users.map((user) => ({
     ...user,
+    membershipExpiresAt: membershipByUserId.get(user.id)?.expiresAt ?? null,
+    membershipHistoryDays: membershipByUserId.get(user.id)?.historyDays ?? 30,
+    membershipPlanKey: membershipByUserId.get(user.id)?.planKey ?? "free",
+    membershipPlanName: membershipByUserId.get(user.id)?.planName ?? "免费用户",
+    membershipStatus: membershipByUserId.get(user.id)?.status ?? null,
     subscriptionCount: countByUserId.get(user.id) ?? 0,
   }))
+}
+
+export async function getAdminOperationsAnalytics() {
+  const db = getDb()
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const [
+    [activeChannelCount],
+    [homeChannelCount],
+    [todaySnapshotCount],
+    [todayItemCount],
+    [todayFailedRunCount],
+    [userCount],
+    [subscriptionCount],
+    [activeMembershipCount],
+    [todayNotificationCount],
+    [unreadNotificationCount],
+    [todayTrackingMatchCount],
+    [activeDailyReportCount],
+    failedRows,
+    channelRows,
+  ] = await Promise.all([
+    db
+      .select({ value: count() })
+      .from(bizChannel)
+      .where(
+        and(isNull(bizChannel.deletedAt), eq(bizChannel.status, "active")),
+      ),
+    db
+      .select({ value: count() })
+      .from(bizChannel)
+      .where(
+        and(
+          isNull(bizChannel.deletedAt),
+          eq(bizChannel.status, "active"),
+          eq(bizChannel.isHomeVisible, true),
+        ),
+      ),
+    db
+      .select({ value: count() })
+      .from(bizChannelSnapshot)
+      .where(gte(bizChannelSnapshot.snapshotTime, today)),
+    db
+      .select({ value: count() })
+      .from(bizSnapshotItem)
+      .where(gte(bizSnapshotItem.createdAt, today)),
+    db
+      .select({ value: count() })
+      .from(logCrawlRun)
+      .where(
+        and(
+          eq(logCrawlRun.status, "failed"),
+          gte(logCrawlRun.startedAt, today),
+        ),
+      ),
+    db.select({ value: count() }).from(sysUser),
+    db.select({ value: count() }).from(relUserChannelSubscription),
+    db
+      .select({ value: count() })
+      .from(userMembership)
+      .where(eq(userMembership.status, "active")),
+    db
+      .select({ value: count() })
+      .from(userNotification)
+      .where(gte(userNotification.createdAt, today)),
+    db
+      .select({ value: count() })
+      .from(userNotification)
+      .where(eq(userNotification.isRead, false)),
+    db
+      .select({ value: count() })
+      .from(userTrackingMatch)
+      .where(gte(userTrackingMatch.matchedAt, today)),
+    db
+      .select({ value: count() })
+      .from(bizDailyReport)
+      .where(
+        and(
+          isNull(bizDailyReport.deletedAt),
+          eq(bizDailyReport.status, "active"),
+        ),
+      ),
+    db
+      .select({
+        channelId: logCrawlRun.channelId,
+        value: count(),
+      })
+      .from(logCrawlRun)
+      .where(
+        and(
+          eq(logCrawlRun.status, "failed"),
+          gte(logCrawlRun.startedAt, today),
+        ),
+      )
+      .groupBy(logCrawlRun.channelId),
+    db
+      .select({
+        id: bizChannel.id,
+        siteName: bizSite.siteName,
+        channelName: bizChannel.channelName,
+        definitionKey: bizChannel.definitionKey,
+        isCrawlEnabled: bizChannel.isCrawlEnabled,
+        lastCrawlAt: bizChannel.lastCrawlAt,
+        lastSuccessAt: bizChannel.lastSuccessAt,
+        status: bizChannel.status,
+        snapshotId: bizChannelSnapshot.id,
+        snapshotItemCount: bizChannelSnapshot.itemCount,
+        snapshotTime: bizChannelSnapshot.snapshotTime,
+      })
+      .from(bizChannel)
+      .innerJoin(bizSite, eq(bizChannel.siteId, bizSite.id))
+      .leftJoin(
+        bizChannelSnapshot,
+        eq(bizChannel.lastSnapshotId, bizChannelSnapshot.id),
+      )
+      .where(and(isNull(bizChannel.deletedAt), isNull(bizSite.deletedAt)))
+      .orderBy(
+        desc(bizChannel.lastSuccessAt),
+        asc(bizSite.sort),
+        asc(bizChannel.sort),
+      )
+      .limit(30),
+  ])
+
+  const failedCountByChannelId = new Map(
+    failedRows.map((row) => [row.channelId, Number(row.value)]),
+  )
+
+  return {
+    stats: {
+      activeChannels: Number(activeChannelCount?.value ?? 0),
+      homeChannels: Number(homeChannelCount?.value ?? 0),
+      todaySnapshots: Number(todaySnapshotCount?.value ?? 0),
+      todayItems: Number(todayItemCount?.value ?? 0),
+      todayFailedRuns: Number(todayFailedRunCount?.value ?? 0),
+      users: Number(userCount?.value ?? 0),
+      subscriptions: Number(subscriptionCount?.value ?? 0),
+      activeMemberships: Number(activeMembershipCount?.value ?? 0),
+      todayNotifications: Number(todayNotificationCount?.value ?? 0),
+      unreadNotifications: Number(unreadNotificationCount?.value ?? 0),
+      todayTrackingMatches: Number(todayTrackingMatchCount?.value ?? 0),
+      activeDailyReports: Number(activeDailyReportCount?.value ?? 0),
+    },
+    channelHealth: channelRows.map((channel) => ({
+      ...channel,
+      todayFailedRuns: failedCountByChannelId.get(channel.id) ?? 0,
+    })),
+  }
+}
+
+export async function getAdminDailyReportOperation(id: string) {
+  if (!isUuid(id)) {
+    return null
+  }
+
+  const db = getDb()
+  const [report] = await db
+    .select({
+      id: bizDailyReport.id,
+      reportDate: bizDailyReport.reportDate,
+      title: bizDailyReport.title,
+      summary: bizDailyReport.summary,
+      status: bizDailyReport.status,
+      channelLimit: bizDailyReport.channelLimit,
+      itemLimitPerChannel: bizDailyReport.itemLimitPerChannel,
+      publishedAt: bizDailyReport.publishedAt,
+      updatedAt: bizDailyReport.updatedAt,
+    })
+    .from(bizDailyReport)
+    .where(and(eq(bizDailyReport.id, id), isNull(bizDailyReport.deletedAt)))
+    .limit(1)
+
+  if (!report) {
+    return null
+  }
+
+  const [manualItems, latestItems] = await Promise.all([
+    db
+      .select({
+        relationId: bizDailyReportItem.id,
+        snapshotItemId: bizSnapshotItem.id,
+        title: bizSnapshotItem.title,
+        url: bizSnapshotItem.url,
+        rankNo: bizSnapshotItem.rankNo,
+        hotValue: bizSnapshotItem.hotValue,
+        hotLabel: bizSnapshotItem.hotLabel,
+        tag: bizSnapshotItem.tag,
+        note: bizDailyReportItem.note,
+        sort: bizDailyReportItem.sort,
+        siteName: bizSite.siteName,
+        channelName: bizChannel.channelName,
+        snapshotTime: bizChannelSnapshot.snapshotTime,
+        createdAt: bizDailyReportItem.createdAt,
+      })
+      .from(bizDailyReportItem)
+      .innerJoin(
+        bizSnapshotItem,
+        eq(bizDailyReportItem.snapshotItemId, bizSnapshotItem.id),
+      )
+      .innerJoin(bizChannel, eq(bizSnapshotItem.channelId, bizChannel.id))
+      .innerJoin(bizSite, eq(bizChannel.siteId, bizSite.id))
+      .innerJoin(
+        bizChannelSnapshot,
+        eq(bizSnapshotItem.snapshotId, bizChannelSnapshot.id),
+      )
+      .where(eq(bizDailyReportItem.reportId, report.id))
+      .orderBy(
+        asc(bizDailyReportItem.sort),
+        desc(bizDailyReportItem.createdAt),
+      ),
+    db
+      .select({
+        snapshotItemId: bizSnapshotItem.id,
+        title: bizSnapshotItem.title,
+        url: bizSnapshotItem.url,
+        rankNo: bizSnapshotItem.rankNo,
+        summary: bizSnapshotItem.summary,
+        hotValue: bizSnapshotItem.hotValue,
+        hotLabel: bizSnapshotItem.hotLabel,
+        tag: bizSnapshotItem.tag,
+        siteName: bizSite.siteName,
+        channelName: bizChannel.channelName,
+        snapshotTime: bizChannelSnapshot.snapshotTime,
+        createdAt: bizSnapshotItem.createdAt,
+      })
+      .from(bizSnapshotItem)
+      .innerJoin(bizChannel, eq(bizSnapshotItem.channelId, bizChannel.id))
+      .innerJoin(bizSite, eq(bizChannel.siteId, bizSite.id))
+      .innerJoin(
+        bizChannelSnapshot,
+        eq(bizSnapshotItem.snapshotId, bizChannelSnapshot.id),
+      )
+      .leftJoin(
+        bizContentBlock,
+        and(
+          eq(bizSnapshotItem.urlHash, bizContentBlock.urlHash),
+          isNull(bizContentBlock.deletedAt),
+        ),
+      )
+      .where(
+        and(
+          isNull(bizContentBlock.id),
+          isNull(bizChannel.deletedAt),
+          isNull(bizSite.deletedAt),
+          eq(bizChannel.status, "active"),
+          eq(bizChannel.isPublic, true),
+          eq(bizSite.status, "active"),
+          eq(bizSite.isVisible, true),
+        ),
+      )
+      .orderBy(
+        desc(bizChannelSnapshot.snapshotTime),
+        asc(bizSnapshotItem.rankNo),
+      )
+      .limit(300),
+  ])
+
+  const manualIds = new Set(manualItems.map((item) => item.snapshotItemId))
+
+  return {
+    report,
+    manualItems,
+    candidates: latestItems
+      .filter((item) => !manualIds.has(item.snapshotItemId))
+      .slice(0, 80),
+  }
 }
 
 export async function listAdminUserSubscriptions() {

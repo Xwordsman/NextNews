@@ -114,6 +114,35 @@ export async function unsubscribeChannelAction(formData: FormData) {
   redirect(withNotice(backTo, "已取消订阅"))
 }
 
+export async function updateSubscriptionNotifyAction(formData: FormData) {
+  const user = await requireUser()
+  const channelId = formString(formData, "channelId")
+  const backTo = safeBackTo(formString(formData, "backTo") || "/account")
+  const notifyEnabled = formString(formData, "notifyEnabled") === "true"
+
+  if (!channelId) {
+    redirect(withNotice(backTo, "频道参数缺失"))
+  }
+
+  await getDb()
+    .update(relUserChannelSubscription)
+    .set({
+      notifyEnabled,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(relUserChannelSubscription.userId, user.id),
+        eq(relUserChannelSubscription.channelId, channelId),
+      ),
+    )
+
+  revalidatePath("/account")
+  redirect(
+    withNotice(backTo, notifyEnabled ? "已开启频道通知" : "已关闭频道通知"),
+  )
+}
+
 export async function createTrackingRuleAction(formData: FormData) {
   const user = await requireUser()
   const keyword = formString(formData, "keyword")

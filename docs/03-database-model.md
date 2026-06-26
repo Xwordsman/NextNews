@@ -38,10 +38,12 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
   user_tracking_rule
   user_tracking_match
   user_notification
+  user_membership
 
 运营与审核
   biz_content_block
   biz_daily_report
+  biz_daily_report_item
   biz_home_module
   biz_ranking_config
   rel_ranking_channel
@@ -285,8 +287,35 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 
 说明：
 
-- 第一版用于个人中心和 `/feed` 动态页。
-- `is_pinned`、`notify_enabled` 先预留，后续可用于订阅排序和通知。
+- 用于个人中心和 `/feed` 动态页。
+- `notify_enabled` 已用于订阅频道更新通知，Worker 写入新快照后会为开启通知的用户生成 `user_notification`。
+- `is_pinned` 继续预留给订阅排序。
+
+## user_membership
+
+用户会员权益表。后台直接给前台用户配置套餐、历史查询天数和到期时间。
+
+关键字段：
+
+- `user_id`
+- `plan_key`
+- `plan_name`
+- `status`: `active`、`expired`、`canceled`
+- `history_days`
+- `started_at`
+- `expires_at`
+- `note`
+
+关键索引：
+
+- `uk_user_membership_user`
+- `idx_user_membership_status_expiry`
+
+说明：
+
+- 访客默认可看最近 7 天历史。
+- 登录普通用户默认可看最近 30 天历史。
+- 有效会员按 `history_days` 控制历史快照和日报详情访问边界。
 
 ## user_tracking_rule
 
@@ -355,6 +384,25 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
 
 - `uk_biz_daily_report_date`
 - `idx_biz_daily_report_status_date`
+
+## biz_daily_report_item
+
+日报人工精选关系表。后台可以把已经入库的快照条目挂载到某一份日报，前台日报详情页会优先展示这些人工精选内容。
+
+关键字段：
+
+- `report_id`
+- `snapshot_item_id`
+- `sort`
+- `note`
+- `created_by`
+- `created_at`
+
+关键索引：
+
+- `uk_biz_daily_report_item`
+- `idx_biz_daily_report_item_report_sort`
+- `idx_biz_daily_report_item_snapshot`
 
 ## biz_topic
 
@@ -488,11 +536,8 @@ NextNews 使用 PostgreSQL。选择 PostgreSQL 的原因是：项目需要长期
   cfg_page_block
   rel_page_block_channel
 
-日报增强
-  biz_daily_report_item
-
-会员与搜索
-  会员历史权限与搜索索引扩展
+搜索增强
+  PostgreSQL 全文索引或独立搜索服务
 ```
 
 ## 大表策略

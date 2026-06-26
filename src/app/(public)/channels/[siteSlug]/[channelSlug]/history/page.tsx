@@ -7,6 +7,8 @@ import {
   formatDateTime,
 } from "@/features/public-content/components/public-content-ui"
 import { getPublicChannelHistory } from "@/features/public-content/queries"
+import { getCurrentUser } from "@/server/auth/session"
+import { getHistoryAccessForUser } from "@/server/membership/access"
 
 export const dynamic = "force-dynamic"
 
@@ -30,8 +32,10 @@ export default async function ChannelHistoryPage({
   searchParams?: Promise<{ month?: string; year?: string }>
 }) {
   const { channelSlug, siteSlug } = await params
-  const query = await searchParams
+  const [query, user] = await Promise.all([searchParams, getCurrentUser()])
+  const access = await getHistoryAccessForUser(user?.id)
   const data = await getPublicChannelHistory(siteSlug, channelSlug, {
+    earliestSnapshotDate: access.earliestDate,
     month: query?.month,
     year: query?.year,
   })
@@ -52,6 +56,28 @@ export default async function ChannelHistoryPage({
         meta={`${data.snapshots.length} 个快照 / ${data.filters.month ?? data.filters.year ?? "全部"}`}
         title={`${data.channel.channelName} 历史`}
       />
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/90 px-5 py-4 shadow-sm">
+        <p className="text-sm font-semibold text-slate-700">
+          当前权益：{access.planName}，可查看最近 {access.historyDays} 天历史，
+          最早可访问 {access.earliestDate}。
+        </p>
+        {!user ? (
+          <Link
+            className="inline-flex min-h-10 items-center rounded-full bg-slate-950 px-4 text-sm font-semibold text-white no-underline transition-colors hover:bg-black"
+            href="/login"
+          >
+            登录查看更多
+          </Link>
+        ) : !access.isMember ? (
+          <Link
+            className="inline-flex min-h-10 items-center rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 no-underline transition-colors hover:bg-slate-900 hover:text-white"
+            href="/account"
+          >
+            查看账户权益
+          </Link>
+        ) : null}
+      </div>
 
       <section className="grid gap-4 lg:grid-cols-[260px_1fr]">
         <aside className="h-fit rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm">

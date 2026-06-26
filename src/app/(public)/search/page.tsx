@@ -6,7 +6,10 @@ import {
   PublicTopBar,
   formatDateTime,
 } from "@/features/public-content/components/public-content-ui"
-import { searchPublicContents } from "@/features/public-operations/queries"
+import {
+  getPublicSearchFilters,
+  searchPublicContents,
+} from "@/features/public-operations/queries"
 
 export const dynamic = "force-dynamic"
 export const metadata = {
@@ -16,11 +19,26 @@ export const metadata = {
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ q?: string }>
+  searchParams?: Promise<{
+    channel?: string
+    from?: string
+    q?: string
+    site?: string
+    to?: string
+  }>
 }) {
   const query = await searchParams
   const keyword = String(query?.q ?? "").trim()
-  const items = keyword ? await searchPublicContents(keyword) : []
+  const filters = {
+    channelId: String(query?.channel ?? "").trim() || undefined,
+    from: String(query?.from ?? "").trim() || undefined,
+    siteSlug: String(query?.site ?? "").trim() || undefined,
+    to: String(query?.to ?? "").trim() || undefined,
+  }
+  const [filterOptions, items] = await Promise.all([
+    getPublicSearchFilters(),
+    keyword ? searchPublicContents(keyword, filters) : Promise.resolve([]),
+  ])
 
   return (
     <PublicContentShell>
@@ -33,7 +51,10 @@ export default async function SearchPage({
       />
 
       <section className="rounded-2xl border border-slate-200 bg-white/90 p-5 shadow-sm">
-        <form action="/search" className="flex flex-col gap-3 sm:flex-row">
+        <form
+          action="/search"
+          className="grid gap-3 lg:grid-cols-[1fr_180px_220px]"
+        >
           <label className="sr-only" htmlFor="site-search">
             搜索关键词
           </label>
@@ -44,6 +65,60 @@ export default async function SearchPage({
             name="q"
             placeholder="搜索热点、频道、站点"
           />
+          <label className="sr-only" htmlFor="site-filter">
+            站点
+          </label>
+          <select
+            className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:border-slate-400"
+            defaultValue={filters.siteSlug ?? ""}
+            id="site-filter"
+            name="site"
+          >
+            <option value="">全部站点</option>
+            {filterOptions.sites.map((site) => (
+              <option key={site.siteSlug} value={site.siteSlug}>
+                {site.siteName}
+              </option>
+            ))}
+          </select>
+          <label className="sr-only" htmlFor="channel-filter">
+            频道
+          </label>
+          <select
+            className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:border-slate-400"
+            defaultValue={filters.channelId ?? ""}
+            id="channel-filter"
+            name="channel"
+          >
+            <option value="">全部频道</option>
+            {filterOptions.channels.map((channel) => (
+              <option key={channel.channelId} value={channel.channelId}>
+                {channel.siteName} / {channel.channelName}
+              </option>
+            ))}
+          </select>
+          <div className="grid gap-3 sm:grid-cols-2 lg:col-span-2">
+            <label className="sr-only" htmlFor="from-filter">
+              开始日期
+            </label>
+            <input
+              className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:border-slate-400"
+              defaultValue={filters.from ?? ""}
+              id="from-filter"
+              name="from"
+              type="date"
+            />
+            <label className="sr-only" htmlFor="to-filter">
+              结束日期
+            </label>
+            <input
+              className="min-h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition-colors focus:border-slate-400"
+              defaultValue={filters.to ?? ""}
+              id="to-filter"
+              name="to"
+              type="date"
+            />
+          </div>
           <button
             className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-full bg-slate-950 px-5 text-sm font-semibold text-white transition-colors hover:bg-black"
             type="submit"
@@ -88,11 +163,11 @@ export default async function SearchPage({
                   rel="noreferrer"
                   target="_blank"
                 >
-                  {item.title}
+                  {highlightText(item.title, keyword)}
                 </a>
                 {item.summary ? (
                   <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-500">
-                    {item.summary}
+                    {highlightText(item.summary, keyword)}
                   </p>
                 ) : null}
                 <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
@@ -114,4 +189,31 @@ export default async function SearchPage({
       )}
     </PublicContentShell>
   )
+}
+
+function highlightText(text: string, keyword: string) {
+  const trimmed = keyword.trim()
+
+  if (!trimmed) {
+    return text
+  }
+
+  const parts = text.split(new RegExp(`(${escapeRegExp(trimmed)})`, "gi"))
+
+  return parts.map((part, index) =>
+    part.toLowerCase() === trimmed.toLowerCase() ? (
+      <mark
+        className="rounded bg-amber-100 px-0.5 text-slate-950"
+        key={`${part}-${index}`}
+      >
+        {part}
+      </mark>
+    ) : (
+      part
+    ),
+  )
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }

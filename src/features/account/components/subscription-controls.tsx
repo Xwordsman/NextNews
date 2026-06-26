@@ -2,6 +2,7 @@ import { BellPlus, BellOff } from "lucide-react"
 import {
   subscribeChannelAction,
   unsubscribeChannelAction,
+  updateSubscriptionNotifyAction,
 } from "@/features/account/actions"
 
 export function ChannelSubscriptionControl({
@@ -43,6 +44,43 @@ export function ChannelSubscriptionControl({
           <BellPlus aria-hidden="true" size={16} />
         )}
         {isSubscribed ? "取消订阅" : "订阅频道"}
+      </button>
+    </form>
+  )
+}
+
+export function SubscriptionNotifyControl({
+  backTo,
+  channelId,
+  notifyEnabled,
+}: {
+  backTo: string
+  channelId: string
+  notifyEnabled: boolean
+}) {
+  return (
+    <form action={updateSubscriptionNotifyAction}>
+      <input name="channelId" type="hidden" value={channelId} />
+      <input name="backTo" type="hidden" value={backTo} />
+      <input
+        name="notifyEnabled"
+        type="hidden"
+        value={String(!notifyEnabled)}
+      />
+      <button
+        className={
+          notifyEnabled
+            ? "inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
+            : "inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-full border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-900 hover:text-white"
+        }
+        type="submit"
+      >
+        {notifyEnabled ? (
+          <BellOff aria-hidden="true" size={15} />
+        ) : (
+          <BellPlus aria-hidden="true" size={15} />
+        )}
+        {notifyEnabled ? "关闭通知" : "开启通知"}
       </button>
     </form>
   )

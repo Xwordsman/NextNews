@@ -191,6 +191,7 @@ export async function getPublicChannelSnapshot(
   siteSlug: string,
   channelSlug: string,
   snapshotId: string,
+  options: { earliestSnapshotDate?: string } = {},
 ) {
   if (!isUuid(snapshotId)) {
     return null
@@ -203,6 +204,17 @@ export async function getPublicChannelSnapshot(
   }
 
   const db = getDb()
+  const filters = [
+    eq(bizChannelSnapshot.id, snapshotId),
+    eq(bizChannelSnapshot.channelId, channel.id),
+  ]
+
+  if (options.earliestSnapshotDate) {
+    filters.push(
+      gte(bizChannelSnapshot.snapshotDate, options.earliestSnapshotDate),
+    )
+  }
+
   const [snapshot] = await db
     .select({
       id: bizChannelSnapshot.id,
@@ -212,12 +224,7 @@ export async function getPublicChannelSnapshot(
       status: bizChannelSnapshot.status,
     })
     .from(bizChannelSnapshot)
-    .where(
-      and(
-        eq(bizChannelSnapshot.id, snapshotId),
-        eq(bizChannelSnapshot.channelId, channel.id),
-      ),
-    )
+    .where(and(...filters))
     .limit(1)
 
   if (!snapshot) {
@@ -234,7 +241,11 @@ export async function getPublicChannelSnapshot(
 export async function getPublicChannelHistory(
   siteSlug: string,
   channelSlug: string,
-  options: { month?: string; year?: string } = {},
+  options: {
+    earliestSnapshotDate?: string
+    month?: string
+    year?: string
+  } = {},
 ) {
   const channel = await getPublicChannel(siteSlug, channelSlug)
 
@@ -244,12 +255,22 @@ export async function getPublicChannelHistory(
 
   const db = getDb()
   const filters = [eq(bizChannelSnapshot.channelId, channel.id)]
+  const archiveFilters = [eq(bizChannelSnapshot.channelId, channel.id)]
   const normalizedYear = options.year?.match(/^\d{4}$/)
     ? options.year
     : undefined
   const normalizedMonth = options.month?.match(/^\d{4}-\d{2}$/)
     ? options.month
     : undefined
+
+  if (options.earliestSnapshotDate) {
+    filters.push(
+      gte(bizChannelSnapshot.snapshotDate, options.earliestSnapshotDate),
+    )
+    archiveFilters.push(
+      gte(bizChannelSnapshot.snapshotDate, options.earliestSnapshotDate),
+    )
+  }
 
   if (normalizedMonth) {
     filters.push(gte(bizChannelSnapshot.snapshotDate, `${normalizedMonth}-01`))
@@ -281,7 +302,7 @@ export async function getPublicChannelHistory(
         snapshotDate: bizChannelSnapshot.snapshotDate,
       })
       .from(bizChannelSnapshot)
-      .where(eq(bizChannelSnapshot.channelId, channel.id))
+      .where(and(...archiveFilters))
       .orderBy(desc(bizChannelSnapshot.snapshotDate)),
   ])
 

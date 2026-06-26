@@ -1,6 +1,9 @@
 import Link from "next/link"
 import { LogOut, Rss, UserRound } from "lucide-react"
-import { ChannelSubscriptionControl } from "@/features/account/components/subscription-controls"
+import {
+  ChannelSubscriptionControl,
+  SubscriptionNotifyControl,
+} from "@/features/account/components/subscription-controls"
 import { getUserSubscriptions } from "@/features/account/queries"
 import {
   PublicContentShell,
@@ -119,12 +122,19 @@ export default async function AccountPage({
                       最近成功：{formatDateTime(subscription.lastSuccessAt)}
                     </p>
                   </div>
-                  <ChannelSubscriptionControl
-                    backTo="/account"
-                    channelId={subscription.channelId}
-                    isSubscribable={true}
-                    isSubscribed={true}
-                  />
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <SubscriptionNotifyControl
+                      backTo="/account"
+                      channelId={subscription.channelId}
+                      notifyEnabled={subscription.notifyEnabled}
+                    />
+                    <ChannelSubscriptionControl
+                      backTo="/account"
+                      channelId={subscription.channelId}
+                      isSubscribable={true}
+                      isSubscribed={true}
+                    />
+                  </div>
                 </div>
 
                 {subscription.items.length === 0 ? (

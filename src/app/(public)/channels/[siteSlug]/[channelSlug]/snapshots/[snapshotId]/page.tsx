@@ -7,6 +7,8 @@ import {
   formatDateTime,
 } from "@/features/public-content/components/public-content-ui"
 import { getPublicChannelSnapshot } from "@/features/public-content/queries"
+import { getCurrentUser } from "@/server/auth/session"
+import { getHistoryAccessForUser } from "@/server/membership/access"
 
 export const dynamic = "force-dynamic"
 
@@ -20,7 +22,16 @@ export default async function ChannelSnapshotPage({
   }>
 }) {
   const { channelSlug, siteSlug, snapshotId } = await params
-  const data = await getPublicChannelSnapshot(siteSlug, channelSlug, snapshotId)
+  const user = await getCurrentUser()
+  const access = await getHistoryAccessForUser(user?.id)
+  const data = await getPublicChannelSnapshot(
+    siteSlug,
+    channelSlug,
+    snapshotId,
+    {
+      earliestSnapshotDate: access.earliestDate,
+    },
+  )
 
   if (!data) {
     notFound()

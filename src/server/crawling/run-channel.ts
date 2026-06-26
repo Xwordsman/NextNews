@@ -9,6 +9,7 @@ import {
   bizSnapshotItem,
   logCrawlRun,
 } from "@/server/db/schema"
+import { recordSubscriptionNotificationsForSnapshot } from "@/server/subscriptions/notifications"
 import { recordTrackingMatchesForSnapshot } from "@/server/tracking/matches"
 import type { NewsItem } from "@/types"
 import { fetchRssItems } from "./rss"
@@ -231,6 +232,15 @@ export async function runChannelCrawl(
         await recordTrackingMatchesForSnapshot(result.snapshotId)
       } catch (error) {
         console.error("[nextnews] tracking match processing failed", error)
+      }
+
+      try {
+        await recordSubscriptionNotificationsForSnapshot(result.snapshotId)
+      } catch (error) {
+        console.error(
+          "[nextnews] subscription notification processing failed",
+          error,
+        )
       }
     }
 

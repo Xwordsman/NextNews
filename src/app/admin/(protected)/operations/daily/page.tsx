@@ -7,6 +7,7 @@ import {
   AdminTable,
   RunButton,
   StatusBadge,
+  ViewLink,
   formatDateTime,
 } from "@/features/admin-content/components/admin-ui"
 import {
@@ -105,6 +106,10 @@ export default async function AdminDailyOperationPage({
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex flex-wrap gap-2">
+                      <ViewLink
+                        href={`/admin/operations/daily/${report.id}`}
+                        label="编辑精选"
+                      />
                       {report.status === "active" ? (
                         <form action={updateDailyReportStatusAction}>
                           <input name="id" type="hidden" value={report.id} />

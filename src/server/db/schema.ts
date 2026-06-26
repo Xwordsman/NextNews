@@ -50,6 +50,11 @@ export const snapshotStatusEnum = pgEnum("snapshot_status", [
   "duplicate",
   "ignored",
 ])
+export const membershipStatusEnum = pgEnum("membership_status", [
+  "active",
+  "expired",
+  "canceled",
+])
 
 export const sysUser = pgTable(
   "sys_user",
@@ -83,6 +88,35 @@ export const sysSetting = pgTable(
   (table) => [
     uniqueIndex("uk_sys_setting_key").on(table.settingKey),
     index("idx_sys_setting_public").on(table.isPublic),
+  ],
+)
+
+export const userMembership = pgTable(
+  "user_membership",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => sysUser.id),
+    planKey: varchar("plan_key", { length: 80 }).default("free").notNull(),
+    planName: varchar("plan_name", { length: 120 })
+      .default("免费用户")
+      .notNull(),
+    status: membershipStatusEnum("status").default("active").notNull(),
+    historyDays: integer("history_days").default(30).notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    note: text("note"),
+    ...timestamps,
+  },
+  (table) => [
+    uniqueIndex("uk_user_membership_user").on(table.userId),
+    index("idx_user_membership_status_expiry").on(
+      table.status,
+      table.expiresAt,
+    ),
   ],
 )
 
@@ -523,6 +557,36 @@ export const bizSnapshotItem = pgTable(
       table.createdAt,
     ),
     index("idx_biz_snapshot_item_url_hash").on(table.urlHash),
+  ],
+)
+
+export const bizDailyReportItem = pgTable(
+  "biz_daily_report_item",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    reportId: uuid("report_id")
+      .notNull()
+      .references(() => bizDailyReport.id),
+    snapshotItemId: uuid("snapshot_item_id")
+      .notNull()
+      .references(() => bizSnapshotItem.id),
+    sort: integer("sort").default(0).notNull(),
+    note: text("note"),
+    createdBy: uuid("created_by").references(() => sysUser.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("uk_biz_daily_report_item").on(
+      table.reportId,
+      table.snapshotItemId,
+    ),
+    index("idx_biz_daily_report_item_report_sort").on(
+      table.reportId,
+      table.sort,
+    ),
+    index("idx_biz_daily_report_item_snapshot").on(table.snapshotItemId),
   ],
 )
 

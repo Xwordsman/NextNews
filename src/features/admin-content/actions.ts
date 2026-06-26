@@ -13,6 +13,7 @@ import {
   bizChannel,
   bizContentBlock,
   bizDailyReport,
+  bizDailyReportItem,
   bizHomeModule,
   bizRankingConfig,
   bizSnapshotItem,
@@ -22,6 +23,7 @@ import {
   relRankingChannel,
   relChannelCategory,
   relTopicSnapshotItem,
+  userMembership,
   userTrackingRule,
 } from "@/server/db/schema"
 import {
@@ -39,6 +41,7 @@ import {
 } from "./validation"
 
 const entityStatuses = ["draft", "active", "disabled"] as const
+const membershipStatuses = ["active", "expired", "canceled"] as const
 
 function redirectWithError(pathname: string, error: unknown): never {
   const message =
@@ -92,6 +95,36 @@ function formatLocalDate(value: Date) {
     timeZone: "Asia/Shanghai",
     year: "numeric",
   }).format(value)
+}
+
+function parseOptionalDateTime(formData: FormData, name: string) {
+  const value = formString(formData, name)
+
+  if (!value) {
+    return null
+  }
+
+  const date = new Date(`${value}T23:59:59+08:00`)
+
+  if (Number.isNaN(date.getTime())) {
+    throw new AdminFormError("到期时间格式不正确")
+  }
+
+  return date
+}
+
+function planKeyString(formData: FormData) {
+  const value = requiredString(formData, "planKey", "套餐 key", 80)
+    .toLowerCase()
+    .trim()
+
+  if (!/^[a-z0-9]+(?:[._-][a-z0-9]+)*$/.test(value)) {
+    throw new AdminFormError(
+      "套餐 key 只能使用小写字母、数字、点、下划线和短横线",
+    )
+  }
+
+  return value
 }
 
 function parseSiteForm(formData: FormData) {
@@ -728,6 +761,103 @@ export async function updateDailyReportStatusAction(formData: FormData) {
   redirectWithMessage(backTo, "notice", "日报状态已更新")
 }
 
+export async function addDailyReportItemAction(formData: FormData) {
+  const admin = await requireAdmin()
+
+  const reportId = uuidString(formData, "reportId", "日报 ID")
+  const snapshotItemId = uuidString(formData, "snapshotItemId", "内容 ID")
+  const sort = optionalInteger(formData, "sort", "排序", 0)
+  const note = optionalString(formData, "note", "推荐语", 240)
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    `/admin/operations/daily/${reportId}`,
+  )
+
+  await getDb()
+    .insert(bizDailyReportItem)
+    .values({
+      reportId,
+      snapshotItemId,
+      sort,
+      note,
+      createdBy: admin.id,
+    })
+    .onConflictDoUpdate({
+      target: [bizDailyReportItem.reportId, bizDailyReportItem.snapshotItemId],
+      set: {
+        note,
+        sort,
+      },
+    })
+
+  await revalidateDailyReportViews(reportId, backTo)
+  redirectWithMessage(backTo, "notice", "已加入日报精选")
+}
+
+export async function removeDailyReportItemAction(formData: FormData) {
+  await requireAdmin()
+
+  const id = uuidString(formData, "id", "精选内容 ID")
+  const reportId = uuidString(formData, "reportId", "日报 ID")
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    `/admin/operations/daily/${reportId}`,
+  )
+
+  await getDb().delete(bizDailyReportItem).where(eq(bizDailyReportItem.id, id))
+
+  await revalidateDailyReportViews(reportId, backTo)
+  redirectWithMessage(backTo, "notice", "已移除日报精选")
+}
+
+export async function saveUserMembershipAction(formData: FormData) {
+  await requireAdmin()
+
+  const userId = uuidString(formData, "userId", "用户 ID")
+  const backTo = safeAdminBackTo(formString(formData, "backTo"), "/admin/users")
+
+  let values: {
+    expiresAt: Date | null
+    historyDays: number
+    note: string | null
+    planKey: string
+    planName: string
+    status: (typeof membershipStatuses)[number]
+  }
+
+  try {
+    values = {
+      expiresAt: parseOptionalDateTime(formData, "expiresAt"),
+      historyDays: optionalInteger(formData, "historyDays", "历史天数", 30, 1),
+      note: optionalString(formData, "note", "备注", 300),
+      planKey: planKeyString(formData),
+      planName: requiredString(formData, "planName", "套餐名称", 120),
+      status: selectValue(formData, "status", "会员状态", membershipStatuses),
+    }
+  } catch (error) {
+    const message =
+      error instanceof AdminFormError ? error.message : "会员权益保存失败"
+    redirectWithMessage(backTo, "error", message)
+  }
+
+  await getDb()
+    .insert(userMembership)
+    .values({
+      userId,
+      ...values,
+    })
+    .onConflictDoUpdate({
+      target: userMembership.userId,
+      set: {
+        ...values,
+        updatedAt: new Date(),
+      },
+    })
+
+  revalidatePath("/admin/users")
+  redirectWithMessage(backTo, "notice", "会员权益已保存")
+}
+
 export async function saveHomeModuleAction(formData: FormData) {
   await requireAdmin()
 
@@ -1027,6 +1157,22 @@ export async function updateTrackingRuleEnabledAction(formData: FormData) {
   revalidatePath("/tracking")
   revalidatePath("/admin/users/tracking")
   redirectWithMessage(backTo, "notice", "追踪规则已更新")
+}
+
+async function revalidateDailyReportViews(reportId: string, adminPath: string) {
+  const [report] = await getDb()
+    .select({ reportDate: bizDailyReport.reportDate })
+    .from(bizDailyReport)
+    .where(eq(bizDailyReport.id, reportId))
+    .limit(1)
+
+  revalidatePath("/daily")
+  revalidatePath("/admin/operations/daily")
+  revalidatePath(adminPath)
+
+  if (report) {
+    revalidatePath(`/daily/${report.reportDate}`)
+  }
 }
 
 async function upsertContentBlock(values: {

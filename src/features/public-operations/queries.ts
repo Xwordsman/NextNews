@@ -16,6 +16,7 @@ import {
   bizChannelSnapshot,
   bizContentBlock,
   bizDailyReport,
+  bizDailyReportItem,
   bizRankingConfig,
   bizSite,
   bizSnapshotItem,
@@ -46,6 +47,13 @@ export type PublicRankingItem = PublicOperationItem & {
   score: number
   matchedChannels: number
   sourceRank: number | null
+}
+
+export type PublicSearchFilters = {
+  channelId?: string
+  from?: string
+  siteSlug?: string
+  to?: string
 }
 
 export async function getPublicDailyPageData() {
@@ -110,9 +118,13 @@ export async function getPublicDailyReportDetail(reportDate: string) {
     return null
   }
 
-  const sourceData = await getDailyReportSources(report)
+  const [sourceData, manualItems] = await Promise.all([
+    getDailyReportSources(report),
+    listDailyManualItems(report.id),
+  ])
 
   return {
+    manualItems,
     report,
     sources: sourceData.sources,
   }
@@ -255,6 +267,58 @@ async function getDailyReportSources(report: {
       }
     }),
   }
+}
+
+async function listDailyManualItems(reportId: string) {
+  return getDb()
+    .select({
+      id: bizSnapshotItem.id,
+      rankNo: bizSnapshotItem.rankNo,
+      title: bizSnapshotItem.title,
+      url: bizSnapshotItem.url,
+      summary: bizSnapshotItem.summary,
+      hotValue: bizSnapshotItem.hotValue,
+      hotLabel: bizSnapshotItem.hotLabel,
+      tag: bizSnapshotItem.tag,
+      publishedAt: bizSnapshotItem.publishedAt,
+      note: bizDailyReportItem.note,
+      channelName: bizChannel.channelName,
+      siteName: bizSite.siteName,
+      siteSlug: bizSite.slug,
+      channelSlug: bizChannel.slug,
+      snapshotTime: bizChannelSnapshot.snapshotTime,
+    })
+    .from(bizDailyReportItem)
+    .innerJoin(
+      bizSnapshotItem,
+      eq(bizDailyReportItem.snapshotItemId, bizSnapshotItem.id),
+    )
+    .innerJoin(bizChannel, eq(bizSnapshotItem.channelId, bizChannel.id))
+    .innerJoin(bizSite, eq(bizChannel.siteId, bizSite.id))
+    .innerJoin(
+      bizChannelSnapshot,
+      eq(bizSnapshotItem.snapshotId, bizChannelSnapshot.id),
+    )
+    .leftJoin(
+      bizContentBlock,
+      and(
+        eq(bizSnapshotItem.urlHash, bizContentBlock.urlHash),
+        isNull(bizContentBlock.deletedAt),
+      ),
+    )
+    .where(
+      and(
+        eq(bizDailyReportItem.reportId, reportId),
+        isNull(bizContentBlock.id),
+      ),
+    )
+    .orderBy(asc(bizDailyReportItem.sort), desc(bizDailyReportItem.createdAt))
+    .then((items) =>
+      items.map((item) => ({
+        ...item,
+        channelHref: `/channels/${item.siteSlug}/${item.channelSlug}`,
+      })),
+    )
 }
 
 export async function getPublicRankingPageData() {
@@ -432,7 +496,56 @@ export async function getPublicRankingPageData() {
   }
 }
 
-export async function searchPublicContents(query: string) {
+export async function getPublicSearchFilters() {
+  const db = getDb()
+  const [sites, channels] = await Promise.all([
+    db
+      .select({
+        siteName: bizSite.siteName,
+        siteSlug: bizSite.slug,
+      })
+      .from(bizSite)
+      .where(
+        and(
+          isNull(bizSite.deletedAt),
+          eq(bizSite.status, "active"),
+          eq(bizSite.isVisible, true),
+        ),
+      )
+      .orderBy(asc(bizSite.sort), asc(bizSite.siteName)),
+    db
+      .select({
+        channelId: bizChannel.id,
+        channelName: bizChannel.channelName,
+        siteName: bizSite.siteName,
+        siteSlug: bizSite.slug,
+      })
+      .from(bizChannel)
+      .innerJoin(bizSite, eq(bizChannel.siteId, bizSite.id))
+      .where(
+        and(
+          isNull(bizChannel.deletedAt),
+          isNull(bizSite.deletedAt),
+          eq(bizChannel.status, "active"),
+          eq(bizChannel.isPublic, true),
+          eq(bizSite.status, "active"),
+          eq(bizSite.isVisible, true),
+        ),
+      )
+      .orderBy(
+        asc(bizSite.sort),
+        asc(bizChannel.sort),
+        asc(bizChannel.channelName),
+      ),
+  ])
+
+  return { channels, sites }
+}
+
+export async function searchPublicContents(
+  query: string,
+  filters: PublicSearchFilters = {},
+) {
   const keyword = query.trim()
 
   if (!keyword) {
@@ -440,6 +553,38 @@ export async function searchPublicContents(query: string) {
   }
 
   const pattern = `%${keyword}%`
+  const conditions = [
+    isNull(bizContentBlock.id),
+    isNull(bizChannel.deletedAt),
+    isNull(bizSite.deletedAt),
+    eq(bizChannel.status, "active"),
+    eq(bizChannel.isPublic, true),
+    eq(bizSite.status, "active"),
+    eq(bizSite.isVisible, true),
+    or(
+      ilike(bizSnapshotItem.title, pattern),
+      ilike(bizSnapshotItem.summary, pattern),
+      ilike(bizSnapshotItem.tag, pattern),
+      ilike(bizChannel.channelName, pattern),
+      ilike(bizSite.siteName, pattern),
+    ),
+  ]
+
+  if (filters.siteSlug) {
+    conditions.push(eq(bizSite.slug, filters.siteSlug))
+  }
+
+  if (filters.channelId) {
+    conditions.push(eq(bizChannel.id, filters.channelId))
+  }
+
+  if (isDateString(filters.from)) {
+    conditions.push(gte(bizChannelSnapshot.snapshotDate, filters.from))
+  }
+
+  if (isDateString(filters.to)) {
+    conditions.push(lte(bizChannelSnapshot.snapshotDate, filters.to))
+  }
 
   return getDb()
     .select({
@@ -472,24 +617,7 @@ export async function searchPublicContents(query: string) {
         isNull(bizContentBlock.deletedAt),
       ),
     )
-    .where(
-      and(
-        isNull(bizContentBlock.id),
-        isNull(bizChannel.deletedAt),
-        isNull(bizSite.deletedAt),
-        eq(bizChannel.status, "active"),
-        eq(bizChannel.isPublic, true),
-        eq(bizSite.status, "active"),
-        eq(bizSite.isVisible, true),
-        or(
-          ilike(bizSnapshotItem.title, pattern),
-          ilike(bizSnapshotItem.summary, pattern),
-          ilike(bizSnapshotItem.tag, pattern),
-          ilike(bizChannel.channelName, pattern),
-          ilike(bizSite.siteName, pattern),
-        ),
-      ),
-    )
+    .where(and(...conditions))
     .orderBy(desc(bizChannelSnapshot.snapshotTime), asc(bizSnapshotItem.rankNo))
     .limit(100)
     .then((items) =>
@@ -706,6 +834,10 @@ function formatOperationDateTime(value: Date | null) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(value)
+}
+
+function isDateString(value?: string): value is string {
+  return Boolean(value?.match(/^\d{4}-\d{2}-\d{2}$/))
 }
 
 export { matchesKeywords, parseKeywords }

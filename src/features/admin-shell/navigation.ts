@@ -39,6 +39,7 @@ export const adminNavigation: AdminNavigationGroup[] = [
     title: "前台运营",
     items: [
       { title: "首页配置", href: "/admin/operations/home" },
+      { title: "运营统计", href: "/admin/operations/analytics" },
       { title: "导航配置", href: "/admin/operations/nav" },
       { title: "热门站点", href: "/admin/operations/sites" },
       { title: "榜中榜配置", href: "/admin/operations/rankings" },
