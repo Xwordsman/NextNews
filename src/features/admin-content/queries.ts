@@ -437,18 +437,9 @@ export async function listAdminLatestContents(options?: {
     .limit(pageSize)
     .offset((page - 1) * pageSize)
 
-  const latestMatches = or(
-    ...latestGroups
-      .filter((group) => group.latestCreatedAt)
-      .map((group) =>
-        and(
-          eq(bizSnapshotItem.urlHash, group.urlHash),
-          eq(bizSnapshotItem.createdAt, group.latestCreatedAt as Date),
-        ),
-      ),
-  )
+  const latestUrlHashes = latestGroups.map((group) => group.urlHash)
 
-  const detailRows = latestMatches
+  const detailRows = latestUrlHashes.length > 0
     ? await db
         .select({
           id: bizSnapshotItem.id,
@@ -483,7 +474,12 @@ export async function listAdminLatestContents(options?: {
             isNull(bizContentBlock.deletedAt),
           ),
         )
-        .where(and(whereCondition, latestMatches))
+        .where(
+          and(
+            whereCondition,
+            inArray(bizSnapshotItem.urlHash, latestUrlHashes),
+          ),
+        )
         .orderBy(
           desc(bizSnapshotItem.createdAt),
           desc(bizChannelSnapshot.snapshotTime),
