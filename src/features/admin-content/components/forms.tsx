@@ -6,6 +6,12 @@ import type {
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
 } from "react"
+import {
+  getChannelDisplayConfig,
+  getChannelFallbackPalette,
+  type ChannelBadgeMode,
+  type ChannelMetaDisplayMode,
+} from "@/server/channels/display-config"
 import type {
   getAdminCategory,
   getAdminChannel,
@@ -20,6 +26,25 @@ type Category = NonNullable<Awaited<ReturnType<typeof getAdminCategory>>>
 type CategoryOption = Awaited<ReturnType<typeof listAdminCategories>>[number]
 type Channel = NonNullable<Awaited<ReturnType<typeof getAdminChannel>>>
 type ChannelOptions = Awaited<ReturnType<typeof listChannelFormOptions>>
+
+const metaDisplayOptions: Array<{
+  value: ChannelMetaDisplayMode
+  label: string
+}> = [
+  { value: "auto", label: "自动" },
+  { value: "heat", label: "热度" },
+  { value: "tag", label: "标签" },
+  { value: "time", label: "发布时间" },
+  { value: "none", label: "不显示" },
+]
+
+const badgeModeOptions: Array<{
+  value: ChannelBadgeMode
+  label: string
+}> = [
+  { value: "source", label: "跟随来源" },
+  { value: "none", label: "不显示" },
+]
 
 function Field({
   label,
@@ -346,6 +371,12 @@ export function ChannelForm({
   submitLabel: string
 }) {
   const checkedCategoryIds = new Set(channel?.categoryIds ?? [])
+  const fallbackPalette = getChannelFallbackPalette(
+    channel?.definitionKey ?? channel?.slug ?? "nextnews",
+  )
+  const displayConfig = getChannelDisplayConfig(channel?.extra)
+  const cardColor = displayConfig.cardColor ?? fallbackPalette.color
+  const logoColor = displayConfig.logoColor ?? fallbackPalette.logoColor
 
   return (
     <form
@@ -456,6 +487,62 @@ export function ChannelForm({
             name="displayStyle"
           />
         </Field>
+        <div className="grid gap-4 border-t border-zinc-100 pt-5 lg:col-span-2">
+          <div>
+            <h3 className="text-sm font-semibold text-zinc-950">
+              首页卡片展示
+            </h3>
+            <p className="mt-1 text-xs leading-5 text-zinc-500">
+              控制前台首页卡片颜色、元信息和新热角标。
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <Field htmlFor="displayCardColor" label="卡片主色">
+              <Input
+                className="h-10 w-full cursor-pointer p-1"
+                defaultValue={cardColor}
+                id="displayCardColor"
+                name="displayCardColor"
+                type="color"
+              />
+            </Field>
+            <Field htmlFor="displayLogoColor" label="Logo 色">
+              <Input
+                className="h-10 w-full cursor-pointer p-1"
+                defaultValue={logoColor}
+                id="displayLogoColor"
+                name="displayLogoColor"
+                type="color"
+              />
+            </Field>
+            <Field htmlFor="displayMeta" label="元信息">
+              <Select
+                defaultValue={displayConfig.metaDisplay}
+                id="displayMeta"
+                name="displayMeta"
+              >
+                {metaDisplayOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field htmlFor="displayBadge" label="角标">
+              <Select
+                defaultValue={displayConfig.badgeMode}
+                id="displayBadge"
+                name="displayBadge"
+              >
+                {badgeModeOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+        </div>
         <Field htmlFor="weight" label="权重">
           <Input
             defaultValue={channel?.weight ?? 0}

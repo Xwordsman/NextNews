@@ -1,4 +1,10 @@
 import { asc, and, eq, inArray, isNull } from "drizzle-orm"
+import {
+  getChannelDisplayConfig,
+  getChannelFallbackPalette,
+  type ChannelBadgeMode,
+  type ChannelMetaDisplayMode,
+} from "@/server/channels/display-config"
 import { getDb } from "@/server/db/client"
 import {
   bizCategory,
@@ -16,17 +22,6 @@ type NavItem = {
   label: string
   href: string
 }
-
-const palettes = [
-  { color: "#456a9e", logoColor: "#1777ff" },
-  { color: "#954b4d", logoColor: "#f0443e" },
-  { color: "#3b8050", logoColor: "#11c989" },
-  { color: "#426795", logoColor: "#2478e6" },
-  { color: "#2d3644", logoColor: "#0f172a" },
-  { color: "#513b57", logoColor: "#da552f" },
-  { color: "#2f6f86", logoColor: "#00aeec" },
-  { color: "#375879", logoColor: "#2563eb" },
-]
 
 export type PublicHomeData = {
   sources: HomeSource[]
@@ -54,6 +49,7 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
         siteName: bizSite.siteName,
         channelSlug: bizChannel.slug,
         channelName: bizChannel.channelName,
+        extra: bizChannel.extra,
         lastSnapshotId: bizChannel.lastSnapshotId,
         lastSuccessAt: bizChannel.lastSuccessAt,
         sort: bizChannel.sort,
@@ -165,7 +161,10 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
 
   return {
     sources: channels.map((channel, index) => {
-      const palette = pickPalette(`${channel.siteSlug}.${channel.channelSlug}`)
+      const fallbackPalette = getChannelFallbackPalette(
+        `${channel.siteSlug}.${channel.channelSlug}`,
+      )
+      const displayConfig = getChannelDisplayConfig(channel.extra)
       const items = channel.lastSnapshotId
         ? (itemsBySnapshotId.get(channel.lastSnapshotId) ?? [])
         : []
@@ -176,21 +175,17 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
         logo: getLogoText(channel.siteName),
         tag: formatUpdateTag(channel.lastSuccessAt),
         category: categoryByChannelId.get(channel.id) ?? "general",
-        color: palette.color,
-        logoColor: palette.logoColor,
+        color: displayConfig.cardColor ?? fallbackPalette.color,
+        logoColor: displayConfig.logoColor ?? fallbackPalette.logoColor,
         favorite: index < 3,
         href: `/channels/${channel.siteSlug}/${channel.channelSlug}`,
-        items: items.slice(0, 8).map((item, itemIndex) => ({
+        items: items.slice(0, 8).map((item) => ({
           id: item.id,
           title: item.title,
           url: item.url,
-          meta:
-            item.hotValue ??
-            item.hotLabel ??
-            item.tag ??
-            formatPublishedAt(item.publishedAt) ??
-            "已收录",
-          badge: getItemBadge(item.rankNo ?? itemIndex + 1, item.hotLabel),
+          meta: getItemMeta(item, displayConfig.metaDisplay),
+          metaVariant: getItemMetaVariant(displayConfig.metaDisplay),
+          badge: getItemBadge(item.hotLabel, item.tag, displayConfig.badgeMode),
         })),
       }
     }),
@@ -233,14 +228,6 @@ async function listHomeModules(): Promise<HomeModule[]> {
     })
     .filter((module) => module.status === "active")
     .sort((a, b) => a.sort - b.sort)
-}
-
-function pickPalette(key: string) {
-  const index =
-    Array.from(key).reduce((total, char) => total + char.charCodeAt(0), 0) %
-    palettes.length
-
-  return palettes[index]
 }
 
 function getLogoText(name: string) {
@@ -287,12 +274,62 @@ function formatPublishedAt(value: Date | null) {
   }).format(value)
 }
 
-function getItemBadge(rankNo: number, hotLabel: string | null) {
-  if (hotLabel?.includes("新")) {
+type ItemMetaInput = {
+  hotValue: string | null
+  hotLabel: string | null
+  tag: string | null
+  publishedAt: Date | null
+}
+
+function getItemMeta(item: ItemMetaInput, metaDisplay: ChannelMetaDisplayMode) {
+  if (metaDisplay === "none") {
+    return undefined
+  }
+
+  if (metaDisplay === "heat") {
+    return item.hotValue ?? item.hotLabel ?? undefined
+  }
+
+  if (metaDisplay === "tag") {
+    return item.tag ?? undefined
+  }
+
+  if (metaDisplay === "time") {
+    return formatPublishedAt(item.publishedAt)
+  }
+
+  return (
+    item.hotValue ??
+    item.hotLabel ??
+    item.tag ??
+    formatPublishedAt(item.publishedAt)
+  )
+}
+
+function getItemMetaVariant(metaDisplay: ChannelMetaDisplayMode) {
+  return metaDisplay === "heat" || metaDisplay === "tag" ? metaDisplay : "muted"
+}
+
+function getItemBadge(
+  hotLabel: string | null,
+  tag: string | null,
+  badgeMode: ChannelBadgeMode,
+) {
+  if (badgeMode === "none") {
+    return undefined
+  }
+
+  const marker = `${hotLabel ?? ""} ${tag ?? ""}`
+
+  if (marker.includes("新")) {
     return "新"
   }
 
-  if (hotLabel?.includes("热") || rankNo <= 3) {
+  if (marker.includes("爆")) {
+    return "爆"
+  }
+
+  if (marker.includes("热")) {
     return "热"
   }
 

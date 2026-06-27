@@ -262,11 +262,11 @@ async function getDailyReportSources(report: {
             formatOperationDateTime(item.publishedAt) ??
             "已收录",
           badge:
-            item.hotLabel?.includes("新") || item.hotLabel?.includes("热")
+            item.hotLabel?.includes("新") ||
+            item.hotLabel?.includes("热") ||
+            item.hotLabel?.includes("爆")
               ? item.hotLabel
-              : item.rankNo && item.rankNo <= 3
-                ? "热"
-                : undefined,
+              : undefined,
         })),
       }
     }),

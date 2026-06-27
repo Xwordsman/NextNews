@@ -6,6 +6,11 @@ import { redirect } from "next/navigation"
 import { recordAdminOperation } from "@/server/admin/operation-log"
 import { hashPassword, verifyPassword } from "@/server/auth/password"
 import { requireAdmin } from "@/server/auth/session"
+import {
+  channelBadgeModes,
+  channelMetaDisplayModes,
+  mergeChannelDisplayConfig,
+} from "@/server/channels/display-config"
 import { getChannelDefinition } from "@/server/channels/registry"
 import { hashContentUrl, normalizeContentUrl } from "@/server/content/hash"
 import { runChannelCrawl } from "@/server/crawling/run-channel"
@@ -58,6 +63,7 @@ import {
 const entityStatuses = ["draft", "active", "disabled"] as const
 const membershipStatuses = ["active", "expired", "canceled"] as const
 const userStatuses = ["active", "disabled"] as const
+const hexColorPattern = /^#[0-9a-f]{6}$/i
 
 function redirectWithError(pathname: string, error: unknown): never {
   const message =
@@ -79,6 +85,20 @@ function isUniqueViolation(error: unknown) {
 
 function formString(formData: FormData, name: string) {
   return String(formData.get(name) ?? "").trim()
+}
+
+function optionalHexColor(formData: FormData, name: string, label: string) {
+  const value = formString(formData, name)
+
+  if (!value) {
+    return undefined
+  }
+
+  if (!hexColorPattern.test(value)) {
+    throw new AdminFormError(`${label}必须是 #RRGGBB 格式`)
+  }
+
+  return value.toLowerCase()
 }
 
 function safeAdminBackTo(value: string, fallback = "/admin") {
@@ -222,6 +242,22 @@ function parseChannelForm(formData: FormData) {
     isSubscribable: booleanField(formData, "isSubscribable"),
     displayStyle:
       optionalString(formData, "displayStyle", "展示样式", 80) ?? "rank",
+    homeDisplay: {
+      cardColor: optionalHexColor(formData, "displayCardColor", "卡片主色"),
+      logoColor: optionalHexColor(formData, "displayLogoColor", "Logo 色"),
+      metaDisplay: selectValue(
+        formData,
+        "displayMeta",
+        "元信息",
+        channelMetaDisplayModes,
+      ),
+      badgeMode: selectValue(
+        formData,
+        "displayBadge",
+        "角标",
+        channelBadgeModes,
+      ),
+    },
     weight: optionalInteger(formData, "weight", "权重", 0),
     sort: optionalInteger(formData, "sort", "排序", 0),
     status: selectValue(formData, "status", "状态", entityStatuses),
@@ -497,12 +533,15 @@ export async function createChannelAction(formData: FormData) {
     redirectWithError("/admin/channels/new", error)
   }
 
-  const { categoryIds, ...channelValues } = values
+  const { categoryIds, homeDisplay, ...channelValues } = values
 
   try {
     const [channel] = await getDb()
       .insert(bizChannel)
-      .values(channelValues)
+      .values({
+        ...channelValues,
+        extra: mergeChannelDisplayConfig(null, homeDisplay),
+      })
       .returning({ id: bizChannel.id })
 
     await replaceChannelCategories(channel.id, categoryIds)
@@ -533,12 +572,22 @@ export async function updateChannelAction(formData: FormData) {
     redirectWithError(`/admin/channels/${id}/edit`, error)
   }
 
-  const { categoryIds, ...channelValues } = values
+  const { categoryIds, homeDisplay, ...channelValues } = values
 
   try {
+    const [currentChannel] = await getDb()
+      .select({ extra: bizChannel.extra })
+      .from(bizChannel)
+      .where(eq(bizChannel.id, id))
+      .limit(1)
+
     await getDb()
       .update(bizChannel)
-      .set({ ...channelValues, updatedAt: new Date() })
+      .set({
+        ...channelValues,
+        extra: mergeChannelDisplayConfig(currentChannel?.extra, homeDisplay),
+        updatedAt: new Date(),
+      })
       .where(eq(bizChannel.id, id))
 
     await replaceChannelCategories(id, categoryIds)

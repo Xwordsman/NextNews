@@ -105,6 +105,20 @@ function NavPill({
   )
 }
 
+function getStoryMetaClassName(
+  metaVariant: HomeSource["items"][number]["metaVariant"],
+) {
+  if (metaVariant === "heat") {
+    return "text-xs font-medium text-rose-600 dark:text-rose-300"
+  }
+
+  if (metaVariant === "tag") {
+    return "inline-flex max-w-full rounded-md bg-slate-900/5 px-1.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-white/10 dark:text-white/70"
+  }
+
+  return "text-xs text-slate-500 dark:text-white/50"
+}
+
 export function PublicHomePage({
   categoryNavItems = defaultCategoryNavItems,
   homeModules = [],
@@ -133,7 +147,7 @@ export function PublicHomePage({
 
     return sources.filter((source) => {
       const text = `${source.name} ${source.tag} ${source.items
-        .map((item) => `${item.title} ${item.meta} ${item.badge ?? ""}`)
+        .map((item) => `${item.title} ${item.meta ?? ""} ${item.badge ?? ""}`)
         .join(" ")}`.toLowerCase()
 
       return text.includes(normalizedQuery)
@@ -591,9 +605,15 @@ export function PublicHomePage({
                                       {item.title}
                                     </strong>
                                   )}
-                                  <small className="text-slate-500 dark:text-white/50">
-                                    {item.meta}
-                                  </small>
+                                  {item.meta ? (
+                                    <small
+                                      className={getStoryMetaClassName(
+                                        item.metaVariant,
+                                      )}
+                                    >
+                                      {item.meta}
+                                    </small>
+                                  ) : null}
                                 </span>
                                 {item.badge ? (
                                   <span className="rounded-md bg-[#f5bb48] px-1.5 py-0.5 text-[11px] font-bold text-[#23180a]">

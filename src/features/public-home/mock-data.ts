@@ -1,7 +1,8 @@
 export type HomeStory = {
   id?: string
   title: string
-  meta: string
+  meta?: string
+  metaVariant?: "muted" | "heat" | "tag"
   url?: string
   badge?: string
 }

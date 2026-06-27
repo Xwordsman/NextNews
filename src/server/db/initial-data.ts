@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm"
 import { hashPassword } from "@/server/auth/password"
+import { mergeChannelDisplayConfig } from "@/server/channels/display-config"
 import { getDb } from "./client"
 import {
   bizCategory,
@@ -100,6 +101,12 @@ export async function seedInitialData(options: SeedInitialDataOptions = {}) {
     isSubscribable: true,
     sort: 10,
     status: "draft",
+    extra: mergeChannelDisplayConfig(null, {
+      cardColor: "#954b4d",
+      logoColor: "#f0443e",
+      metaDisplay: "heat",
+      badgeMode: "source",
+    }),
   })
   const zhihuHot = await upsertChannel({
     siteId: zhihu.id,
@@ -115,6 +122,12 @@ export async function seedInitialData(options: SeedInitialDataOptions = {}) {
     isSubscribable: true,
     sort: 20,
     status: "draft",
+    extra: mergeChannelDisplayConfig(null, {
+      cardColor: "#456a9e",
+      logoColor: "#1777ff",
+      metaDisplay: "heat",
+      badgeMode: "source",
+    }),
   })
   const githubTrending = await upsertChannel({
     siteId: github.id,
@@ -130,6 +143,12 @@ export async function seedInitialData(options: SeedInitialDataOptions = {}) {
     isSubscribable: true,
     sort: 30,
     status: "draft",
+    extra: mergeChannelDisplayConfig(null, {
+      cardColor: "#2d3644",
+      logoColor: "#0f172a",
+      metaDisplay: "heat",
+      badgeMode: "source",
+    }),
   })
   const solidotNews = await upsertChannel({
     siteId: solidot.id,
@@ -145,6 +164,12 @@ export async function seedInitialData(options: SeedInitialDataOptions = {}) {
     isSubscribable: true,
     sort: 40,
     status: "active",
+    extra: mergeChannelDisplayConfig(null, {
+      cardColor: "#375879",
+      logoColor: "#2563eb",
+      metaDisplay: "time",
+      badgeMode: "none",
+    }),
   })
 
   await bindChannelCategory(weiboHot.id, general.id)
