@@ -3,7 +3,6 @@
 import Link from "next/link"
 import { type DragEvent, useEffect, useMemo, useRef, useState } from "react"
 import {
-  GripVertical,
   Moon,
   Newspaper,
   RefreshCw,
@@ -260,7 +259,7 @@ export function PublicHomePage({
       top: "0",
       transform: "scale(0.98)",
       width: `${rect.width}px`,
-      zIndex: "-1",
+      zIndex: "2147483647",
     })
 
     document.body.append(preview)
@@ -654,7 +653,8 @@ export function PublicHomePage({
                       .slice(0, liveRankingsModule.displayLimit)
                       .map((source) => (
                         <article
-                          className={`min-h-[390px] select-none rounded-[14px] border border-slate-200 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 dark:border-white/[0.08] dark:shadow-[0_18px_50px_rgba(0,0,0,0.26)] dark:hover:border-white/20 ${
+                          aria-label={`${source.name} 榜单卡片，可拖动调整排序`}
+                          className={`min-h-[390px] cursor-grab select-none rounded-[14px] border border-slate-200 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 active:cursor-grabbing dark:border-white/[0.08] dark:shadow-[0_18px_50px_rgba(0,0,0,0.26)] dark:hover:border-white/20 ${
                             draggedId === source.id
                               ? "scale-[0.985] opacity-45 ring-2 ring-slate-400/25"
                               : ""
@@ -676,6 +676,7 @@ export function PublicHomePage({
                           }}
                           onDragOver={(event) => {
                             event.preventDefault()
+                            event.dataTransfer.dropEffect = "move"
                             queueMoveDraggedSource({
                               id: source.id,
                               placement: getDropPlacement(event),
@@ -685,12 +686,12 @@ export function PublicHomePage({
                             event.preventDefault()
                           }}
                           onDragStart={(event) => {
-                            const dragHandle =
+                            const actionElement =
                               event.target instanceof Element
-                                ? event.target.closest("[data-drag-handle]")
+                                ? event.target.closest("[data-card-action]")
                                 : null
 
-                            if (!dragHandle) {
+                            if (actionElement) {
                               event.preventDefault()
                               return
                             }
@@ -699,6 +700,7 @@ export function PublicHomePage({
                             lastDragOverKeyRef.current = null
                             setDraggedId(source.id)
                             event.dataTransfer.effectAllowed = "move"
+                            event.dataTransfer.setData("text/plain", source.id)
                             const rect =
                               event.currentTarget.getBoundingClientRect()
                             const preview = createDragPreview(
@@ -743,21 +745,9 @@ export function PublicHomePage({
                             </div>
                             <div className="flex items-center gap-0.5">
                               <button
-                                aria-label={`拖动 ${source.name} 调整排序`}
-                                className="grid h-11 w-11 cursor-grab place-items-center rounded-full border border-transparent text-slate-500 transition-colors hover:border-slate-200 hover:bg-slate-900/10 hover:text-slate-950 active:cursor-grabbing dark:text-slate-400 dark:hover:border-line dark:hover:bg-white/10 dark:hover:text-slate-50"
-                                data-drag-handle
-                                title="拖动排序"
-                                type="button"
-                              >
-                                <GripVertical
-                                  aria-hidden="true"
-                                  size={22}
-                                  strokeWidth={2}
-                                />
-                              </button>
-                              <button
                                 aria-label="刷新该榜单"
                                 className="grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-transparent text-slate-500 transition-colors hover:border-slate-200 hover:bg-slate-900/10 hover:text-slate-950 dark:text-slate-400 dark:hover:border-line dark:hover:bg-white/10 dark:hover:text-slate-50"
+                                data-card-action
                                 onClick={(event) =>
                                   animateCard(
                                     event.currentTarget.closest("article"),
@@ -777,6 +767,7 @@ export function PublicHomePage({
                                 }
                                 aria-pressed={source.favorite}
                                 className="grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-transparent text-slate-500 transition-colors hover:bg-slate-900/10 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-50"
+                                data-card-action
                                 onClick={() => toggleFavorite(source.id)}
                                 type="button"
                               >
