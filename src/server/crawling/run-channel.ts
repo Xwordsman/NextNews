@@ -101,7 +101,9 @@ export async function runChannelCrawl(
     const now = new Date()
     const contentHash = hashSnapshotIdentity(items)
     const snapshotPolicy = normalizeSnapshotPolicy({
-      minIntervalSeconds: serverEnv.crawlMinSnapshotIntervalSeconds,
+      minIntervalSeconds:
+        channel.snapshotIntervalSeconds ??
+        serverEnv.crawlMinSnapshotIntervalSeconds,
       significantTopChangeCount: serverEnv.crawlSignificantTopChangeCount,
       significantTopLimit: serverEnv.crawlSignificantTopLimit,
     })

@@ -1,0 +1,1 @@
+ALTER TABLE "biz_channel" ADD COLUMN "snapshot_interval_seconds" integer DEFAULT 7200 NOT NULL;

@@ -222,6 +222,13 @@ function parseChannelForm(formData: FormData) {
       300,
       30,
     ),
+    snapshotIntervalSeconds: optionalInteger(
+      formData,
+      "snapshotIntervalSeconds",
+      "快照间隔",
+      7200,
+      300,
+    ),
     isCrawlEnabled: booleanField(formData, "isCrawlEnabled"),
     isPublic: booleanField(formData, "isPublic"),
     isHomeVisible: booleanField(formData, "isHomeVisible"),

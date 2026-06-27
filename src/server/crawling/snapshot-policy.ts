@@ -29,7 +29,7 @@ export type SnapshotDecision = {
 }
 
 const DEFAULT_SNAPSHOT_POLICY: SnapshotPolicy = {
-  minIntervalSeconds: 10 * 60,
+  minIntervalSeconds: 2 * 60 * 60,
   significantTopChangeCount: 3,
   significantTopLimit: 10,
 }

@@ -3,6 +3,7 @@ import test from "node:test"
 import {
   countTopIdentityChanges,
   hashSnapshotIdentity,
+  normalizeSnapshotPolicy,
   shouldCreateSnapshot,
   type SnapshotIdentityItem,
 } from "./snapshot-policy"
@@ -30,6 +31,10 @@ const previousItems: SnapshotIdentityItem[] = [
     urlHash: "c",
   },
 ]
+
+test("normalizeSnapshotPolicy defaults snapshot archiving to two hours", () => {
+  assert.equal(normalizeSnapshotPolicy().minIntervalSeconds, 7200)
+})
 
 test("hashSnapshotIdentity ignores heat-only changes", () => {
   const firstHash = hashSnapshotIdentity(previousItems)

@@ -54,6 +54,7 @@ export default async function CrawlTasksPage({
                 <th className="px-5 py-3 font-semibold">definition_key</th>
                 <th className="px-5 py-3 font-semibold">状态</th>
                 <th className="px-5 py-3 font-semibold">采集间隔</th>
+                <th className="px-5 py-3 font-semibold">快照间隔</th>
                 <th className="px-5 py-3 font-semibold">最近采集</th>
                 <th className="px-5 py-3 font-semibold">最近成功</th>
                 <th className="px-5 py-3 font-semibold">操作</th>
@@ -86,6 +87,9 @@ export default async function CrawlTasksPage({
                   </td>
                   <td className="px-5 py-4 text-sm text-zinc-500">
                     {formatInterval(task.crawlIntervalSeconds)}
+                  </td>
+                  <td className="px-5 py-4 text-sm text-zinc-500">
+                    {formatInterval(task.snapshotIntervalSeconds)}
                   </td>
                   <td className="px-5 py-4 text-sm text-zinc-500">
                     {formatDateTime(task.lastCrawlAt)}

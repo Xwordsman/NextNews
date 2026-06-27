@@ -473,6 +473,19 @@ export function ChannelForm({
             type="number"
           />
         </Field>
+        <Field
+          htmlFor="snapshotIntervalSeconds"
+          hint="用于历史归档，默认 7200 秒（2 小时）。采集可以更频繁，快照不必每次都保存。"
+          label="快照间隔（秒）"
+        >
+          <Input
+            defaultValue={channel?.snapshotIntervalSeconds ?? 7200}
+            id="snapshotIntervalSeconds"
+            min={300}
+            name="snapshotIntervalSeconds"
+            type="number"
+          />
+        </Field>
         <Field htmlFor="channelType" label="频道类型">
           <Input
             defaultValue={channel?.channelType ?? "rank"}

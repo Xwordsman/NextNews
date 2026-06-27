@@ -57,6 +57,13 @@
       "when": 1782470000000,
       "tag": "0007_search_trigram_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782547491562,
+      "tag": "0008_groovy_cardiac",
+      "breakpoints": true
     }
   ]
 }

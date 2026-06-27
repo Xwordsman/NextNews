@@ -109,6 +109,13 @@ export default async function ChannelsPage({
                     </div>
                   </td>
                   <td className="px-5 py-4 text-sm text-zinc-500">
+                    <div>
+                      采集间隔：{formatInterval(channel.crawlIntervalSeconds)}
+                    </div>
+                    <div className="mt-1">
+                      快照间隔：
+                      {formatInterval(channel.snapshotIntervalSeconds)}
+                    </div>
                     <div>采集：{formatDateTime(channel.lastCrawlAt)}</div>
                     <div className="mt-1">
                       成功：{formatDateTime(channel.lastSuccessAt)}
@@ -135,4 +142,16 @@ export default async function ChannelsPage({
       </AdminSection>
     </div>
   )
+}
+
+function formatInterval(seconds: number) {
+  if (seconds < 60) {
+    return `${seconds} 秒`
+  }
+
+  if (seconds < 3600) {
+    return `${Math.round(seconds / 60)} 分钟`
+  }
+
+  return `${Math.round(seconds / 3600)} 小时`
 }

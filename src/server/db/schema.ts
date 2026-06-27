@@ -246,6 +246,9 @@ export const bizChannel = pgTable(
     crawlIntervalSeconds: integer("crawl_interval_seconds")
       .default(300)
       .notNull(),
+    snapshotIntervalSeconds: integer("snapshot_interval_seconds")
+      .default(7200)
+      .notNull(),
     isCrawlEnabled: boolean("is_crawl_enabled").default(true).notNull(),
     isPublic: boolean("is_public").default(true).notNull(),
     isHomeVisible: boolean("is_home_visible").default(false).notNull(),
