@@ -9,4 +9,13 @@ export const serverEnv = {
   crawlDefaultIntervalSeconds: Number(
     process.env.CRAWL_DEFAULT_INTERVAL_SECONDS ?? 300,
   ),
+  crawlMinSnapshotIntervalSeconds: Number(
+    process.env.CRAWL_MIN_SNAPSHOT_INTERVAL_SECONDS ?? 600,
+  ),
+  crawlSignificantTopChangeCount: Number(
+    process.env.CRAWL_SIGNIFICANT_TOP_CHANGE_COUNT ?? 3,
+  ),
+  crawlSignificantTopLimit: Number(
+    process.env.CRAWL_SIGNIFICANT_TOP_LIMIT ?? 10,
+  ),
 }

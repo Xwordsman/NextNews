@@ -1,4 +1,4 @@
-import { and, eq, gt, isNull, lt, sql } from "drizzle-orm"
+import { and, asc, desc, eq, gt, isNull, lt, sql } from "drizzle-orm"
 import { getChannelDefinition } from "@/server/channels/registry"
 import { hashText } from "@/server/content/hash"
 import { getDb } from "@/server/db/client"
@@ -9,11 +9,17 @@ import {
   bizSnapshotItem,
   logCrawlRun,
 } from "@/server/db/schema"
+import { serverEnv } from "@/server/env"
 import { enqueueSystemJob } from "@/server/jobs/queue"
 import { recordSubscriptionNotificationsForSnapshot } from "@/server/subscriptions/notifications"
 import { recordTrackingMatchesForSnapshot } from "@/server/tracking/matches"
 import type { NewsItem } from "@/types"
 import { fetchRssItems } from "./rss"
+import {
+  hashSnapshotIdentity,
+  normalizeSnapshotPolicy,
+  shouldCreateSnapshot,
+} from "./snapshot-policy"
 
 type CrawlRunType = typeof logCrawlRun.$inferInsert.runType
 type CrawlRunStatus = "success" | "skipped"
@@ -93,9 +99,88 @@ export async function runChannelCrawl(
     const rawItems = await collectItems(definition)
     const items = normalizeItems(rawItems)
     const now = new Date()
-    const contentHash = hashSnapshot(items)
+    const contentHash = hashSnapshotIdentity(items)
+    const snapshotPolicy = normalizeSnapshotPolicy({
+      minIntervalSeconds: serverEnv.crawlMinSnapshotIntervalSeconds,
+      significantTopChangeCount: serverEnv.crawlSignificantTopChangeCount,
+      significantTopLimit: serverEnv.crawlSignificantTopLimit,
+    })
 
     const result = await db.transaction(async (tx) => {
+      const [latestSnapshot] = await tx
+        .select({
+          id: bizChannelSnapshot.id,
+          contentHash: bizChannelSnapshot.contentHash,
+          snapshotTime: bizChannelSnapshot.snapshotTime,
+        })
+        .from(bizChannelSnapshot)
+        .where(
+          and(
+            eq(bizChannelSnapshot.channelId, channelId),
+            eq(bizChannelSnapshot.status, "active"),
+          ),
+        )
+        .orderBy(desc(bizChannelSnapshot.snapshotTime))
+        .limit(1)
+
+      if (latestSnapshot?.contentHash === contentHash) {
+        await tx
+          .update(bizChannel)
+          .set({
+            lastSnapshotId: latestSnapshot.id,
+            lastCrawlAt: now,
+            lastSuccessAt: now,
+            updatedAt: now,
+          })
+          .where(eq(bizChannel.id, channelId))
+
+        return {
+          snapshotId: latestSnapshot.id,
+          insertedCount: 0,
+          createdSnapshot: false,
+          skippedReason: "same_snapshot_identity",
+        }
+      }
+
+      if (latestSnapshot) {
+        const previousItems = await tx
+          .select({
+            rankNo: bizSnapshotItem.rankNo,
+            title: bizSnapshotItem.title,
+            url: bizSnapshotItem.url,
+            urlHash: bizSnapshotItem.urlHash,
+          })
+          .from(bizSnapshotItem)
+          .where(eq(bizSnapshotItem.snapshotId, latestSnapshot.id))
+          .orderBy(asc(bizSnapshotItem.rankNo), asc(bizSnapshotItem.createdAt))
+        const snapshotDecision = shouldCreateSnapshot({
+          currentItems: items,
+          latestSnapshotTime: latestSnapshot.snapshotTime,
+          now,
+          policy: snapshotPolicy,
+          previousItems,
+        })
+
+        if (!snapshotDecision.shouldCreate) {
+          await tx
+            .update(bizChannel)
+            .set({
+              lastSnapshotId: latestSnapshot.id,
+              lastCrawlAt: now,
+              lastSuccessAt: now,
+              updatedAt: now,
+            })
+            .where(eq(bizChannel.id, channelId))
+
+          return {
+            snapshotId: latestSnapshot.id,
+            insertedCount: 0,
+            createdSnapshot: false,
+            skippedReason: snapshotDecision.reason,
+          }
+        }
+      }
+
       const [snapshot] = await tx
         .insert(bizChannelSnapshot)
         .values({
@@ -145,6 +230,7 @@ export async function runChannelCrawl(
           snapshotId: existingSnapshot.id,
           insertedCount: 0,
           createdSnapshot: false,
+          skippedReason: "same_snapshot_identity",
         }
       }
 
@@ -213,6 +299,7 @@ export async function runChannelCrawl(
         snapshotId: snapshot.id,
         insertedCount: snapshotRows.length,
         createdSnapshot: true,
+        skippedReason: undefined,
       }
     })
 
@@ -274,6 +361,7 @@ export async function runChannelCrawl(
       fetchedCount: rawItems.length,
       insertedCount: result.insertedCount,
       createdSnapshot: result.createdSnapshot,
+      skippedReason: result.skippedReason,
     }
   } catch (error) {
     const now = new Date()
@@ -416,20 +504,6 @@ function normalizeItems(items: NewsItem[]): NormalizedNewsItem[] {
       }
     })
     .filter((item): item is NormalizedNewsItem => Boolean(item))
-}
-
-function hashSnapshot(items: NormalizedNewsItem[]) {
-  return hashText(
-    JSON.stringify(
-      items.map((item) => ({
-        rankNo: item.rankNo,
-        title: item.title,
-        url: item.url,
-        hotValue: item.hotValue,
-        hotLabel: item.hotLabel,
-      })),
-    ),
-  )
 }
 
 function cleanString(value?: string) {
