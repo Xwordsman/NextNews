@@ -1,8 +1,9 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { type DragEvent, useEffect, useMemo, useRef, useState } from "react"
 import {
+  GripVertical,
   Moon,
   Newspaper,
   RefreshCw,
@@ -74,6 +75,13 @@ type PublicHomePageProps = {
   primaryNavItems?: typeof defaultPrimaryNavItems
 }
 
+type DropPlacement = "before" | "after"
+
+type PendingDragTarget = {
+  id: string
+  placement: DropPlacement
+}
+
 function cloneSources(sources: HomeSource[]) {
   return sources.map((source) => ({
     ...source,
@@ -137,7 +145,10 @@ export function PublicHomePage({
   const searchInputRef = useRef<HTMLInputElement>(null)
   const gridRef = useRef<HTMLDivElement>(null)
   const draggedIdRef = useRef<string | null>(null)
-  const lastDragOverIdRef = useRef<string | null>(null)
+  const lastDragOverKeyRef = useRef<string | null>(null)
+  const pendingDragTargetRef = useRef<PendingDragTarget | null>(null)
+  const reorderFrameRef = useRef<number | null>(null)
+  const dragPreviewRef = useRef<HTMLElement | null>(null)
 
   const normalizedQuery = query.trim().toLowerCase()
   const filteredSources = useMemo(() => {
@@ -166,6 +177,11 @@ export function PublicHomePage({
   const hotSitesModule = moduleByKey.get("hot-sites")
   const liveRankingsModule = moduleByKey.get("live-rankings")
 
+  function clearDragPreview() {
+    dragPreviewRef.current?.remove()
+    dragPreviewRef.current = null
+  }
+
   useEffect(() => {
     function handleDocumentClick(event: MouseEvent) {
       if (!searchRef.current?.contains(event.target as Node) && !query.trim()) {
@@ -182,6 +198,15 @@ export function PublicHomePage({
       searchInputRef.current?.focus()
     }
   }, [isSearchOpen])
+
+  useEffect(() => {
+    return () => {
+      if (reorderFrameRef.current !== null) {
+        cancelAnimationFrame(reorderFrameRef.current)
+      }
+      clearDragPreview()
+    }
+  }, [])
 
   function toggleFavorite(sourceId: string) {
     setSources((currentSources) =>
@@ -218,16 +243,138 @@ export function PublicHomePage({
       })
   }
 
-  function moveDraggedSource(targetId: string) {
+  function createDragPreview(card: HTMLElement) {
+    clearDragPreview()
+
+    const rect = card.getBoundingClientRect()
+    const preview = card.cloneNode(true) as HTMLElement
+
+    preview.setAttribute("aria-hidden", "true")
+    Object.assign(preview.style, {
+      boxShadow: "0 24px 60px rgba(15, 23, 42, 0.22)",
+      height: `${rect.height}px`,
+      left: "-10000px",
+      opacity: "0.96",
+      pointerEvents: "none",
+      position: "fixed",
+      top: "0",
+      transform: "scale(0.98)",
+      width: `${rect.width}px`,
+      zIndex: "-1",
+    })
+
+    document.body.append(preview)
+    dragPreviewRef.current = preview
+
+    return preview
+  }
+
+  function getSourceCardRects() {
+    const rects = new Map<string, DOMRect>()
+
+    gridRef.current
+      ?.querySelectorAll<HTMLElement>("[data-source-id]")
+      .forEach((card) => {
+        if (card.dataset.sourceId) {
+          rects.set(card.dataset.sourceId, card.getBoundingClientRect())
+        }
+      })
+
+    return rects
+  }
+
+  function animateSourceReorder(
+    previousRects: Map<string, DOMRect>,
+    draggedSourceId: string,
+  ) {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return
+    }
+
+    requestAnimationFrame(() => {
+      gridRef.current
+        ?.querySelectorAll<HTMLElement>("[data-source-id]")
+        .forEach((card) => {
+          const sourceId = card.dataset.sourceId
+
+          if (!sourceId || sourceId === draggedSourceId) {
+            return
+          }
+
+          const previousRect = previousRects.get(sourceId)
+
+          if (!previousRect) {
+            return
+          }
+
+          const currentRect = card.getBoundingClientRect()
+          const deltaX = previousRect.left - currentRect.left
+          const deltaY = previousRect.top - currentRect.top
+
+          if (Math.abs(deltaX) < 1 && Math.abs(deltaY) < 1) {
+            return
+          }
+
+          card.animate(
+            [
+              { transform: `translate(${deltaX}px, ${deltaY}px)` },
+              { transform: "translate(0, 0)" },
+            ],
+            {
+              duration: 220,
+              easing: "cubic-bezier(0.2, 0, 0, 1)",
+            },
+          )
+        })
+    })
+  }
+
+  function getDropPlacement(event: DragEvent<HTMLElement>): DropPlacement {
+    const rect = event.currentTarget.getBoundingClientRect()
+    const horizontalRatio = (event.clientX - rect.left) / rect.width
+    const verticalRatio = (event.clientY - rect.top) / rect.height
+    const horizontalDistance = Math.abs(horizontalRatio - 0.5)
+    const verticalDistance = Math.abs(verticalRatio - 0.5)
+
+    if (horizontalDistance > verticalDistance) {
+      return horizontalRatio > 0.5 ? "after" : "before"
+    }
+
+    return verticalRatio > 0.5 ? "after" : "before"
+  }
+
+  function queueMoveDraggedSource(target: PendingDragTarget) {
+    pendingDragTargetRef.current = target
+
+    if (reorderFrameRef.current !== null) {
+      return
+    }
+
+    reorderFrameRef.current = requestAnimationFrame(() => {
+      const pendingTarget = pendingDragTargetRef.current
+
+      pendingDragTargetRef.current = null
+      reorderFrameRef.current = null
+
+      if (pendingTarget) {
+        moveDraggedSource(pendingTarget)
+      }
+    })
+  }
+
+  function moveDraggedSource({ id: targetId, placement }: PendingDragTarget) {
     const sourceId = draggedIdRef.current
+    const dragOverKey = `${targetId}:${placement}`
 
     if (
       !sourceId ||
       sourceId === targetId ||
-      lastDragOverIdRef.current === targetId
+      lastDragOverKeyRef.current === dragOverKey
     ) {
       return
     }
+
+    const previousRects = getSourceCardRects()
 
     setSources((currentSources) => {
       const fromIndex = currentSources.findIndex(
@@ -241,12 +388,33 @@ export function PublicHomePage({
         return currentSources
       }
 
-      const nextSources = [...currentSources]
-      const [moved] = nextSources.splice(fromIndex, 1)
-      nextSources.splice(toIndex, 0, moved)
-      lastDragOverIdRef.current = targetId
+      const moved = currentSources[fromIndex]
+      const nextSources = currentSources.filter(
+        (source) => source.id !== sourceId,
+      )
+      const targetIndexAfterRemoval = nextSources.findIndex(
+        (source) => source.id === targetId,
+      )
+      const insertIndex =
+        placement === "after"
+          ? targetIndexAfterRemoval + 1
+          : targetIndexAfterRemoval
+
+      nextSources.splice(insertIndex, 0, moved)
+
+      if (
+        nextSources.every(
+          (source, index) => source.id === currentSources[index]?.id,
+        )
+      ) {
+        return currentSources
+      }
+
+      lastDragOverKeyRef.current = dragOverKey
       return nextSources
     })
+
+    animateSourceReorder(previousRects, sourceId)
   }
 
   return (
@@ -486,27 +654,61 @@ export function PublicHomePage({
                       .slice(0, liveRankingsModule.displayLimit)
                       .map((source) => (
                         <article
-                          className={`min-h-[390px] rounded-[14px] border border-slate-200 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 dark:border-white/[0.08] dark:shadow-[0_18px_50px_rgba(0,0,0,0.26)] dark:hover:border-white/20 ${
-                            draggedId === source.id ? "opacity-50" : ""
+                          className={`min-h-[390px] select-none rounded-[14px] border border-slate-200 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 dark:border-white/[0.08] dark:shadow-[0_18px_50px_rgba(0,0,0,0.26)] dark:hover:border-white/20 ${
+                            draggedId === source.id
+                              ? "scale-[0.985] opacity-45 ring-2 ring-slate-400/25"
+                              : ""
                           }`}
                           data-source-card
+                          data-source-id={source.id}
                           draggable
                           key={source.id}
-                          onDragEnd={(event) => {
+                          onDragEnd={() => {
+                            if (reorderFrameRef.current !== null) {
+                              cancelAnimationFrame(reorderFrameRef.current)
+                              reorderFrameRef.current = null
+                            }
+                            pendingDragTargetRef.current = null
                             draggedIdRef.current = null
-                            lastDragOverIdRef.current = null
+                            lastDragOverKeyRef.current = null
+                            clearDragPreview()
                             setDraggedId(null)
-                            event.currentTarget.classList.remove("opacity-50")
                           }}
                           onDragOver={(event) => {
                             event.preventDefault()
-                            moveDraggedSource(source.id)
+                            queueMoveDraggedSource({
+                              id: source.id,
+                              placement: getDropPlacement(event),
+                            })
+                          }}
+                          onDrop={(event) => {
+                            event.preventDefault()
                           }}
                           onDragStart={(event) => {
+                            const dragHandle =
+                              event.target instanceof Element
+                                ? event.target.closest("[data-drag-handle]")
+                                : null
+
+                            if (!dragHandle) {
+                              event.preventDefault()
+                              return
+                            }
+
                             draggedIdRef.current = source.id
-                            lastDragOverIdRef.current = null
+                            lastDragOverKeyRef.current = null
                             setDraggedId(source.id)
                             event.dataTransfer.effectAllowed = "move"
+                            const rect =
+                              event.currentTarget.getBoundingClientRect()
+                            const preview = createDragPreview(
+                              event.currentTarget,
+                            )
+                            event.dataTransfer.setDragImage(
+                              preview,
+                              event.clientX - rect.left,
+                              event.clientY - rect.top,
+                            )
                           }}
                           style={{
                             background: getSourceCardBackground(
@@ -540,6 +742,19 @@ export function PublicHomePage({
                               </span>
                             </div>
                             <div className="flex items-center gap-0.5">
+                              <button
+                                aria-label={`拖动 ${source.name} 调整排序`}
+                                className="grid h-11 w-11 cursor-grab place-items-center rounded-full border border-transparent text-slate-500 transition-colors hover:border-slate-200 hover:bg-slate-900/10 hover:text-slate-950 active:cursor-grabbing dark:text-slate-400 dark:hover:border-line dark:hover:bg-white/10 dark:hover:text-slate-50"
+                                data-drag-handle
+                                title="拖动排序"
+                                type="button"
+                              >
+                                <GripVertical
+                                  aria-hidden="true"
+                                  size={22}
+                                  strokeWidth={2}
+                                />
+                              </button>
                               <button
                                 aria-label="刷新该榜单"
                                 className="grid h-11 w-11 cursor-pointer place-items-center rounded-full border border-transparent text-slate-500 transition-colors hover:border-slate-200 hover:bg-slate-900/10 hover:text-slate-950 dark:text-slate-400 dark:hover:border-line dark:hover:bg-white/10 dark:hover:text-slate-50"
