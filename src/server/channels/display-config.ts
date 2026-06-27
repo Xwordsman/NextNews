@@ -35,6 +35,7 @@ export type ChannelDisplayConfig = {
   colorPreset: ChannelColorPreset
   metaDisplay: ChannelMetaDisplayMode
   badgeMode: ChannelBadgeMode
+  subtitle?: string | null
 }
 
 export type ChannelPalette = {
@@ -101,6 +102,7 @@ export function getChannelDisplayConfig(
     colorPreset,
     metaDisplay: normalizeMetaDisplay(display.metaDisplay),
     badgeMode: normalizeBadgeMode(display.badgeMode),
+    subtitle: normalizeSubtitle(display.subtitle),
   }
 }
 
@@ -114,6 +116,7 @@ export function mergeChannelDisplayConfig(
     colorPreset: displayConfig.colorPreset,
     metaDisplay: displayConfig.metaDisplay,
     badgeMode: displayConfig.badgeMode,
+    subtitle: normalizeSubtitle(displayConfig.subtitle),
   }
 
   return nextExtra
@@ -165,6 +168,16 @@ function normalizeBadgeMode(value: unknown): ChannelBadgeMode {
   return channelBadgeModes.includes(value as ChannelBadgeMode)
     ? (value as ChannelBadgeMode)
     : "source"
+}
+
+function normalizeSubtitle(value: unknown) {
+  if (typeof value !== "string") {
+    return null
+  }
+
+  const subtitle = value.trim()
+
+  return subtitle || null
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

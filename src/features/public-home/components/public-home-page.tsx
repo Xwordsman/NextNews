@@ -156,9 +156,10 @@ export function PublicHomePage({
     }
 
     return sources.filter((source) => {
-      const text = `${source.name} ${source.tag} ${source.items
-        .map((item) => `${item.title} ${item.meta ?? ""} ${item.badge ?? ""}`)
-        .join(" ")}`.toLowerCase()
+      const text =
+        `${source.name} ${source.tag} ${source.updatedLabel ?? ""} ${source.items
+          .map((item) => `${item.title} ${item.meta ?? ""} ${item.badge ?? ""}`)
+          .join(" ")}`.toLowerCase()
 
       return text.includes(normalizedQuery)
     })
@@ -737,9 +738,7 @@ export function PublicHomePage({
                                   </span>
                                 </span>
                                 <small className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
-                                  {source.tag === "实时热搜"
-                                    ? "正在追踪"
-                                    : "12 分钟内更新"}
+                                  {source.updatedLabel ?? "刚刚更新"}
                                 </small>
                               </span>
                             </div>

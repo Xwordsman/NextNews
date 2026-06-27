@@ -178,7 +178,12 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
         id: channel.id,
         name: channel.channelName,
         logo: getLogoText(channel.siteName),
-        tag: formatUpdateTag(channel.lastSuccessAt),
+        tag: getChannelSubtitle(
+          channel.channelName,
+          channel.siteName,
+          displayConfig.subtitle,
+        ),
+        updatedLabel: formatUpdateTag(channel.lastSuccessAt),
         category: categoryByChannelId.get(channel.id) ?? "general",
         color: palette.color,
         logoColor: palette.logoColor,
@@ -237,6 +242,26 @@ async function listHomeModules(): Promise<HomeModule[]> {
 
 function getLogoText(name: string) {
   return Array.from(name.trim())[0]?.toUpperCase() ?? "N"
+}
+
+function getChannelSubtitle(
+  channelName: string,
+  siteName: string,
+  configuredSubtitle?: string | null,
+) {
+  const subtitle = configuredSubtitle?.trim()
+
+  if (subtitle) {
+    return subtitle
+  }
+
+  const normalizedChannelName = channelName.trim()
+  const normalizedSiteName = siteName.trim()
+  const inferredSubtitle = normalizedChannelName.startsWith(normalizedSiteName)
+    ? normalizedChannelName.slice(normalizedSiteName.length).trim()
+    : ""
+
+  return inferredSubtitle || normalizedSiteName || normalizedChannelName
 }
 
 function formatUpdateTag(value: Date | null) {

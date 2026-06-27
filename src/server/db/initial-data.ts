@@ -105,6 +105,7 @@ export async function seedInitialData(options: SeedInitialDataOptions = {}) {
       colorPreset: "red",
       metaDisplay: "heat",
       badgeMode: "source",
+      subtitle: "热搜",
     }),
   })
   const zhihuHot = await upsertChannel({
@@ -125,6 +126,7 @@ export async function seedInitialData(options: SeedInitialDataOptions = {}) {
       colorPreset: "blue",
       metaDisplay: "heat",
       badgeMode: "source",
+      subtitle: "热榜",
     }),
   })
   const githubTrending = await upsertChannel({
@@ -145,6 +147,7 @@ export async function seedInitialData(options: SeedInitialDataOptions = {}) {
       colorPreset: "gray",
       metaDisplay: "heat",
       badgeMode: "source",
+      subtitle: "Trending",
     }),
   })
   const solidotNews = await upsertChannel({
@@ -165,6 +168,7 @@ export async function seedInitialData(options: SeedInitialDataOptions = {}) {
       colorPreset: "teal",
       metaDisplay: "time",
       badgeMode: "none",
+      subtitle: "资讯",
     }),
   })
 

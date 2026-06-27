@@ -229,6 +229,7 @@ function parseChannelForm(formData: FormData) {
     displayStyle:
       optionalString(formData, "displayStyle", "展示样式", 80) ?? "rank",
     homeDisplay: {
+      subtitle: optionalString(formData, "displaySubtitle", "首页副标题", 40),
       colorPreset: selectValue(
         formData,
         "displayColorPreset",
@@ -547,6 +548,7 @@ export async function createChannelAction(formData: FormData) {
   }
 
   revalidatePath("/admin/channels")
+  revalidatePath("/")
   redirect("/admin/channels")
 }
 
@@ -593,6 +595,7 @@ export async function updateChannelAction(formData: FormData) {
   }
 
   revalidatePath("/admin/channels")
+  revalidatePath("/")
   redirect("/admin/channels")
 }
 
@@ -612,6 +615,7 @@ export async function deleteChannelAction(formData: FormData) {
     .where(eq(bizChannel.id, id))
 
   revalidatePath("/admin/channels")
+  revalidatePath("/")
 }
 
 export async function runChannelCrawlAction(formData: FormData) {

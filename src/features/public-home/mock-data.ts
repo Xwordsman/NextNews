@@ -12,6 +12,7 @@ export type HomeSource = {
   name: string
   logo: string
   tag: string
+  updatedLabel?: string
   category: string
   color: string
   logoColor: string

@@ -498,7 +498,20 @@ export function ChannelForm({
               控制前台首页卡片颜色预设、元信息和新热角标。
             </p>
           </div>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-4">
+            <Field
+              htmlFor="displaySubtitle"
+              hint="显示在首页卡片标题右侧，例如：热搜、实时热搜、Trending。"
+              label="频道副标题"
+            >
+              <Input
+                defaultValue={displayConfig.subtitle ?? ""}
+                id="displaySubtitle"
+                maxLength={40}
+                name="displaySubtitle"
+                placeholder="热搜"
+              />
+            </Field>
             <Field htmlFor="displayColorPreset" label="颜色预设">
               <Select
                 defaultValue={displayConfig.colorPreset}
