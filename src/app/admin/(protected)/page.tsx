@@ -52,13 +52,13 @@ export default async function AdminPage() {
       </section>
 
       <AdminSection>
-        <div className="grid gap-4 border-b border-slate-200 p-5 md:grid-cols-3">
+        <div className="grid gap-4 border-b border-zinc-200 p-5 md:grid-cols-3">
           <Link
             className="rounded-lg border border-zinc-200 bg-white p-4 transition-colors hover:bg-zinc-50"
             href="/admin/sites"
           >
             <h2 className="font-semibold">站点管理</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
+            <p className="mt-2 text-sm leading-6 text-zinc-500">
               管理微博、知乎、GitHub 这类内容来源。
             </p>
           </Link>
@@ -67,7 +67,7 @@ export default async function AdminPage() {
             href="/admin/categories"
           >
             <h2 className="font-semibold">分类管理</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
+            <p className="mt-2 text-sm leading-6 text-zinc-500">
               控制导航、首页分组和频道归类。
             </p>
           </Link>
@@ -76,7 +76,7 @@ export default async function AdminPage() {
             href="/admin/channels"
           >
             <h2 className="font-semibold">频道管理</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
+            <p className="mt-2 text-sm leading-6 text-zinc-500">
               绑定 definition_key、采集频率和前台展示策略。
             </p>
           </Link>

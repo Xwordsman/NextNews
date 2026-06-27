@@ -46,7 +46,7 @@ export default async function CategoriesPage({
         ) : (
           <AdminTable>
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/80 text-xs text-slate-500">
+              <tr className="border-b border-zinc-200 bg-zinc-50/80 text-xs text-zinc-500">
                 <th className="px-5 py-3 font-semibold">分类</th>
                 <th className="px-5 py-3 font-semibold">slug</th>
                 <th className="px-5 py-3 font-semibold">父级</th>
@@ -58,12 +58,12 @@ export default async function CategoriesPage({
             <tbody>
               {categories.map((category) => (
                 <tr
-                  className="border-b border-slate-200 last:border-0 hover:bg-slate-50/80"
+                  className="border-b border-zinc-200 last:border-0 hover:bg-zinc-50/80"
                   key={category.id}
                 >
                   <td className="px-5 py-4">
                     <div className="font-semibold">{category.categoryName}</div>
-                    <div className="mt-1 text-xs text-slate-500">
+                    <div className="mt-1 text-xs text-zinc-500">
                       {category.icon ?? "未设置图标"} ·{" "}
                       {category.color ?? "未设置颜色"}
                     </div>

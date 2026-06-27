@@ -49,7 +49,7 @@ export default async function CrawlTasksPage({
         ) : (
           <AdminTable>
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/80 text-xs text-slate-500">
+              <tr className="border-b border-zinc-200 bg-zinc-50/80 text-xs text-zinc-500">
                 <th className="px-5 py-3 font-semibold">频道</th>
                 <th className="px-5 py-3 font-semibold">definition_key</th>
                 <th className="px-5 py-3 font-semibold">状态</th>
@@ -62,12 +62,12 @@ export default async function CrawlTasksPage({
             <tbody>
               {tasks.map((task) => (
                 <tr
-                  className="border-b border-slate-200 last:border-0 hover:bg-slate-50/80"
+                  className="border-b border-zinc-200 last:border-0 hover:bg-zinc-50/80"
                   key={task.id}
                 >
                   <td className="px-5 py-4">
                     <div className="font-semibold">{task.channelName}</div>
-                    <div className="mt-1 text-xs text-slate-500">
+                    <div className="mt-1 text-xs text-zinc-500">
                       {task.siteName}
                     </div>
                   </td>
@@ -84,13 +84,13 @@ export default async function CrawlTasksPage({
                       />
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {formatInterval(task.crawlIntervalSeconds)}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {formatDateTime(task.lastCrawlAt)}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {formatDateTime(task.lastSuccessAt)}
                   </td>
                   <td className="px-5 py-4">

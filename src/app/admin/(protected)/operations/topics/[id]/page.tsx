@@ -45,13 +45,13 @@ export default async function AdminTopicDetailPage({
       <AdminNotice message={query?.notice} />
 
       <AdminSection>
-        <div className="border-b border-slate-200 bg-slate-50 px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+        <div className="border-b border-zinc-200 bg-zinc-50 px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-zinc-500">
           关键词
         </div>
         <div className="flex flex-wrap gap-2 p-5">
           {data.topic.keywords.map((keyword) => (
             <span
-              className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-500"
+              className="rounded-md border border-zinc-200 bg-white px-3 py-1 text-xs font-semibold text-zinc-500"
               key={keyword}
             >
               {keyword}
@@ -68,7 +68,7 @@ export default async function AdminTopicDetailPage({
           />
         ) : (
           <AdminTable>
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-[0.08em] text-zinc-500">
               <tr>
                 <th className="px-5 py-3">内容</th>
                 <th className="px-5 py-3">来源</th>
@@ -77,29 +77,29 @@ export default async function AdminTopicDetailPage({
                 <th className="px-5 py-3">操作</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-zinc-200">
               {data.manualItems.map((item) => (
-                <tr className="hover:bg-slate-50/80" key={item.relationId}>
+                <tr className="hover:bg-zinc-50/80" key={item.relationId}>
                   <td className="px-5 py-4">
                     <a
-                      className="font-semibold text-slate-950 no-underline transition-colors hover:text-brand"
+                      className="font-semibold text-zinc-950 no-underline transition-colors hover:text-zinc-600 hover:underline"
                       href={item.url}
                       rel="noreferrer"
                       target="_blank"
                     >
                       {item.title}
                     </a>
-                    <div className="mt-1 text-xs text-slate-500">
+                    <div className="mt-1 text-xs text-zinc-500">
                       原榜排名：{item.rankNo ?? "-"}
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {item.siteName} / {item.channelName}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {item.sort}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {formatDateTime(item.createdAt)}
                   </td>
                   <td className="px-5 py-4">
@@ -133,7 +133,7 @@ export default async function AdminTopicDetailPage({
           />
         ) : (
           <AdminTable>
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-[0.08em] text-zinc-500">
               <tr>
                 <th className="px-5 py-3">候选内容</th>
                 <th className="px-5 py-3">来源</th>
@@ -141,26 +141,26 @@ export default async function AdminTopicDetailPage({
                 <th className="px-5 py-3">操作</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-zinc-200">
               {data.candidates.map((item) => (
-                <tr className="hover:bg-slate-50/80" key={item.snapshotItemId}>
+                <tr className="hover:bg-zinc-50/80" key={item.snapshotItemId}>
                   <td className="px-5 py-4">
                     <a
-                      className="font-semibold text-slate-950 no-underline transition-colors hover:text-brand"
+                      className="font-semibold text-zinc-950 no-underline transition-colors hover:text-zinc-600 hover:underline"
                       href={item.url}
                       rel="noreferrer"
                       target="_blank"
                     >
                       {item.title}
                     </a>
-                    <div className="mt-1 text-xs text-slate-500">
+                    <div className="mt-1 text-xs text-zinc-500">
                       原榜排名：{item.rankNo ?? "-"}
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {item.siteName} / {item.channelName}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {formatDateTime(item.createdAt)}
                   </td>
                   <td className="px-5 py-4">

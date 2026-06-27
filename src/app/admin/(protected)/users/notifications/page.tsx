@@ -29,7 +29,7 @@ export default async function AdminUserNotificationsPage() {
           />
         ) : (
           <AdminTable>
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-[0.08em] text-zinc-500">
               <tr>
                 <th className="px-5 py-3">通知</th>
                 <th className="px-5 py-3">用户</th>
@@ -38,13 +38,13 @@ export default async function AdminUserNotificationsPage() {
                 <th className="px-5 py-3">时间</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-zinc-200">
               {notifications.map((notification) => (
-                <tr className="hover:bg-slate-50/80" key={notification.id}>
+                <tr className="hover:bg-zinc-50/80" key={notification.id}>
                   <td className="max-w-[520px] px-5 py-4">
                     <div className="font-semibold">{notification.title}</div>
                     {notification.body ? (
-                      <div className="mt-1 text-sm leading-6 text-slate-500">
+                      <div className="mt-1 text-sm leading-6 text-zinc-500">
                         {notification.body}
                       </div>
                     ) : null}
@@ -53,11 +53,11 @@ export default async function AdminUserNotificationsPage() {
                     <div className="font-semibold">
                       {notification.userDisplayName}
                     </div>
-                    <div className="mt-1 text-xs text-slate-500">
+                    <div className="mt-1 text-xs text-zinc-500">
                       {notification.userEmail}
                     </div>
                   </td>
-                  <td className="px-5 py-4 font-mono text-xs text-slate-500">
+                  <td className="px-5 py-4 font-mono text-xs text-zinc-500">
                     {notification.notificationType}
                   </td>
                   <td className="px-5 py-4">
@@ -67,7 +67,7 @@ export default async function AdminUserNotificationsPage() {
                       inactiveLabel="已读"
                     />
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {formatDateTime(notification.createdAt)}
                   </td>
                 </tr>

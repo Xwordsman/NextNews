@@ -54,17 +54,17 @@ export default async function AdminDailyReportDetailPage({
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge status={data.report.status} />
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">
+              <span className="rounded-md bg-zinc-100 px-3 py-1 text-xs font-semibold text-zinc-500">
                 {data.report.reportDate}
               </span>
             </div>
             {data.report.summary ? (
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500">
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-zinc-500">
                 {data.report.summary}
               </p>
             ) : null}
           </div>
-          <div className="text-right text-sm text-slate-500">
+          <div className="text-right text-sm text-zinc-500">
             <div>频道 {data.report.channelLimit}</div>
             <div>每频道 {data.report.itemLimitPerChannel} 条</div>
           </div>
@@ -79,7 +79,7 @@ export default async function AdminDailyReportDetailPage({
           />
         ) : (
           <AdminTable>
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-[0.08em] text-zinc-500">
               <tr>
                 <th className="px-5 py-3">内容</th>
                 <th className="px-5 py-3">来源</th>
@@ -88,12 +88,12 @@ export default async function AdminDailyReportDetailPage({
                 <th className="px-5 py-3">操作</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-zinc-200">
               {data.manualItems.map((item) => (
-                <tr className="hover:bg-slate-50/80" key={item.relationId}>
+                <tr className="hover:bg-zinc-50/80" key={item.relationId}>
                   <td className="px-5 py-4">
                     <a
-                      className="font-semibold text-slate-950 no-underline transition-colors hover:text-brand"
+                      className="font-semibold text-zinc-950 no-underline transition-colors hover:text-zinc-600 hover:underline"
                       href={item.url}
                       rel="noreferrer"
                       target="_blank"
@@ -101,21 +101,21 @@ export default async function AdminDailyReportDetailPage({
                       {item.title}
                     </a>
                     {item.note ? (
-                      <p className="mt-1 max-w-[520px] text-xs leading-5 text-slate-500">
+                      <p className="mt-1 max-w-[520px] text-xs leading-5 text-zinc-500">
                         {item.note}
                       </p>
                     ) : null}
-                    <div className="mt-1 text-xs text-slate-500">
+                    <div className="mt-1 text-xs text-zinc-500">
                       原榜排名：{item.rankNo ?? "-"}
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {item.siteName} / {item.channelName}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {item.sort}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {formatDateTime(item.snapshotTime)}
                   </td>
                   <td className="px-5 py-4">
@@ -145,7 +145,7 @@ export default async function AdminDailyReportDetailPage({
           />
         ) : (
           <AdminTable>
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-[0.08em] text-zinc-500">
               <tr>
                 <th className="px-5 py-3">候选内容</th>
                 <th className="px-5 py-3">来源</th>
@@ -154,23 +154,23 @@ export default async function AdminDailyReportDetailPage({
                 <th className="px-5 py-3">热度</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-zinc-200">
               {data.candidates.map((item) => (
-                <tr className="hover:bg-slate-50/80" key={item.snapshotItemId}>
+                <tr className="hover:bg-zinc-50/80" key={item.snapshotItemId}>
                   <td className="px-5 py-4">
                     <a
-                      className="font-semibold text-slate-950 no-underline transition-colors hover:text-brand"
+                      className="font-semibold text-zinc-950 no-underline transition-colors hover:text-zinc-600 hover:underline"
                       href={item.url}
                       rel="noreferrer"
                       target="_blank"
                     >
                       {item.title}
                     </a>
-                    <div className="mt-1 text-xs text-slate-500">
+                    <div className="mt-1 text-xs text-zinc-500">
                       原榜排名：{item.rankNo ?? "-"}
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {item.siteName} / {item.channelName}
                   </td>
                   <td className="px-5 py-4">
@@ -191,17 +191,17 @@ export default async function AdminDailyReportDetailPage({
                       <input name="sort" type="hidden" value="0" />
                       <input name="backTo" type="hidden" value={backTo} />
                       <input
-                        className="min-h-9 min-w-0 flex-1 rounded-full border border-slate-200 bg-white px-3 text-sm font-medium outline-none transition-colors focus:border-slate-400"
+                        className="min-h-9 min-w-0 flex-1 rounded-md border border-zinc-200 bg-white px-3 text-sm font-medium outline-none transition-colors focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
                         name="note"
                         placeholder="可选推荐语"
                       />
                       <RunButton label="加入" />
                     </form>
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {formatDateTime(item.createdAt)}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {item.hotValue ?? item.hotLabel ?? item.tag ?? "-"}
                   </td>
                 </tr>

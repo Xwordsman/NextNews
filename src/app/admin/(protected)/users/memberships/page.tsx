@@ -55,7 +55,7 @@ export default async function AdminMembershipsPage({
           <input name="backTo" type="hidden" value="/admin/users/memberships" />
           <div>
             <h2 className="text-base font-semibold">新增套餐</h2>
-            <p className="mt-1 text-sm leading-6 text-slate-500">
+            <p className="mt-1 text-sm leading-6 text-zinc-500">
               套餐保存后仍受系统商业化开关和套餐启用状态共同控制。
             </p>
           </div>
@@ -117,7 +117,7 @@ export default async function AdminMembershipsPage({
             </select>
           </div>
           <textarea
-            className="min-h-24 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium outline-none transition-colors focus:border-slate-400"
+            className="min-h-24 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm font-medium outline-none transition-colors focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
             name="description"
             placeholder="套餐说明"
           />
@@ -135,7 +135,7 @@ export default async function AdminMembershipsPage({
           />
         ) : (
           <AdminTable>
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-[0.08em] text-zinc-500">
               <tr>
                 <th className="px-5 py-3">套餐</th>
                 <th className="px-5 py-3">价格</th>
@@ -144,24 +144,24 @@ export default async function AdminMembershipsPage({
                 <th className="px-5 py-3">快速编辑</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-zinc-200">
               {plans.map((plan) => (
-                <tr className="hover:bg-slate-50/80" key={plan.id}>
+                <tr className="hover:bg-zinc-50/80" key={plan.id}>
                   <td className="px-5 py-4">
                     <div className="font-semibold">{plan.planName}</div>
-                    <div className="mt-1 font-mono text-xs text-slate-500">
+                    <div className="mt-1 font-mono text-xs text-zinc-500">
                       {plan.planKey}
                     </div>
                     {plan.description ? (
-                      <p className="mt-2 max-w-[420px] text-sm leading-6 text-slate-500">
+                      <p className="mt-2 max-w-[420px] text-sm leading-6 text-zinc-500">
                         {plan.description}
                       </p>
                     ) : null}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-600">
+                  <td className="px-5 py-4 text-sm text-zinc-600">
                     {formatMoney(plan.priceCents, plan.currency)}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-600">
+                  <td className="px-5 py-4 text-sm text-zinc-600">
                     {plan.historyDays} 天历史 / {plan.durationDays} 天有效期
                   </td>
                   <td className="px-5 py-4">
@@ -274,7 +274,7 @@ export default async function AdminMembershipsPage({
           />
         ) : (
           <AdminTable>
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-[0.08em] text-zinc-500">
               <tr>
                 <th className="px-5 py-3">用户</th>
                 <th className="px-5 py-3">套餐</th>
@@ -284,28 +284,28 @@ export default async function AdminMembershipsPage({
                 <th className="px-5 py-3">操作</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-zinc-200">
               {orders.map((order) => (
-                <tr className="hover:bg-slate-50/80" key={order.id}>
+                <tr className="hover:bg-zinc-50/80" key={order.id}>
                   <td className="px-5 py-4">
                     <div className="font-semibold">{order.userDisplayName}</div>
-                    <div className="mt-1 text-xs text-slate-500">
+                    <div className="mt-1 text-xs text-zinc-500">
                       {order.userEmail}
                     </div>
                   </td>
                   <td className="px-5 py-4">
                     <div className="font-semibold">{order.planName}</div>
-                    <div className="mt-1 font-mono text-xs text-slate-500">
+                    <div className="mt-1 font-mono text-xs text-zinc-500">
                       {order.planKey}
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-600">
+                  <td className="px-5 py-4 text-sm text-zinc-600">
                     {formatMoney(order.amountCents, order.currency)}
                   </td>
                   <td className="px-5 py-4">
                     <StatusBadge status={order.status} />
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     创建：{formatDateTime(order.createdAt)}
                     <br />
                     支付：{formatDateTime(order.paidAt)}
@@ -364,14 +364,14 @@ function OrderActions({
         </form>
       ) : null}
       {status !== "pending" && status !== "paid" ? (
-        <span className="text-sm text-slate-500">无需操作</span>
+        <span className="text-sm text-zinc-500">无需操作</span>
       ) : null}
     </div>
   )
 }
 
 const inputClassName =
-  "min-h-10 rounded-full border border-slate-200 bg-white px-3 text-sm font-medium outline-none transition-colors focus:border-slate-400"
+  "min-h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm font-medium outline-none transition-colors focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
 
 function formatMoney(priceCents: number, currency: string) {
   return `${currency} ${(priceCents / 100).toFixed(2)}`

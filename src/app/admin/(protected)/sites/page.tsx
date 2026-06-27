@@ -47,7 +47,7 @@ export default async function SitesPage({
         ) : (
           <AdminTable>
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/80 text-xs text-slate-500">
+              <tr className="border-b border-zinc-200 bg-zinc-50/80 text-xs text-zinc-500">
                 <th className="px-5 py-3 font-semibold">站点</th>
                 <th className="px-5 py-3 font-semibold">slug</th>
                 <th className="px-5 py-3 font-semibold">状态</th>
@@ -59,7 +59,7 @@ export default async function SitesPage({
             <tbody>
               {sites.map((site) => (
                 <tr
-                  className="border-b border-slate-200 last:border-0 hover:bg-slate-50/80"
+                  className="border-b border-zinc-200 last:border-0 hover:bg-zinc-50/80"
                   key={site.id}
                 >
                   <td className="px-5 py-4">

@@ -49,7 +49,7 @@ export default async function AdminLatestContentsPage({
           />
         ) : (
           <AdminTable>
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-[0.08em] text-zinc-500">
               <tr>
                 <th className="px-5 py-3">内容</th>
                 <th className="px-5 py-3">来源</th>
@@ -60,12 +60,12 @@ export default async function AdminLatestContentsPage({
                 <th className="px-5 py-3">操作</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-zinc-200">
               {items.map((item) => (
-                <tr className="hover:bg-slate-50/80" key={item.id}>
+                <tr className="hover:bg-zinc-50/80" key={item.id}>
                   <td className="max-w-[420px] px-5 py-4">
                     <a
-                      className="line-clamp-2 font-semibold text-slate-900 transition-colors hover:text-brand"
+                      className="line-clamp-2 font-semibold text-zinc-900 transition-colors hover:text-zinc-600 hover:underline"
                       href={item.url}
                       rel="noreferrer"
                       target="_blank"
@@ -73,21 +73,21 @@ export default async function AdminLatestContentsPage({
                       {item.title}
                     </a>
                     {item.tag ? (
-                      <div className="mt-1 text-xs text-slate-500">
+                      <div className="mt-1 text-xs text-zinc-500">
                         {item.tag}
                       </div>
                     ) : null}
                   </td>
                   <td className="px-5 py-4">
                     <div className="font-semibold">{item.channelName}</div>
-                    <div className="mt-1 text-xs text-slate-500">
+                    <div className="mt-1 text-xs text-zinc-500">
                       {item.siteName} / {item.siteSlug}.{item.channelSlug}
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {item.rankNo ?? "-"}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {item.hotLabel ?? item.hotValue ?? "-"}
                   </td>
                   <td className="px-5 py-4">
@@ -97,7 +97,7 @@ export default async function AdminLatestContentsPage({
                       inactiveLabel="已屏蔽"
                     />
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {formatDateTime(item.createdAt)}
                   </td>
                   <td className="px-5 py-4">

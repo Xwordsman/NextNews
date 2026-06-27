@@ -29,7 +29,7 @@ export default async function AdminUserSubscriptionsPage() {
           />
         ) : (
           <AdminTable>
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-[0.08em] text-zinc-500">
               <tr>
                 <th className="px-5 py-3">用户</th>
                 <th className="px-5 py-3">频道</th>
@@ -38,14 +38,14 @@ export default async function AdminUserSubscriptionsPage() {
                 <th className="px-5 py-3">订阅时间</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-zinc-200">
               {subscriptions.map((subscription) => (
                 <tr key={subscription.id}>
                   <td className="px-5 py-4">
                     <div className="font-semibold">
                       {subscription.userDisplayName}
                     </div>
-                    <div className="mt-1 text-xs text-slate-500">
+                    <div className="mt-1 text-xs text-zinc-500">
                       {subscription.userEmail}
                     </div>
                   </td>
@@ -53,7 +53,7 @@ export default async function AdminUserSubscriptionsPage() {
                     <div className="font-semibold">
                       {subscription.channelName}
                     </div>
-                    <div className="mt-1 text-xs text-slate-500">
+                    <div className="mt-1 text-xs text-zinc-500">
                       {subscription.siteName} / {subscription.definitionKey}
                     </div>
                   </td>

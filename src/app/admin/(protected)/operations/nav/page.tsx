@@ -30,7 +30,7 @@ export default async function AdminNavOperationPage() {
           />
         ) : (
           <AdminTable>
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-[0.08em] text-zinc-500">
               <tr>
                 <th className="px-5 py-3">分类</th>
                 <th className="px-5 py-3">状态</th>
@@ -39,21 +39,21 @@ export default async function AdminNavOperationPage() {
                 <th className="px-5 py-3">操作</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-zinc-200">
               {categories.map((category) => (
-                <tr className="hover:bg-slate-50/80" key={category.id}>
+                <tr className="hover:bg-zinc-50/80" key={category.id}>
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <span
                         aria-hidden="true"
-                        className="h-3 w-3 rounded-full border border-slate-200"
+                        className="h-3 w-3 rounded-full border border-zinc-200"
                         style={{ backgroundColor: category.color ?? "#e2e8f0" }}
                       />
                       <div>
                         <div className="font-semibold">
                           {category.categoryName}
                         </div>
-                        <div className="mt-1 font-mono text-xs text-slate-500">
+                        <div className="mt-1 font-mono text-xs text-zinc-500">
                           {category.slug}
                         </div>
                       </div>
@@ -74,10 +74,10 @@ export default async function AdminNavOperationPage() {
                       />
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {category.activePublicChannelCount}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {category.sort}
                   </td>
                   <td className="px-5 py-4">

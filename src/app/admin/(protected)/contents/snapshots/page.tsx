@@ -30,7 +30,7 @@ export default async function SnapshotsPage() {
         ) : (
           <AdminTable>
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/80 text-xs text-slate-500">
+              <tr className="border-b border-zinc-200 bg-zinc-50/80 text-xs text-zinc-500">
                 <th className="px-5 py-3 font-semibold">快照时间</th>
                 <th className="px-5 py-3 font-semibold">频道</th>
                 <th className="px-5 py-3 font-semibold">条目数</th>
@@ -42,25 +42,25 @@ export default async function SnapshotsPage() {
             <tbody>
               {snapshots.map((snapshot) => (
                 <tr
-                  className="border-b border-slate-200 last:border-0 hover:bg-slate-50/80"
+                  className="border-b border-zinc-200 last:border-0 hover:bg-zinc-50/80"
                   key={snapshot.id}
                 >
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {formatDateTime(snapshot.snapshotTime)}
                   </td>
                   <td className="px-5 py-4">
                     <div className="font-semibold">{snapshot.channelName}</div>
-                    <div className="mt-1 text-xs text-slate-500">
+                    <div className="mt-1 text-xs text-zinc-500">
                       {snapshot.siteName} / {snapshot.definitionKey}
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {snapshot.itemCount}
                   </td>
                   <td className="px-5 py-4">
                     <StatusBadge status={snapshot.status} />
                   </td>
-                  <td className="px-5 py-4 font-mono text-xs text-slate-500">
+                  <td className="px-5 py-4 font-mono text-xs text-zinc-500">
                     {snapshot.contentHash.slice(0, 12)}
                   </td>
                   <td className="px-5 py-4">

@@ -44,7 +44,7 @@ export default async function SnapshotDetailPage({
             value={formatDateTime(snapshot.snapshotTime)}
           />
           <div>
-            <p className="text-xs font-semibold text-slate-500">状态</p>
+            <p className="text-xs font-semibold text-zinc-500">状态</p>
             <div className="mt-2">
               <StatusBadge status={snapshot.status} />
             </div>
@@ -68,7 +68,7 @@ export default async function SnapshotDetailPage({
         ) : (
           <AdminTable>
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/80 text-xs text-slate-500">
+              <tr className="border-b border-zinc-200 bg-zinc-50/80 text-xs text-zinc-500">
                 <th className="px-5 py-3 font-semibold">排名</th>
                 <th className="px-5 py-3 font-semibold">标题</th>
                 <th className="px-5 py-3 font-semibold">热度</th>
@@ -79,15 +79,15 @@ export default async function SnapshotDetailPage({
             <tbody>
               {snapshot.items.map((item) => (
                 <tr
-                  className="border-b border-slate-200 last:border-0 hover:bg-slate-50/80"
+                  className="border-b border-zinc-200 last:border-0 hover:bg-zinc-50/80"
                   key={item.id}
                 >
-                  <td className="px-5 py-4 font-mono text-sm text-slate-500">
+                  <td className="px-5 py-4 font-mono text-sm text-zinc-500">
                     {item.rankNo ?? "-"}
                   </td>
                   <td className="px-5 py-4">
                     <a
-                      className="font-semibold text-slate-900 transition-colors hover:text-brand"
+                      className="font-semibold text-zinc-900 transition-colors hover:text-zinc-600 hover:underline"
                       href={item.url}
                       rel="noreferrer"
                       target="_blank"
@@ -95,18 +95,18 @@ export default async function SnapshotDetailPage({
                       {item.title}
                     </a>
                     {item.summary ? (
-                      <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
+                      <p className="mt-1 max-w-2xl text-sm leading-6 text-zinc-500">
                         {item.summary}
                       </p>
                     ) : null}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {item.hotValue ?? item.hotLabel ?? "-"}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {item.tag ?? "-"}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {formatDateTime(item.publishedAt)}
                   </td>
                 </tr>
@@ -122,7 +122,7 @@ export default async function SnapshotDetailPage({
 function SummaryItem({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <p className="text-xs font-semibold text-slate-500">{label}</p>
+      <p className="text-xs font-semibold text-zinc-500">{label}</p>
       <p className="mt-2 break-words text-sm font-semibold">{value}</p>
     </div>
   )

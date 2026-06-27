@@ -38,7 +38,7 @@ function Field({
         {label}
       </label>
       {children}
-      {hint ? <p className="text-xs leading-5 text-slate-500">{hint}</p> : null}
+      {hint ? <p className="text-xs leading-5 text-zinc-500">{hint}</p> : null}
     </div>
   )
 }
@@ -493,7 +493,7 @@ export function ChannelForm({
                 </label>
               ))}
               {options.categories.length === 0 ? (
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-zinc-500">
                   还没有分类，可以先保存频道，稍后再补分类。
                 </p>
               ) : null}

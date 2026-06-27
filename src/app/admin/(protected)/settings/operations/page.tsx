@@ -29,9 +29,9 @@ export default async function AdminSystemOperationsPage() {
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         {data.jobCounts.length === 0 ? (
           <article className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-medium text-slate-500">任务队列</p>
+            <p className="text-sm font-medium text-zinc-500">任务队列</p>
             <p className="mt-3 text-3xl font-semibold">0</p>
-            <p className="mt-2 text-sm text-slate-500">暂无任务</p>
+            <p className="mt-2 text-sm text-zinc-500">暂无任务</p>
           </article>
         ) : (
           data.jobCounts.map((item) => (
@@ -39,11 +39,9 @@ export default async function AdminSystemOperationsPage() {
               className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm"
               key={item.status}
             >
-              <p className="text-sm font-medium text-slate-500">
-                {item.status}
-              </p>
+              <p className="text-sm font-medium text-zinc-500">{item.status}</p>
               <p className="mt-3 text-3xl font-semibold">{item.value}</p>
-              <p className="mt-2 text-sm text-slate-500">任务数量</p>
+              <p className="mt-2 text-sm text-zinc-500">任务数量</p>
             </article>
           ))
         )}
@@ -57,7 +55,7 @@ export default async function AdminSystemOperationsPage() {
           />
         ) : (
           <AdminTable>
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-[0.08em] text-zinc-500">
               <tr>
                 <th className="px-5 py-3">动作</th>
                 <th className="px-5 py-3">对象</th>
@@ -66,13 +64,13 @@ export default async function AdminSystemOperationsPage() {
                 <th className="px-5 py-3">时间</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-zinc-200">
               {data.operationLogs.map((log) => (
-                <tr className="hover:bg-slate-50/80" key={log.id}>
+                <tr className="hover:bg-zinc-50/80" key={log.id}>
                   <td className="px-5 py-4 font-mono text-xs font-semibold">
                     {log.action}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {log.targetType ?? "-"}
                     {log.targetId ? (
                       <span className="mt-1 block font-mono text-xs">
@@ -80,10 +78,10 @@ export default async function AdminSystemOperationsPage() {
                       </span>
                     ) : null}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-600">
+                  <td className="px-5 py-4 text-sm text-zinc-600">
                     {log.summary ?? "-"}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {log.adminName ?? "系统"}
                     {log.adminEmail ? (
                       <>
@@ -92,7 +90,7 @@ export default async function AdminSystemOperationsPage() {
                       </>
                     ) : null}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {formatDateTime(log.createdAt)}
                   </td>
                 </tr>
@@ -110,7 +108,7 @@ export default async function AdminSystemOperationsPage() {
           />
         ) : (
           <AdminTable>
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-[0.08em] text-zinc-500">
               <tr>
                 <th className="px-5 py-3">任务</th>
                 <th className="px-5 py-3">状态</th>
@@ -120,29 +118,29 @@ export default async function AdminSystemOperationsPage() {
                 <th className="px-5 py-3">操作</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-zinc-200">
               {data.jobs.map((job) => (
-                <tr className="hover:bg-slate-50/80" key={job.id}>
+                <tr className="hover:bg-zinc-50/80" key={job.id}>
                   <td className="px-5 py-4">
                     <div className="font-semibold">{job.jobType}</div>
-                    <div className="mt-1 font-mono text-xs text-slate-500">
+                    <div className="mt-1 font-mono text-xs text-zinc-500">
                       {job.id}
                     </div>
                   </td>
                   <td className="px-5 py-4">
                     <StatusBadge status={job.status} />
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-600">
+                  <td className="px-5 py-4 text-sm text-zinc-600">
                     {job.attempts} / {job.maxAttempts}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     创建：{formatDateTime(job.createdAt)}
                     <br />
                     可执行：{formatDateTime(job.availableAt)}
                     <br />
                     完成：{formatDateTime(job.finishedAt)}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {job.errorMessage ?? "-"}
                   </td>
                   <td className="px-5 py-4">
@@ -184,7 +182,7 @@ function JobActions({ jobId, status }: { jobId: string; status: string }) {
         </form>
       ) : null}
       {status === "success" ? (
-        <span className="text-sm text-slate-500">已完成</span>
+        <span className="text-sm text-zinc-500">已完成</span>
       ) : null}
     </div>
   )

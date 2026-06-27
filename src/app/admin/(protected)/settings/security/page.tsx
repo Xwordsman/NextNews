@@ -70,12 +70,12 @@ export default async function AdminSecuritySettingsPage({
           <input name="backTo" type="hidden" value="/admin/settings/security" />
           <div>
             <h2 className="text-base font-semibold">修改管理员密码</h2>
-            <p className="mt-1 text-sm leading-6 text-slate-500">
+            <p className="mt-1 text-sm leading-6 text-zinc-500">
               新密码至少 10 个字符。修改成功后会写入后台操作日志。
             </p>
           </div>
           <div className="grid gap-3 md:grid-cols-3">
-            <label className="grid gap-2 text-sm font-medium text-slate-700">
+            <label className="grid gap-2 text-sm font-medium text-zinc-700">
               当前密码
               <input
                 className={inputClassName}
@@ -83,7 +83,7 @@ export default async function AdminSecuritySettingsPage({
                 type="password"
               />
             </label>
-            <label className="grid gap-2 text-sm font-medium text-slate-700">
+            <label className="grid gap-2 text-sm font-medium text-zinc-700">
               新密码
               <input
                 className={inputClassName}
@@ -91,7 +91,7 @@ export default async function AdminSecuritySettingsPage({
                 type="password"
               />
             </label>
-            <label className="grid gap-2 text-sm font-medium text-slate-700">
+            <label className="grid gap-2 text-sm font-medium text-zinc-700">
               确认新密码
               <input
                 className={inputClassName}
@@ -110,4 +110,4 @@ export default async function AdminSecuritySettingsPage({
 }
 
 const inputClassName =
-  "min-h-10 rounded-full border border-slate-200 bg-white px-3 text-sm font-medium outline-none transition-colors focus:border-slate-400"
+  "min-h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm font-medium outline-none transition-colors focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"

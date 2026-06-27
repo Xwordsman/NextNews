@@ -52,7 +52,7 @@ export default async function AdminUserTrackingPage({
           />
         ) : (
           <AdminTable>
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-[0.08em] text-zinc-500">
               <tr>
                 <th className="px-5 py-3">用户</th>
                 <th className="px-5 py-3">关键词</th>
@@ -62,19 +62,19 @@ export default async function AdminUserTrackingPage({
                 <th className="px-5 py-3">操作</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-zinc-200">
               {rules.map((rule) => (
-                <tr className="hover:bg-slate-50/80" key={rule.id}>
+                <tr className="hover:bg-zinc-50/80" key={rule.id}>
                   <td className="px-5 py-4">
                     <div className="font-semibold">{rule.userDisplayName}</div>
-                    <div className="mt-1 text-xs text-slate-500">
+                    <div className="mt-1 text-xs text-zinc-500">
                       {rule.userEmail}
                     </div>
                   </td>
                   <td className="max-w-[360px] px-5 py-4">
                     <div className="font-semibold">{rule.keyword}</div>
                     {rule.description ? (
-                      <p className="mt-1 text-sm leading-6 text-slate-500">
+                      <p className="mt-1 text-sm leading-6 text-zinc-500">
                         {rule.description}
                       </p>
                     ) : null}
@@ -93,10 +93,10 @@ export default async function AdminUserTrackingPage({
                       />
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {formatDateTime(rule.lastMatchedAt)}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     <div>创建：{formatDateTime(rule.createdAt)}</div>
                     <div className="mt-1">
                       更新：{formatDateTime(rule.updatedAt)}
@@ -133,7 +133,7 @@ export default async function AdminUserTrackingPage({
           />
         ) : (
           <AdminTable>
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-[0.08em] text-zinc-500">
               <tr>
                 <th className="px-5 py-3">命中内容</th>
                 <th className="px-5 py-3">用户</th>
@@ -142,29 +142,29 @@ export default async function AdminUserTrackingPage({
                 <th className="px-5 py-3">时间</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-zinc-200">
               {matches.map((match) => (
-                <tr className="hover:bg-slate-50/80" key={match.id}>
+                <tr className="hover:bg-zinc-50/80" key={match.id}>
                   <td className="max-w-[520px] px-5 py-4">
                     <a
-                      className="font-semibold text-slate-950 no-underline transition-colors hover:text-brand"
+                      className="font-semibold text-zinc-950 no-underline transition-colors hover:text-zinc-600 hover:underline"
                       href={match.url}
                       rel="noreferrer"
                       target="_blank"
                     >
                       {match.title}
                     </a>
-                    <div className="mt-1 text-xs text-slate-500">
+                    <div className="mt-1 text-xs text-zinc-500">
                       命中：{match.matchedKeyword}
                     </div>
                   </td>
                   <td className="px-5 py-4">
                     <div className="font-semibold">{match.userDisplayName}</div>
-                    <div className="mt-1 text-xs text-slate-500">
+                    <div className="mt-1 text-xs text-zinc-500">
                       {match.userEmail}
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {match.ruleKeyword}
                   </td>
                   <td className="px-5 py-4">
@@ -174,7 +174,7 @@ export default async function AdminUserTrackingPage({
                       inactiveLabel="已读"
                     />
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {formatDateTime(match.matchedAt)}
                   </td>
                 </tr>

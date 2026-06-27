@@ -99,7 +99,7 @@ export default async function AdminOperationsAnalyticsPage() {
     },
   ]
   const trendMetrics = [
-    { key: "snapshots", label: "快照", tone: "bg-slate-900" },
+    { key: "snapshots", label: "快照", tone: "bg-zinc-900" },
     { key: "items", label: "内容", tone: "bg-blue-600" },
     { key: "searches", label: "搜索", tone: "bg-emerald-600" },
     { key: "notifications", label: "通知", tone: "bg-amber-500" },
@@ -159,7 +159,7 @@ export default async function AdminOperationsAnalyticsPage() {
         <div className="grid gap-5 p-5">
           <div>
             <h2 className="text-base font-semibold">14 天趋势</h2>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-zinc-500">
               用于观察采集、搜索、通知和阅读是否出现持续异常。
             </p>
           </div>
@@ -185,7 +185,7 @@ export default async function AdminOperationsAnalyticsPage() {
           />
         ) : (
           <AdminTable>
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-[0.08em] text-zinc-500">
               <tr>
                 <th className="px-5 py-3">频道</th>
                 <th className="px-5 py-3">状态</th>
@@ -195,14 +195,14 @@ export default async function AdminOperationsAnalyticsPage() {
                 <th className="px-5 py-3">今日失败</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-zinc-200">
               {data.channelHealth.map((channel) => (
-                <tr className="hover:bg-slate-50/80" key={channel.id}>
+                <tr className="hover:bg-zinc-50/80" key={channel.id}>
                   <td className="px-5 py-4">
                     <div className="font-semibold">
                       {channel.siteName} / {channel.channelName}
                     </div>
-                    <div className="mt-1 font-mono text-xs text-slate-500">
+                    <div className="mt-1 font-mono text-xs text-zinc-500">
                       {channel.definitionKey}
                     </div>
                   </td>
@@ -216,17 +216,17 @@ export default async function AdminOperationsAnalyticsPage() {
                       inactiveLabel="已关闭"
                     />
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {formatDateTime(channel.lastSuccessAt)}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {channel.snapshotId
                       ? `${formatDateTime(channel.snapshotTime)} / ${
                           channel.snapshotItemCount ?? 0
                         } 条`
                       : "暂无快照"}
                   </td>
-                  <td className="px-5 py-4 text-sm font-semibold text-slate-700">
+                  <td className="px-5 py-4 text-sm font-semibold text-zinc-700">
                     {channel.todayFailedRuns}
                   </td>
                 </tr>

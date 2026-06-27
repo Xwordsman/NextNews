@@ -54,7 +54,7 @@ export default async function AdminDailyOperationPage({
         <div className="flex flex-wrap items-center justify-between gap-4 p-5">
           <div>
             <h2 className="text-base font-semibold">发布今日日报</h2>
-            <p className="mt-1 text-sm leading-6 text-slate-500">
+            <p className="mt-1 text-sm leading-6 text-zinc-500">
               发布后 `/daily` 会显示今天的日报标题，并聚合首页频道的最新内容。
             </p>
           </div>
@@ -74,7 +74,7 @@ export default async function AdminDailyOperationPage({
           <input name="backTo" type="hidden" value="/admin/operations/daily" />
           <div>
             <h2 className="text-base font-semibold">新增日报模板</h2>
-            <p className="mt-1 text-sm leading-6 text-slate-500">
+            <p className="mt-1 text-sm leading-6 text-zinc-500">
               模板不会立刻触发自动生成；是否自动生成、是否需要审核由基础设置和模板本身共同控制。
             </p>
           </div>
@@ -146,7 +146,7 @@ export default async function AdminDailyOperationPage({
             </select>
           </div>
           <textarea
-            className="min-h-24 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium outline-none transition-colors focus:border-slate-400"
+            className="min-h-24 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm font-medium outline-none transition-colors focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
             name="summaryPattern"
             placeholder="摘要模板"
           />
@@ -164,7 +164,7 @@ export default async function AdminDailyOperationPage({
           />
         ) : (
           <AdminTable>
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-[0.08em] text-zinc-500">
               <tr>
                 <th className="px-5 py-3">模板</th>
                 <th className="px-5 py-3">策略</th>
@@ -172,21 +172,21 @@ export default async function AdminDailyOperationPage({
                 <th className="px-5 py-3">快速编辑</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-zinc-200">
               {templates.map((template) => (
-                <tr className="hover:bg-slate-50/80" key={template.id}>
+                <tr className="hover:bg-zinc-50/80" key={template.id}>
                   <td className="px-5 py-4">
                     <div className="font-semibold">{template.templateName}</div>
-                    <div className="mt-1 text-xs text-slate-500">
+                    <div className="mt-1 text-xs text-zinc-500">
                       {template.titlePattern}
                     </div>
                     {template.summaryPattern ? (
-                      <p className="mt-2 max-w-[420px] text-sm leading-6 text-slate-500">
+                      <p className="mt-2 max-w-[420px] text-sm leading-6 text-zinc-500">
                         {template.summaryPattern}
                       </p>
                     ) : null}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-600">
+                  <td className="px-5 py-4 text-sm text-zinc-600">
                     {template.channelLimit} 个频道 / 每频道{" "}
                     {template.itemLimitPerChannel} 条
                     <br />
@@ -308,7 +308,7 @@ export default async function AdminDailyOperationPage({
           />
         ) : (
           <AdminTable>
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-[0.08em] text-zinc-500">
               <tr>
                 <th className="px-5 py-3">日报</th>
                 <th className="px-5 py-3">状态</th>
@@ -317,16 +317,16 @@ export default async function AdminDailyOperationPage({
                 <th className="px-5 py-3">操作</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-zinc-200">
               {reports.map((report) => (
-                <tr className="hover:bg-slate-50/80" key={report.id}>
+                <tr className="hover:bg-zinc-50/80" key={report.id}>
                   <td className="px-5 py-4">
                     <div className="font-semibold">{report.title}</div>
-                    <div className="mt-1 text-xs text-slate-500">
+                    <div className="mt-1 text-xs text-zinc-500">
                       {report.reportDate}
                     </div>
                     {report.summary ? (
-                      <p className="mt-2 max-w-[520px] text-sm leading-6 text-slate-500">
+                      <p className="mt-2 max-w-[520px] text-sm leading-6 text-zinc-500">
                         {report.summary}
                       </p>
                     ) : null}
@@ -334,11 +334,11 @@ export default async function AdminDailyOperationPage({
                   <td className="px-5 py-4">
                     <StatusBadge status={report.status} />
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {report.channelLimit} 个频道 / 每频道{" "}
                     {report.itemLimitPerChannel} 条
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {formatDateTime(report.publishedAt)}
                   </td>
                   <td className="px-5 py-4">
@@ -383,4 +383,4 @@ export default async function AdminDailyOperationPage({
 }
 
 const inputClassName =
-  "min-h-10 rounded-full border border-slate-200 bg-white px-3 text-sm font-medium outline-none transition-colors focus:border-slate-400"
+  "min-h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm font-medium outline-none transition-colors focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"

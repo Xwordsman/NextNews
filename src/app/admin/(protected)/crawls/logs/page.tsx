@@ -38,7 +38,7 @@ export default async function CrawlLogsPage() {
         ) : (
           <AdminTable>
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/80 text-xs text-slate-500">
+              <tr className="border-b border-zinc-200 bg-zinc-50/80 text-xs text-zinc-500">
                 <th className="px-5 py-3 font-semibold">时间</th>
                 <th className="px-5 py-3 font-semibold">频道</th>
                 <th className="px-5 py-3 font-semibold">类型</th>
@@ -51,28 +51,28 @@ export default async function CrawlLogsPage() {
             <tbody>
               {runs.map((run) => (
                 <tr
-                  className="border-b border-slate-200 last:border-0 hover:bg-slate-50/80"
+                  className="border-b border-zinc-200 last:border-0 hover:bg-zinc-50/80"
                   key={run.id}
                 >
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {formatDateTime(run.startedAt)}
                   </td>
                   <td className="px-5 py-4">
                     <div className="font-semibold">{run.channelName}</div>
-                    <div className="mt-1 text-xs text-slate-500">
+                    <div className="mt-1 text-xs text-zinc-500">
                       {run.siteName} / {run.definitionKey}
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {runTypeLabels[run.runType] ?? run.runType}
                   </td>
                   <td className="px-5 py-4">
                     <StatusBadge status={run.status} />
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     抓取 {run.fetchedCount} / 写入 {run.insertedCount}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {formatDurationMs(run.durationMs)}
                   </td>
                   <td className="px-5 py-4">
@@ -86,7 +86,7 @@ export default async function CrawlLogsPage() {
                         {run.errorMessage}
                       </p>
                     ) : (
-                      <span className="text-sm text-slate-500">-</span>
+                      <span className="text-sm text-zinc-500">-</span>
                     )}
                   </td>
                 </tr>
@@ -97,7 +97,7 @@ export default async function CrawlLogsPage() {
       </AdminSection>
       <div>
         <Link
-          className="text-sm font-semibold text-slate-500 transition-colors hover:text-slate-950"
+          className="text-sm font-semibold text-zinc-500 transition-colors hover:text-zinc-950"
           href="/admin/crawls/failures"
         >
           只看失败记录

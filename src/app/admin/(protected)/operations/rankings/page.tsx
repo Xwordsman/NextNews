@@ -49,7 +49,7 @@ export default async function AdminRankingOperationPage({
             value="/admin/operations/rankings"
           />
           <div className="grid gap-4 lg:grid-cols-4">
-            <label className="grid gap-2 text-sm font-semibold text-slate-700">
+            <label className="grid gap-2 text-sm font-semibold text-zinc-700">
               榜单名称
               <input
                 className={inputClassName}
@@ -58,7 +58,7 @@ export default async function AdminRankingOperationPage({
                 required
               />
             </label>
-            <label className="grid gap-2 text-sm font-semibold text-slate-700">
+            <label className="grid gap-2 text-sm font-semibold text-zinc-700">
               Slug
               <input
                 className={inputClassName}
@@ -68,7 +68,7 @@ export default async function AdminRankingOperationPage({
                 required
               />
             </label>
-            <label className="grid gap-2 text-sm font-semibold text-slate-700">
+            <label className="grid gap-2 text-sm font-semibold text-zinc-700">
               时间窗口（小时）
               <input
                 className={inputClassName}
@@ -78,7 +78,7 @@ export default async function AdminRankingOperationPage({
                 type="number"
               />
             </label>
-            <label className="grid gap-2 text-sm font-semibold text-slate-700">
+            <label className="grid gap-2 text-sm font-semibold text-zinc-700">
               状态
               <select
                 className={inputClassName}
@@ -93,7 +93,7 @@ export default async function AdminRankingOperationPage({
           </div>
 
           <div className="grid gap-4 lg:grid-cols-[1fr_160px_160px_160px]">
-            <label className="grid gap-2 text-sm font-semibold text-slate-700">
+            <label className="grid gap-2 text-sm font-semibold text-zinc-700">
               描述
               <input
                 className={inputClassName}
@@ -101,7 +101,7 @@ export default async function AdminRankingOperationPage({
                 placeholder="跨频道聚合最近热点"
               />
             </label>
-            <label className="grid gap-2 text-sm font-semibold text-slate-700">
+            <label className="grid gap-2 text-sm font-semibold text-zinc-700">
               展示数量
               <input
                 className={inputClassName}
@@ -111,7 +111,7 @@ export default async function AdminRankingOperationPage({
                 type="number"
               />
             </label>
-            <label className="grid gap-2 text-sm font-semibold text-slate-700">
+            <label className="grid gap-2 text-sm font-semibold text-zinc-700">
               单频道数量
               <input
                 className={inputClassName}
@@ -121,7 +121,7 @@ export default async function AdminRankingOperationPage({
                 type="number"
               />
             </label>
-            <label className="grid gap-2 text-sm font-semibold text-slate-700">
+            <label className="grid gap-2 text-sm font-semibold text-zinc-700">
               排序
               <input
                 className={inputClassName}
@@ -133,9 +133,9 @@ export default async function AdminRankingOperationPage({
             </label>
           </div>
 
-          <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 text-sm font-semibold text-slate-600">
+          <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 text-sm font-semibold text-zinc-600">
             <input
-              className="h-4 w-4 accent-slate-950"
+              className="h-4 w-4 accent-zinc-950"
               name="isDefault"
               type="checkbox"
             />
@@ -145,20 +145,20 @@ export default async function AdminRankingOperationPage({
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {channels.map((channel) => (
               <label
-                className="flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 text-sm transition-colors hover:bg-slate-50"
+                className="flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white px-3 text-sm transition-colors hover:bg-zinc-50"
                 key={channel.id}
               >
                 <span className="min-w-0">
                   <span className="block truncate font-semibold">
                     {channel.siteName} / {channel.channelName}
                   </span>
-                  <span className="mt-1 block text-xs text-slate-500">
+                  <span className="mt-1 block text-xs text-zinc-500">
                     权重 {channel.weight} /{" "}
                     {formatDateTime(channel.lastSuccessAt)}
                   </span>
                 </span>
                 <input
-                  className="h-4 w-4 shrink-0 accent-slate-950"
+                  className="h-4 w-4 shrink-0 accent-zinc-950"
                   name="channelIds"
                   type="checkbox"
                   value={channel.id}
@@ -167,9 +167,9 @@ export default async function AdminRankingOperationPage({
             ))}
           </div>
 
-          <div className="flex justify-end border-t border-slate-200 pt-4">
+          <div className="flex justify-end border-t border-zinc-200 pt-4">
             <button
-              className="inline-flex min-h-10 cursor-pointer items-center rounded-full bg-slate-950 px-4 text-sm font-semibold text-white transition-colors hover:bg-black"
+              className="inline-flex min-h-10 cursor-pointer items-center rounded-md bg-zinc-950 px-4 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 focus-visible:outline-none"
               type="submit"
             >
               创建配置
@@ -186,7 +186,7 @@ export default async function AdminRankingOperationPage({
           />
         ) : (
           <AdminTable>
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-[0.08em] text-zinc-500">
               <tr>
                 <th className="px-5 py-3">配置</th>
                 <th className="px-5 py-3">状态</th>
@@ -196,16 +196,16 @@ export default async function AdminRankingOperationPage({
                 <th className="px-5 py-3">操作</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-zinc-200">
               {configs.map((config) => (
-                <tr className="hover:bg-slate-50/80" key={config.id}>
+                <tr className="hover:bg-zinc-50/80" key={config.id}>
                   <td className="px-5 py-4">
                     <div className="font-semibold">{config.configName}</div>
-                    <div className="mt-1 font-mono text-xs text-slate-500">
+                    <div className="mt-1 font-mono text-xs text-zinc-500">
                       {config.slug}
                     </div>
                     {config.description ? (
-                      <div className="mt-1 text-xs text-slate-500">
+                      <div className="mt-1 text-xs text-zinc-500">
                         {config.description}
                       </div>
                     ) : null}
@@ -220,11 +220,11 @@ export default async function AdminRankingOperationPage({
                       />
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {config.timeWindowHours} 小时 / {config.itemLimit} 条 /
                     单频道 {config.perChannelLimit}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {config.channels.length === 0
                       ? "未选择频道"
                       : config.channels
@@ -232,7 +232,7 @@ export default async function AdminRankingOperationPage({
                           .map((channel) => channel.channelName)
                           .join("、")}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {formatDateTime(config.updatedAt)}
                   </td>
                   <td className="px-5 py-4">
@@ -252,7 +252,7 @@ export default async function AdminRankingOperationPage({
                         value={String(config.isDefault)}
                       />
                       <select
-                        className="min-h-9 rounded-full border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600"
+                        className="min-h-9 rounded-md border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-600 outline-none transition-colors focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
                         defaultValue={config.status}
                         name="status"
                       >
@@ -261,7 +261,7 @@ export default async function AdminRankingOperationPage({
                         <option value="disabled">停用</option>
                       </select>
                       <button
-                        className="inline-flex min-h-9 cursor-pointer items-center rounded-full border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-900 hover:text-white"
+                        className="inline-flex min-h-9 cursor-pointer items-center rounded-md border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-600 transition-colors hover:bg-zinc-900 hover:text-white focus-visible:outline-none"
                         type="submit"
                       >
                         保存状态
@@ -279,4 +279,4 @@ export default async function AdminRankingOperationPage({
 }
 
 const inputClassName =
-  "min-h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium outline-none transition-colors focus:border-slate-400"
+  "min-h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm font-medium outline-none transition-colors focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"

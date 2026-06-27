@@ -49,29 +49,29 @@ export default async function AdminBlockedContentsPage({
           className="grid gap-4 p-5 lg:grid-cols-[1fr_1.2fr_1fr_auto]"
         >
           <input name="backTo" type="hidden" value="/admin/contents/blocked" />
-          <label className="grid gap-2 text-sm font-semibold text-slate-700">
+          <label className="grid gap-2 text-sm font-semibold text-zinc-700">
             标题
             <input
-              className="min-h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium outline-none transition-colors focus:border-slate-400"
+              className="min-h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm font-medium outline-none transition-colors focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
               name="title"
               placeholder="需要屏蔽的标题"
               required
             />
           </label>
-          <label className="grid gap-2 text-sm font-semibold text-slate-700">
+          <label className="grid gap-2 text-sm font-semibold text-zinc-700">
             链接
             <input
-              className="min-h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium outline-none transition-colors focus:border-slate-400"
+              className="min-h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm font-medium outline-none transition-colors focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
               name="url"
               placeholder="https://..."
               required
               type="url"
             />
           </label>
-          <label className="grid gap-2 text-sm font-semibold text-slate-700">
+          <label className="grid gap-2 text-sm font-semibold text-zinc-700">
             原因
             <input
-              className="min-h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium outline-none transition-colors focus:border-slate-400"
+              className="min-h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm font-medium outline-none transition-colors focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
               name="reason"
               placeholder="可选"
             />
@@ -90,7 +90,7 @@ export default async function AdminBlockedContentsPage({
           />
         ) : (
           <AdminTable>
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-[0.08em] text-zinc-500">
               <tr>
                 <th className="px-5 py-3">内容</th>
                 <th className="px-5 py-3">原因</th>
@@ -99,29 +99,29 @@ export default async function AdminBlockedContentsPage({
                 <th className="px-5 py-3">操作</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-zinc-200">
               {items.map((item) => (
-                <tr className="hover:bg-slate-50/80" key={item.id}>
+                <tr className="hover:bg-zinc-50/80" key={item.id}>
                   <td className="max-w-[520px] px-5 py-4">
                     <a
-                      className="line-clamp-2 font-semibold text-slate-900 transition-colors hover:text-brand"
+                      className="line-clamp-2 font-semibold text-zinc-900 transition-colors hover:text-zinc-600 hover:underline"
                       href={item.url}
                       rel="noreferrer"
                       target="_blank"
                     >
                       {item.title}
                     </a>
-                    <div className="mt-1 font-mono text-[11px] text-slate-400">
+                    <div className="mt-1 font-mono text-[11px] text-zinc-400">
                       {item.urlHash.slice(0, 16)}
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {item.reason ?? "-"}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {item.creatorName ?? item.creatorEmail ?? "系统"}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {formatDateTime(item.createdAt)}
                   </td>
                   <td className="px-5 py-4">

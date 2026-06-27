@@ -55,7 +55,7 @@ export default async function ChannelsPage({
         ) : (
           <AdminTable>
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/80 text-xs text-slate-500">
+              <tr className="border-b border-zinc-200 bg-zinc-50/80 text-xs text-zinc-500">
                 <th className="px-5 py-3 font-semibold">频道</th>
                 <th className="px-5 py-3 font-semibold">definition_key</th>
                 <th className="px-5 py-3 font-semibold">分类</th>
@@ -68,12 +68,12 @@ export default async function ChannelsPage({
             <tbody>
               {channels.map((channel) => (
                 <tr
-                  className="border-b border-slate-200 last:border-0 hover:bg-slate-50/80"
+                  className="border-b border-zinc-200 last:border-0 hover:bg-zinc-50/80"
                   key={channel.id}
                 >
                   <td className="px-5 py-4">
                     <div className="font-semibold">{channel.channelName}</div>
-                    <div className="mt-1 text-xs text-slate-500">
+                    <div className="mt-1 text-xs text-zinc-500">
                       {channel.siteName} / {channel.slug} ·{" "}
                       {channel.collectorType}
                     </div>
@@ -108,7 +108,7 @@ export default async function ChannelsPage({
                       />
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     <div>采集：{formatDateTime(channel.lastCrawlAt)}</div>
                     <div className="mt-1">
                       成功：{formatDateTime(channel.lastSuccessAt)}

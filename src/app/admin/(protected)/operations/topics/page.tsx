@@ -101,9 +101,9 @@ export default async function AdminTopicsOperationPage({
               />
             </FormField>
             <div className="flex items-end gap-3">
-              <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 text-sm font-semibold text-slate-600">
+              <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 text-sm font-semibold text-zinc-600">
                 <input
-                  className="h-4 w-4 cursor-pointer accent-slate-950"
+                  className="h-4 w-4 cursor-pointer accent-zinc-950"
                   defaultChecked
                   name="isHomeVisible"
                   type="checkbox"
@@ -124,7 +124,7 @@ export default async function AdminTopicsOperationPage({
           />
         ) : (
           <AdminTable>
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-[0.08em] text-zinc-500">
               <tr>
                 <th className="px-5 py-3">话题</th>
                 <th className="px-5 py-3">关键词</th>
@@ -134,21 +134,21 @@ export default async function AdminTopicsOperationPage({
                 <th className="px-5 py-3">操作</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-zinc-200">
               {topics.map((topic) => (
-                <tr className="hover:bg-slate-50/80" key={topic.id}>
+                <tr className="hover:bg-zinc-50/80" key={topic.id}>
                   <td className="px-5 py-4">
                     <div className="font-semibold">{topic.topicName}</div>
-                    <div className="mt-1 font-mono text-xs text-slate-500">
+                    <div className="mt-1 font-mono text-xs text-zinc-500">
                       {topic.slug}
                     </div>
                     {topic.description ? (
-                      <p className="mt-2 max-w-[420px] text-sm leading-6 text-slate-500">
+                      <p className="mt-2 max-w-[420px] text-sm leading-6 text-zinc-500">
                         {topic.description}
                       </p>
                     ) : null}
                   </td>
-                  <td className="max-w-[320px] px-5 py-4 text-sm text-slate-500">
+                  <td className="max-w-[320px] px-5 py-4 text-sm text-zinc-500">
                     {topic.keywords || "-"}
                   </td>
                   <td className="px-5 py-4">
@@ -161,16 +161,16 @@ export default async function AdminTopicsOperationPage({
                       />
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {topic.sort}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {formatDateTime(topic.updatedAt)}
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex flex-wrap gap-2">
                       <Link
-                        className="inline-flex min-h-9 items-center rounded-full border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-600 no-underline transition-colors hover:bg-slate-900 hover:text-white"
+                        className="inline-flex min-h-9 items-center rounded-md border border-zinc-200 bg-white px-3 text-sm font-semibold text-zinc-600 no-underline transition-colors hover:bg-zinc-900 hover:text-white focus-visible:outline-none"
                         href={`/admin/operations/topics/${topic.id}`}
                       >
                         管理内容
@@ -241,7 +241,7 @@ export default async function AdminTopicsOperationPage({
 }
 
 const inputClassName =
-  "min-h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium outline-none transition-colors focus:border-slate-400"
+  "min-h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm font-medium outline-none transition-colors focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
 
 function FormField({
   children,
@@ -251,7 +251,7 @@ function FormField({
   label: string
 }) {
   return (
-    <label className="grid gap-2 text-sm font-semibold text-slate-700">
+    <label className="grid gap-2 text-sm font-semibold text-zinc-700">
       {label}
       {children}
     </label>

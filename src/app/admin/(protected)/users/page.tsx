@@ -52,7 +52,7 @@ export default async function AdminUsersPage({
           />
         ) : (
           <AdminTable>
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-[0.08em] text-zinc-500">
               <tr>
                 <th className="px-5 py-3">用户</th>
                 <th className="px-5 py-3">角色</th>
@@ -64,12 +64,12 @@ export default async function AdminUsersPage({
                 <th className="px-5 py-3">账号操作</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-zinc-200">
               {users.map((user) => (
                 <tr key={user.id}>
                   <td className="px-5 py-4">
                     <div className="font-semibold">{user.displayName}</div>
-                    <div className="mt-1 text-xs text-slate-500">
+                    <div className="mt-1 text-xs text-zinc-500">
                       {user.email}
                     </div>
                   </td>
@@ -123,7 +123,7 @@ export default async function AdminUsersPage({
                         </select>
                       </div>
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs text-slate-500">
+                        <span className="text-xs text-zinc-500">
                           当前可看 {user.membershipHistoryDays} 天历史
                         </span>
                         <RunButton label="保存权益" />
@@ -162,7 +162,7 @@ export default async function AdminUsersPage({
 }
 
 const inputClassName =
-  "min-h-9 rounded-full border border-slate-200 bg-white px-3 text-sm font-medium outline-none transition-colors focus:border-slate-400"
+  "min-h-9 rounded-md border border-zinc-200 bg-white px-3 text-sm font-medium outline-none transition-colors focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100"
 
 function formatDateInput(value: Date | null) {
   if (!value) {

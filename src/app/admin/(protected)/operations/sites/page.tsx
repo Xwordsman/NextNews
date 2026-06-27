@@ -31,7 +31,7 @@ export default async function AdminHotSitesOperationPage() {
           />
         ) : (
           <AdminTable>
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-[0.08em] text-slate-500">
+            <thead className="border-b border-zinc-200 bg-zinc-50 text-xs uppercase tracking-[0.08em] text-zinc-500">
               <tr>
                 <th className="px-5 py-3">站点</th>
                 <th className="px-5 py-3">状态</th>
@@ -41,17 +41,17 @@ export default async function AdminHotSitesOperationPage() {
                 <th className="px-5 py-3">操作</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-zinc-200">
               {sites.map((site) => (
-                <tr className="hover:bg-slate-50/80" key={site.id}>
+                <tr className="hover:bg-zinc-50/80" key={site.id}>
                   <td className="px-5 py-4">
                     <div className="font-semibold">{site.siteName}</div>
-                    <div className="mt-1 font-mono text-xs text-slate-500">
+                    <div className="mt-1 font-mono text-xs text-zinc-500">
                       {site.slug}
                     </div>
                     {site.homepageUrl ? (
                       <a
-                        className="mt-1 block truncate text-xs text-slate-500 transition-colors hover:text-brand"
+                        className="mt-1 block truncate text-xs text-zinc-500 transition-colors hover:text-zinc-900 hover:underline"
                         href={site.homepageUrl}
                         rel="noreferrer"
                         target="_blank"
@@ -70,16 +70,16 @@ export default async function AdminHotSitesOperationPage() {
                       />
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     <div>{site.activePublicChannelCount} 个公开频道</div>
                     <div className="mt-1 text-xs">
                       {site.homeChannelCount} 个首页频道
                     </div>
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {site.sort}
                   </td>
-                  <td className="px-5 py-4 text-sm text-slate-500">
+                  <td className="px-5 py-4 text-sm text-zinc-500">
                     {formatDateTime(site.updatedAt)}
                   </td>
                   <td className="px-5 py-4">
