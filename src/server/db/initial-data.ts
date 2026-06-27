@@ -106,6 +106,7 @@ export async function seedInitialData(options: SeedInitialDataOptions = {}) {
       colorPreset: "red",
       metaDisplay: "heat",
       badgeMode: "source",
+      showUpdatedAt: true,
       subtitle: "热搜",
     }),
   })
@@ -128,6 +129,7 @@ export async function seedInitialData(options: SeedInitialDataOptions = {}) {
       colorPreset: "blue",
       metaDisplay: "heat",
       badgeMode: "source",
+      showUpdatedAt: true,
       subtitle: "热榜",
     }),
   })
@@ -150,6 +152,7 @@ export async function seedInitialData(options: SeedInitialDataOptions = {}) {
       colorPreset: "gray",
       metaDisplay: "heat",
       badgeMode: "source",
+      showUpdatedAt: true,
       subtitle: "Trending",
     }),
   })
@@ -170,8 +173,9 @@ export async function seedInitialData(options: SeedInitialDataOptions = {}) {
     status: "active",
     extra: mergeChannelDisplayConfig(null, {
       colorPreset: "teal",
-      metaDisplay: "time",
+      metaDisplay: "none",
       badgeMode: "none",
+      showUpdatedAt: false,
       subtitle: "资讯",
     }),
   })

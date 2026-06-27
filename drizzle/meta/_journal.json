@@ -64,6 +64,13 @@
       "when": 1782547491562,
       "tag": "0008_groovy_cardiac",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1782550000000,
+      "tag": "0009_channel_display_defaults",
+      "breakpoints": true
     }
   ]
 }

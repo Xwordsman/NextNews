@@ -184,7 +184,9 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
           channel.siteName,
           displayConfig.subtitle,
         ),
-        updatedLabel: formatUpdateTag(channel.lastSuccessAt),
+        updatedLabel: displayConfig.showUpdatedAt
+          ? formatUpdateTag(channel.lastSuccessAt)
+          : undefined,
         category: categoryByChannelId.get(channel.id) ?? "general",
         color: palette.color,
         logoColor: palette.logoColor,
@@ -324,12 +326,7 @@ function getItemMeta(item: ItemMetaInput, metaDisplay: ChannelMetaDisplayMode) {
     return formatPublishedAt(item.publishedAt)
   }
 
-  return (
-    item.hotValue ??
-    item.hotLabel ??
-    item.tag ??
-    formatPublishedAt(item.publishedAt)
-  )
+  return item.hotValue ?? item.hotLabel ?? item.tag ?? undefined
 }
 
 function getItemMetaVariant(metaDisplay: ChannelMetaDisplayMode) {

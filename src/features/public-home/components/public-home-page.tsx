@@ -737,9 +737,11 @@ export function PublicHomePage({
                                     {source.tag}
                                   </span>
                                 </span>
-                                <small className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
-                                  {source.updatedLabel ?? "刚刚更新"}
-                                </small>
+                                {source.updatedLabel ? (
+                                  <small className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
+                                    {source.updatedLabel}
+                                  </small>
+                                ) : null}
                               </span>
                             </div>
                             <div className="flex items-center gap-0.5">

@@ -9,7 +9,9 @@ import { requireAdmin } from "@/server/auth/session"
 import {
   channelBadgeModes,
   channelColorPresets,
+  channelDisplayStyles,
   channelMetaDisplayModes,
+  channelTypes,
   mergeChannelDisplayConfig,
 } from "@/server/channels/display-config"
 import { getChannelDefinition } from "@/server/channels/registry"
@@ -212,8 +214,7 @@ function parseChannelForm(formData: FormData) {
     slug: slugString(formData, "slug", "频道 slug"),
     definitionKey,
     collectorType: definition.collectorType,
-    channelType:
-      optionalString(formData, "channelType", "频道类型", 80) ?? "rank",
+    channelType: selectValue(formData, "channelType", "频道类型", channelTypes),
     homepageUrl: optionalString(formData, "homepageUrl", "频道地址"),
     crawlIntervalSeconds: optionalInteger(
       formData,
@@ -233,8 +234,12 @@ function parseChannelForm(formData: FormData) {
     isPublic: booleanField(formData, "isPublic"),
     isHomeVisible: booleanField(formData, "isHomeVisible"),
     isSubscribable: booleanField(formData, "isSubscribable"),
-    displayStyle:
-      optionalString(formData, "displayStyle", "展示样式", 80) ?? "rank",
+    displayStyle: selectValue(
+      formData,
+      "displayStyle",
+      "展示样式",
+      channelDisplayStyles,
+    ),
     homeDisplay: {
       subtitle: optionalString(formData, "displaySubtitle", "首页副标题", 40),
       colorPreset: selectValue(
@@ -255,6 +260,7 @@ function parseChannelForm(formData: FormData) {
         "角标",
         channelBadgeModes,
       ),
+      showUpdatedAt: booleanField(formData, "displayUpdatedAt"),
     },
     weight: optionalInteger(formData, "weight", "权重", 0),
     sort: optionalInteger(formData, "sort", "排序", 0),

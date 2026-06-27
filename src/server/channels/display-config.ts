@@ -18,23 +18,28 @@ export const channelColorPresets = [
 ] as const
 
 export const channelMetaDisplayModes = [
+  "none",
   "auto",
   "heat",
   "tag",
   "time",
-  "none",
 ] as const
 
 export const channelBadgeModes = ["source", "none"] as const
+export const channelTypes = ["rank", "news", "feed", "video", "topic"] as const
+export const channelDisplayStyles = ["rank", "news", "compact", "card"] as const
 
 export type ChannelColorPreset = (typeof channelColorPresets)[number]
 export type ChannelMetaDisplayMode = (typeof channelMetaDisplayModes)[number]
 export type ChannelBadgeMode = (typeof channelBadgeModes)[number]
+export type ChannelType = (typeof channelTypes)[number]
+export type ChannelDisplayStyle = (typeof channelDisplayStyles)[number]
 
 export type ChannelDisplayConfig = {
   colorPreset: ChannelColorPreset
   metaDisplay: ChannelMetaDisplayMode
   badgeMode: ChannelBadgeMode
+  showUpdatedAt: boolean
   subtitle?: string | null
 }
 
@@ -71,6 +76,27 @@ const colorPresetOptionByValue = new Map(
   channelColorPresetOptions.map((option) => [option.value, option]),
 )
 
+export const channelTypeOptions: Array<{
+  value: ChannelType
+  label: string
+}> = [
+  { value: "rank", label: "榜单 / 排行" },
+  { value: "news", label: "新闻资讯" },
+  { value: "feed", label: "订阅 / RSS" },
+  { value: "video", label: "视频媒体" },
+  { value: "topic", label: "话题聚合" },
+]
+
+export const channelDisplayStyleOptions: Array<{
+  value: ChannelDisplayStyle
+  label: string
+}> = [
+  { value: "rank", label: "排行列表" },
+  { value: "news", label: "资讯列表" },
+  { value: "compact", label: "紧凑列表" },
+  { value: "card", label: "卡片列表" },
+]
+
 export function getChannelFallbackColorPreset(key: string) {
   const index =
     Array.from(key).reduce((total, char) => total + char.charCodeAt(0), 0) %
@@ -102,6 +128,7 @@ export function getChannelDisplayConfig(
     colorPreset,
     metaDisplay: normalizeMetaDisplay(display.metaDisplay),
     badgeMode: normalizeBadgeMode(display.badgeMode),
+    showUpdatedAt: normalizeBoolean(display.showUpdatedAt, true),
     subtitle: normalizeSubtitle(display.subtitle),
   }
 }
@@ -116,6 +143,7 @@ export function mergeChannelDisplayConfig(
     colorPreset: displayConfig.colorPreset,
     metaDisplay: displayConfig.metaDisplay,
     badgeMode: displayConfig.badgeMode,
+    showUpdatedAt: displayConfig.showUpdatedAt,
     subtitle: normalizeSubtitle(displayConfig.subtitle),
   }
 
@@ -161,7 +189,7 @@ function normalizeHexColor(value: unknown) {
 function normalizeMetaDisplay(value: unknown): ChannelMetaDisplayMode {
   return channelMetaDisplayModes.includes(value as ChannelMetaDisplayMode)
     ? (value as ChannelMetaDisplayMode)
-    : "auto"
+    : "none"
 }
 
 function normalizeBadgeMode(value: unknown): ChannelBadgeMode {
@@ -178,6 +206,10 @@ function normalizeSubtitle(value: unknown) {
   const subtitle = value.trim()
 
   return subtitle || null
+}
+
+function normalizeBoolean(value: unknown, fallback: boolean) {
+  return typeof value === "boolean" ? value : fallback
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
