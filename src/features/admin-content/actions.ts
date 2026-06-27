@@ -8,6 +8,7 @@ import { hashPassword, verifyPassword } from "@/server/auth/password"
 import { requireAdmin } from "@/server/auth/session"
 import {
   channelBadgeModes,
+  channelColorPresets,
   channelMetaDisplayModes,
   mergeChannelDisplayConfig,
 } from "@/server/channels/display-config"
@@ -63,7 +64,6 @@ import {
 const entityStatuses = ["draft", "active", "disabled"] as const
 const membershipStatuses = ["active", "expired", "canceled"] as const
 const userStatuses = ["active", "disabled"] as const
-const hexColorPattern = /^#[0-9a-f]{6}$/i
 
 function redirectWithError(pathname: string, error: unknown): never {
   const message =
@@ -85,20 +85,6 @@ function isUniqueViolation(error: unknown) {
 
 function formString(formData: FormData, name: string) {
   return String(formData.get(name) ?? "").trim()
-}
-
-function optionalHexColor(formData: FormData, name: string, label: string) {
-  const value = formString(formData, name)
-
-  if (!value) {
-    return undefined
-  }
-
-  if (!hexColorPattern.test(value)) {
-    throw new AdminFormError(`${label}必须是 #RRGGBB 格式`)
-  }
-
-  return value.toLowerCase()
 }
 
 function safeAdminBackTo(value: string, fallback = "/admin") {
@@ -243,8 +229,12 @@ function parseChannelForm(formData: FormData) {
     displayStyle:
       optionalString(formData, "displayStyle", "展示样式", 80) ?? "rank",
     homeDisplay: {
-      cardColor: optionalHexColor(formData, "displayCardColor", "卡片主色"),
-      logoColor: optionalHexColor(formData, "displayLogoColor", "Logo 色"),
+      colorPreset: selectValue(
+        formData,
+        "displayColorPreset",
+        "颜色预设",
+        channelColorPresets,
+      ),
       metaDisplay: selectValue(
         formData,
         "displayMeta",

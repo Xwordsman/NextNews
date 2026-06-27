@@ -1,7 +1,8 @@
 import { asc, and, eq, inArray, isNull } from "drizzle-orm"
 import {
   getChannelDisplayConfig,
-  getChannelFallbackPalette,
+  getChannelFallbackColorPreset,
+  getChannelPalette,
   type ChannelBadgeMode,
   type ChannelMetaDisplayMode,
 } from "@/server/channels/display-config"
@@ -161,10 +162,14 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
 
   return {
     sources: channels.map((channel, index) => {
-      const fallbackPalette = getChannelFallbackPalette(
+      const fallbackColorPreset = getChannelFallbackColorPreset(
         `${channel.siteSlug}.${channel.channelSlug}`,
       )
-      const displayConfig = getChannelDisplayConfig(channel.extra)
+      const displayConfig = getChannelDisplayConfig(
+        channel.extra,
+        fallbackColorPreset,
+      )
+      const palette = getChannelPalette(displayConfig.colorPreset)
       const items = channel.lastSnapshotId
         ? (itemsBySnapshotId.get(channel.lastSnapshotId) ?? [])
         : []
@@ -175,8 +180,8 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
         logo: getLogoText(channel.siteName),
         tag: formatUpdateTag(channel.lastSuccessAt),
         category: categoryByChannelId.get(channel.id) ?? "general",
-        color: displayConfig.cardColor ?? fallbackPalette.color,
-        logoColor: displayConfig.logoColor ?? fallbackPalette.logoColor,
+        color: palette.color,
+        logoColor: palette.logoColor,
         favorite: index < 3,
         href: `/channels/${channel.siteSlug}/${channel.channelSlug}`,
         items: items.slice(0, 8).map((item) => ({

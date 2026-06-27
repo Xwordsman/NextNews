@@ -7,8 +7,9 @@ import type {
   TextareaHTMLAttributes,
 } from "react"
 import {
+  channelColorPresetOptions,
   getChannelDisplayConfig,
-  getChannelFallbackPalette,
+  getChannelFallbackColorPreset,
   type ChannelBadgeMode,
   type ChannelMetaDisplayMode,
 } from "@/server/channels/display-config"
@@ -371,12 +372,13 @@ export function ChannelForm({
   submitLabel: string
 }) {
   const checkedCategoryIds = new Set(channel?.categoryIds ?? [])
-  const fallbackPalette = getChannelFallbackPalette(
+  const fallbackColorPreset = getChannelFallbackColorPreset(
     channel?.definitionKey ?? channel?.slug ?? "nextnews",
   )
-  const displayConfig = getChannelDisplayConfig(channel?.extra)
-  const cardColor = displayConfig.cardColor ?? fallbackPalette.color
-  const logoColor = displayConfig.logoColor ?? fallbackPalette.logoColor
+  const displayConfig = getChannelDisplayConfig(
+    channel?.extra,
+    fallbackColorPreset,
+  )
 
   return (
     <form
@@ -493,27 +495,22 @@ export function ChannelForm({
               首页卡片展示
             </h3>
             <p className="mt-1 text-xs leading-5 text-zinc-500">
-              控制前台首页卡片颜色、元信息和新热角标。
+              控制前台首页卡片颜色预设、元信息和新热角标。
             </p>
           </div>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <Field htmlFor="displayCardColor" label="卡片主色">
-              <Input
-                className="h-10 w-full cursor-pointer p-1"
-                defaultValue={cardColor}
-                id="displayCardColor"
-                name="displayCardColor"
-                type="color"
-              />
-            </Field>
-            <Field htmlFor="displayLogoColor" label="Logo 色">
-              <Input
-                className="h-10 w-full cursor-pointer p-1"
-                defaultValue={logoColor}
-                id="displayLogoColor"
-                name="displayLogoColor"
-                type="color"
-              />
+          <div className="grid gap-4 md:grid-cols-3">
+            <Field htmlFor="displayColorPreset" label="颜色预设">
+              <Select
+                defaultValue={displayConfig.colorPreset}
+                id="displayColorPreset"
+                name="displayColorPreset"
+              >
+                {channelColorPresetOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </Select>
             </Field>
             <Field htmlFor="displayMeta" label="元信息">
               <Select

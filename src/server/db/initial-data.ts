@@ -102,8 +102,7 @@ export async function seedInitialData(options: SeedInitialDataOptions = {}) {
     sort: 10,
     status: "draft",
     extra: mergeChannelDisplayConfig(null, {
-      cardColor: "#954b4d",
-      logoColor: "#f0443e",
+      colorPreset: "red",
       metaDisplay: "heat",
       badgeMode: "source",
     }),
@@ -123,8 +122,7 @@ export async function seedInitialData(options: SeedInitialDataOptions = {}) {
     sort: 20,
     status: "draft",
     extra: mergeChannelDisplayConfig(null, {
-      cardColor: "#456a9e",
-      logoColor: "#1777ff",
+      colorPreset: "blue",
       metaDisplay: "heat",
       badgeMode: "source",
     }),
@@ -144,8 +142,7 @@ export async function seedInitialData(options: SeedInitialDataOptions = {}) {
     sort: 30,
     status: "draft",
     extra: mergeChannelDisplayConfig(null, {
-      cardColor: "#2d3644",
-      logoColor: "#0f172a",
+      colorPreset: "gray",
       metaDisplay: "heat",
       badgeMode: "source",
     }),
@@ -165,8 +162,7 @@ export async function seedInitialData(options: SeedInitialDataOptions = {}) {
     sort: 40,
     status: "active",
     extra: mergeChannelDisplayConfig(null, {
-      cardColor: "#375879",
-      logoColor: "#2563eb",
+      colorPreset: "teal",
       metaDisplay: "time",
       badgeMode: "none",
     }),
