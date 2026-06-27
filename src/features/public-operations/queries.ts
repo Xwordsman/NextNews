@@ -26,6 +26,7 @@ import {
   relTopicSnapshotItem,
 } from "@/server/db/schema"
 import { getPublicHomeData } from "@/features/public-home/queries"
+import { formatAppDateTime } from "@/lib/date-format"
 import { matchesKeywords, parseKeywords } from "@/server/content/keywords"
 import { normalizeSearchTerms } from "@/server/search/terms"
 
@@ -855,12 +856,7 @@ function formatOperationDateTime(value: Date | null) {
     return null
   }
 
-  return new Intl.DateTimeFormat("zh-CN", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(value)
+  return formatAppDateTime(value, "")
 }
 
 function isDateString(value?: string): value is string {

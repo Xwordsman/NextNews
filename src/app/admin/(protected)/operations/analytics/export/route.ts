@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/server/auth/session"
 import { getAdminOperationsAnalytics } from "@/features/admin-content/queries"
+import { formatAppDateTimeWithSeconds } from "@/lib/date-format"
 import { getAppSettings, settingBoolean } from "@/server/settings/app-settings"
 
 export const dynamic = "force-dynamic"
@@ -150,5 +151,5 @@ function formatDate(value: Date | string | null) {
     return ""
   }
 
-  return date.toISOString()
+  return formatAppDateTimeWithSeconds(date)
 }

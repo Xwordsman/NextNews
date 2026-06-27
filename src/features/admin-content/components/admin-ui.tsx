@@ -1,6 +1,7 @@
 import Link from "next/link"
 import type { ReactNode } from "react"
 import { ArrowLeft, Eye, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react"
+import { formatAppDateTime } from "@/lib/date-format"
 
 type AdminPageHeaderProps = {
   eyebrow: string
@@ -238,18 +239,7 @@ export function ViewLink({
 }
 
 export function formatDateTime(value: Date | string | null) {
-  if (!value) {
-    return "未产生"
-  }
-
-  const date = value instanceof Date ? value : new Date(value)
-
-  return new Intl.DateTimeFormat("zh-CN", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date)
+  return formatAppDateTime(value)
 }
 
 export function formatDurationMs(value: number | null) {

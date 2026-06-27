@@ -17,6 +17,7 @@ import {
   relChannelCategory,
 } from "@/server/db/schema"
 import { defaultHomeModules } from "@/server/home/modules"
+import { formatAppDateTime } from "@/lib/date-format"
 import type { HomeSource } from "./mock-data"
 
 type NavItem = {
@@ -296,12 +297,7 @@ function formatPublishedAt(value: Date | null) {
     return undefined
   }
 
-  return new Intl.DateTimeFormat("zh-CN", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(value)
+  return formatAppDateTime(value, "")
 }
 
 type ItemMetaInput = {

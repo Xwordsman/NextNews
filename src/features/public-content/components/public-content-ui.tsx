@@ -8,6 +8,7 @@ import {
   UserRound,
 } from "lucide-react"
 import { toggleBookmarkAction } from "@/features/account/actions"
+import { formatAppDateTime } from "@/lib/date-format"
 import type { PublicRankItem } from "../queries"
 
 export function PublicContentShell({
@@ -174,16 +175,5 @@ export function PublicRankList({
 }
 
 export function formatDateTime(value: Date | string | null) {
-  if (!value) {
-    return "未产生"
-  }
-
-  const date = value instanceof Date ? value : new Date(value)
-
-  return new Intl.DateTimeFormat("zh-CN", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date)
+  return formatAppDateTime(value)
 }
