@@ -411,51 +411,78 @@ export async function listAdminLatestContents(options?: {
   }
 
   const whereCondition = and(...conditions)
+  const latestItems = db.$with("latest_admin_contents").as(
+    db
+      .selectDistinctOn([bizSnapshotItem.urlHash], {
+        id: bizSnapshotItem.id,
+        snapshotId: bizSnapshotItem.snapshotId,
+        siteName: bizSite.siteName,
+        siteSlug: bizSite.slug,
+        channelName: bizChannel.channelName,
+        channelSlug: bizChannel.slug,
+        title: bizSnapshotItem.title,
+        url: bizSnapshotItem.url,
+        rankNo: bizSnapshotItem.rankNo,
+        hotValue: bizSnapshotItem.hotValue,
+        hotLabel: bizSnapshotItem.hotLabel,
+        tag: bizSnapshotItem.tag,
+        publishedAt: bizSnapshotItem.publishedAt,
+        snapshotTime: bizChannelSnapshot.snapshotTime,
+        createdAt: bizSnapshotItem.createdAt,
+        blockedId: bizContentBlock.id,
+      })
+      .from(bizSnapshotItem)
+      .innerJoin(bizChannel, eq(bizSnapshotItem.channelId, bizChannel.id))
+      .innerJoin(bizSite, eq(bizChannel.siteId, bizSite.id))
+      .innerJoin(
+        bizChannelSnapshot,
+        eq(bizSnapshotItem.snapshotId, bizChannelSnapshot.id),
+      )
+      .leftJoin(
+        bizContentBlock,
+        and(
+          eq(bizSnapshotItem.urlHash, bizContentBlock.urlHash),
+          isNull(bizContentBlock.deletedAt),
+        ),
+      )
+      .where(whereCondition)
+      .orderBy(
+        bizSnapshotItem.urlHash,
+        desc(bizSnapshotItem.createdAt),
+        desc(bizChannelSnapshot.snapshotTime),
+      ),
+  )
+
   const [totalRow] = await db
+    .with(latestItems)
     .select({ value: count() })
-    .from(bizSnapshotItem)
-    .innerJoin(bizChannel, eq(bizSnapshotItem.channelId, bizChannel.id))
-    .innerJoin(bizSite, eq(bizChannel.siteId, bizSite.id))
-    .where(whereCondition)
+    .from(latestItems)
 
   const total = Number(totalRow?.value ?? 0)
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
   const page = Math.min(requestedPage, totalPages)
   const items = await db
+    .with(latestItems)
     .select({
-      id: bizSnapshotItem.id,
-      snapshotId: bizSnapshotItem.snapshotId,
-      siteName: bizSite.siteName,
-      siteSlug: bizSite.slug,
-      channelName: bizChannel.channelName,
-      channelSlug: bizChannel.slug,
-      title: bizSnapshotItem.title,
-      url: bizSnapshotItem.url,
-      rankNo: bizSnapshotItem.rankNo,
-      hotValue: bizSnapshotItem.hotValue,
-      hotLabel: bizSnapshotItem.hotLabel,
-      tag: bizSnapshotItem.tag,
-      publishedAt: bizSnapshotItem.publishedAt,
-      snapshotTime: bizChannelSnapshot.snapshotTime,
-      createdAt: bizSnapshotItem.createdAt,
-      blockedId: bizContentBlock.id,
+      id: latestItems.id,
+      snapshotId: latestItems.snapshotId,
+      siteName: latestItems.siteName,
+      siteSlug: latestItems.siteSlug,
+      channelName: latestItems.channelName,
+      channelSlug: latestItems.channelSlug,
+      title: latestItems.title,
+      url: latestItems.url,
+      rankNo: latestItems.rankNo,
+      hotValue: latestItems.hotValue,
+      hotLabel: latestItems.hotLabel,
+      tag: latestItems.tag,
+      publishedAt: latestItems.publishedAt,
+      snapshotTime: latestItems.snapshotTime,
+      createdAt: latestItems.createdAt,
+      blockedId: latestItems.blockedId,
     })
-    .from(bizSnapshotItem)
-    .innerJoin(bizChannel, eq(bizSnapshotItem.channelId, bizChannel.id))
-    .innerJoin(bizSite, eq(bizChannel.siteId, bizSite.id))
-    .innerJoin(
-      bizChannelSnapshot,
-      eq(bizSnapshotItem.snapshotId, bizChannelSnapshot.id),
-    )
-    .leftJoin(
-      bizContentBlock,
-      and(
-        eq(bizSnapshotItem.urlHash, bizContentBlock.urlHash),
-        isNull(bizContentBlock.deletedAt),
-      ),
-    )
-    .where(whereCondition)
-    .orderBy(desc(bizSnapshotItem.createdAt))
+    .from(latestItems)
+    .orderBy(desc(latestItems.createdAt))
     .limit(pageSize)
     .offset((page - 1) * pageSize)
 

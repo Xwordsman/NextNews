@@ -23,7 +23,6 @@ export type SnapshotDecision = {
   reason:
     | "first_snapshot"
     | "minimum_interval_elapsed"
-    | "significant_top_change"
     | "minor_change_throttled"
   shouldCreate: boolean
 }
@@ -106,18 +105,6 @@ export function shouldCreateSnapshot(input: {
     previousItems: input.previousItems,
     rankLimit: policy.significantTopLimit,
   })
-  const threshold = Math.max(1, policy.significantTopChangeCount)
-
-  if (newTopItemCount >= threshold || rankChangedCount >= threshold) {
-    return {
-      ageSeconds,
-      newTopItemCount,
-      rankChangedCount,
-      reason: "significant_top_change",
-      shouldCreate: true,
-    }
-  }
-
   return {
     ageSeconds,
     newTopItemCount,

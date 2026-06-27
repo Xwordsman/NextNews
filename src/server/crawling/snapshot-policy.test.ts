@@ -94,7 +94,7 @@ test("shouldCreateSnapshot throttles minor changes inside the minimum interval",
   )
 })
 
-test("shouldCreateSnapshot allows significant top changes inside the interval", () => {
+test("shouldCreateSnapshot keeps significant top changes throttled inside the interval", () => {
   const decision = shouldCreateSnapshot({
     currentItems: [
       { rankNo: 1, url: "https://example.com/d", urlHash: "d" },
@@ -111,6 +111,8 @@ test("shouldCreateSnapshot allows significant top changes inside the interval", 
     previousItems,
   })
 
-  assert.equal(decision.shouldCreate, true)
-  assert.equal(decision.reason, "significant_top_change")
+  assert.equal(decision.shouldCreate, false)
+  assert.equal(decision.reason, "minor_change_throttled")
+  assert.equal(decision.newTopItemCount, 3)
+  assert.equal(decision.rankChangedCount, 3)
 })
