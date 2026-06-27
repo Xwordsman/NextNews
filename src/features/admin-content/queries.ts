@@ -5,8 +5,10 @@ import {
   desc,
   eq,
   gte,
+  ilike,
   inArray,
   isNull,
+  or,
   sql,
 } from "drizzle-orm"
 import { listChannelDefinitions } from "@/server/channels/registry"
@@ -377,10 +379,49 @@ export async function getAdminSnapshot(id: string) {
   }
 }
 
-export async function listAdminLatestContents() {
+export async function listAdminLatestContents(options?: {
+  page?: number
+  pageSize?: number
+  query?: string
+}) {
   const db = getDb()
+  const keyword = options?.query?.trim().slice(0, 120) ?? ""
+  const pageSize = Math.min(Math.max(options?.pageSize ?? 30, 1), 100)
+  const requestedPage = Math.max(options?.page ?? 1, 1)
+  const searchPattern = `%${keyword}%`
+  const conditions = [isNull(bizChannel.deletedAt), isNull(bizSite.deletedAt)]
 
-  return db
+  if (keyword) {
+    const searchCondition = or(
+      ilike(bizSnapshotItem.title, searchPattern),
+      ilike(bizSnapshotItem.summary, searchPattern),
+      ilike(bizSnapshotItem.url, searchPattern),
+      ilike(bizSnapshotItem.hotValue, searchPattern),
+      ilike(bizSnapshotItem.hotLabel, searchPattern),
+      ilike(bizSnapshotItem.tag, searchPattern),
+      ilike(bizChannel.channelName, searchPattern),
+      ilike(bizChannel.slug, searchPattern),
+      ilike(bizSite.siteName, searchPattern),
+      ilike(bizSite.slug, searchPattern),
+    )
+
+    if (searchCondition) {
+      conditions.push(searchCondition)
+    }
+  }
+
+  const whereCondition = and(...conditions)
+  const [totalRow] = await db
+    .select({ value: count() })
+    .from(bizSnapshotItem)
+    .innerJoin(bizChannel, eq(bizSnapshotItem.channelId, bizChannel.id))
+    .innerJoin(bizSite, eq(bizChannel.siteId, bizSite.id))
+    .where(whereCondition)
+
+  const total = Number(totalRow?.value ?? 0)
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
+  const page = Math.min(requestedPage, totalPages)
+  const items = await db
     .select({
       id: bizSnapshotItem.id,
       snapshotId: bizSnapshotItem.snapshotId,
@@ -413,9 +454,21 @@ export async function listAdminLatestContents() {
         isNull(bizContentBlock.deletedAt),
       ),
     )
-    .where(and(isNull(bizChannel.deletedAt), isNull(bizSite.deletedAt)))
+    .where(whereCondition)
     .orderBy(desc(bizSnapshotItem.createdAt))
-    .limit(100)
+    .limit(pageSize)
+    .offset((page - 1) * pageSize)
+
+  return {
+    items,
+    pagination: {
+      page,
+      pageSize,
+      query: keyword,
+      total,
+      totalPages,
+    },
+  }
 }
 
 export async function listAdminHomeChannels() {

@@ -1,6 +1,8 @@
 export type AdminSearchParams = Promise<{
   error?: string | string[]
   notice?: string | string[]
+  page?: string | string[]
+  q?: string | string[]
 }>
 
 export async function getErrorMessage(searchParams: AdminSearchParams) {
