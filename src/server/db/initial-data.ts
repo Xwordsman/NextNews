@@ -104,6 +104,7 @@ export async function seedInitialData(options: SeedInitialDataOptions = {}) {
     status: "draft",
     extra: mergeChannelDisplayConfig(null, {
       colorPreset: "red",
+      itemLimit: 30,
       metaDisplay: "heat",
       badgeMode: "source",
       showUpdatedAt: true,
@@ -127,6 +128,7 @@ export async function seedInitialData(options: SeedInitialDataOptions = {}) {
     status: "draft",
     extra: mergeChannelDisplayConfig(null, {
       colorPreset: "blue",
+      itemLimit: 30,
       metaDisplay: "heat",
       badgeMode: "source",
       showUpdatedAt: true,
@@ -150,6 +152,7 @@ export async function seedInitialData(options: SeedInitialDataOptions = {}) {
     status: "draft",
     extra: mergeChannelDisplayConfig(null, {
       colorPreset: "gray",
+      itemLimit: 30,
       metaDisplay: "heat",
       badgeMode: "source",
       showUpdatedAt: true,
@@ -173,6 +176,7 @@ export async function seedInitialData(options: SeedInitialDataOptions = {}) {
     status: "active",
     extra: mergeChannelDisplayConfig(null, {
       colorPreset: "teal",
+      itemLimit: 30,
       metaDisplay: "none",
       badgeMode: "none",
       showUpdatedAt: false,

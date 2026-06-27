@@ -12,6 +12,8 @@ import {
   channelDisplayStyles,
   channelMetaDisplayModes,
   channelTypes,
+  defaultChannelHomeItemLimit,
+  maxChannelHomeItemLimit,
   mergeChannelDisplayConfig,
 } from "@/server/channels/display-config"
 import { getChannelDefinition } from "@/server/channels/registry"
@@ -242,6 +244,14 @@ function parseChannelForm(formData: FormData) {
     ),
     homeDisplay: {
       subtitle: optionalString(formData, "displaySubtitle", "首页副标题", 40),
+      itemLimit: optionalInteger(
+        formData,
+        "displayItemLimit",
+        "首页条数",
+        defaultChannelHomeItemLimit,
+        1,
+        maxChannelHomeItemLimit,
+      ),
       colorPreset: selectValue(
         formData,
         "displayColorPreset",

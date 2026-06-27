@@ -9,8 +9,10 @@ import type {
 import {
   channelColorPresetOptions,
   channelDisplayStyleOptions,
+  defaultChannelHomeItemLimit,
   getChannelDisplayConfig,
   getChannelFallbackColorPreset,
+  maxChannelHomeItemLimit,
   channelTypeOptions,
   type ChannelBadgeMode,
   type ChannelMetaDisplayMode,
@@ -623,6 +625,21 @@ export function ChannelForm({
               maxLength={40}
               name="displaySubtitle"
               placeholder="热搜"
+            />
+          </Field>
+          <Field
+            htmlFor="displayItemLimit"
+            hint="控制首页卡片最多显示多少条，不影响采集、入库和历史快照。"
+            label="首页条数"
+          >
+            <Input
+              defaultValue={displayConfig.itemLimit}
+              id="displayItemLimit"
+              max={maxChannelHomeItemLimit}
+              min={1}
+              name="displayItemLimit"
+              placeholder={String(defaultChannelHomeItemLimit)}
+              type="number"
             />
           </Field>
           <Field htmlFor="displayColorPreset" label="颜色预设">

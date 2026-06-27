@@ -192,7 +192,7 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
         logoColor: palette.logoColor,
         favorite: index < 3,
         href: `/channels/${channel.siteSlug}/${channel.channelSlug}`,
-        items: items.slice(0, 8).map((item) => ({
+        items: items.slice(0, displayConfig.itemLimit).map((item) => ({
           id: item.id,
           title: item.title,
           url: item.url,

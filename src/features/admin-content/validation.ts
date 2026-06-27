@@ -78,6 +78,7 @@ export function optionalInteger(
   label: string,
   fallback: number,
   min = 0,
+  max?: number,
 ) {
   const rawValue = String(formData.get(name) ?? "").trim()
 
@@ -89,6 +90,10 @@ export function optionalInteger(
 
   if (!Number.isInteger(value) || value < min) {
     throw new AdminFormError(`${label}必须是不小于 ${min} 的整数`)
+  }
+
+  if (typeof max === "number" && value > max) {
+    throw new AdminFormError(`${label}不能超过 ${max}`)
   }
 
   return value

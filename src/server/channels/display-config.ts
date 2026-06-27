@@ -28,6 +28,8 @@ export const channelMetaDisplayModes = [
 export const channelBadgeModes = ["source", "none"] as const
 export const channelTypes = ["rank", "news", "feed", "video", "topic"] as const
 export const channelDisplayStyles = ["rank", "news", "compact", "card"] as const
+export const defaultChannelHomeItemLimit = 30
+export const maxChannelHomeItemLimit = 100
 
 export type ChannelColorPreset = (typeof channelColorPresets)[number]
 export type ChannelMetaDisplayMode = (typeof channelMetaDisplayModes)[number]
@@ -37,6 +39,7 @@ export type ChannelDisplayStyle = (typeof channelDisplayStyles)[number]
 
 export type ChannelDisplayConfig = {
   colorPreset: ChannelColorPreset
+  itemLimit: number
   metaDisplay: ChannelMetaDisplayMode
   badgeMode: ChannelBadgeMode
   showUpdatedAt: boolean
@@ -126,6 +129,12 @@ export function getChannelDisplayConfig(
 
   return {
     colorPreset,
+    itemLimit: normalizeInteger(
+      display.itemLimit,
+      defaultChannelHomeItemLimit,
+      1,
+      maxChannelHomeItemLimit,
+    ),
     metaDisplay: normalizeMetaDisplay(display.metaDisplay),
     badgeMode: normalizeBadgeMode(display.badgeMode),
     showUpdatedAt: normalizeBoolean(display.showUpdatedAt, true),
@@ -141,6 +150,7 @@ export function mergeChannelDisplayConfig(
 
   nextExtra.homeDisplay = {
     colorPreset: displayConfig.colorPreset,
+    itemLimit: displayConfig.itemLimit,
     metaDisplay: displayConfig.metaDisplay,
     badgeMode: displayConfig.badgeMode,
     showUpdatedAt: displayConfig.showUpdatedAt,
@@ -210,6 +220,19 @@ function normalizeSubtitle(value: unknown) {
 
 function normalizeBoolean(value: unknown, fallback: boolean) {
   return typeof value === "boolean" ? value : fallback
+}
+
+function normalizeInteger(
+  value: unknown,
+  fallback: number,
+  min: number,
+  max: number,
+) {
+  if (typeof value !== "number" || !Number.isInteger(value)) {
+    return fallback
+  }
+
+  return Math.min(Math.max(value, min), max)
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
