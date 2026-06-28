@@ -47,8 +47,9 @@ const badgeModeOptions: Array<{
   value: ChannelBadgeMode
   label: string
 }> = [
-  { value: "source", label: "跟随来源标签" },
   { value: "none", label: "不显示" },
+  { value: "label", label: "显示热 / 新 / 爆" },
+  { value: "heat", label: "显示具体热度值" },
 ]
 
 function Field({
@@ -674,8 +675,8 @@ export function ChannelForm({
           </Field>
           <Field
             htmlFor="displayBadge"
-            hint="根据采集到的 hotLabel 或 tag 判断；包含“新 / 爆 / 热”时才显示，也可以关闭。"
-            label="条目角标"
+            hint="显示在标题右侧，不再占用列表最右侧。热度值使用采集到的 hotValue，默认不显示。"
+            label="标题右侧标记"
           >
             <Select
               defaultValue={displayConfig.badgeMode}

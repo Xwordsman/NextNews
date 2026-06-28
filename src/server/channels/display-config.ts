@@ -25,7 +25,7 @@ export const channelMetaDisplayModes = [
   "time",
 ] as const
 
-export const channelBadgeModes = ["source", "none"] as const
+export const channelBadgeModes = ["none", "label", "heat"] as const
 export const channelTypes = ["rank", "news", "feed", "video", "topic"] as const
 export const channelDisplayStyles = ["rank", "news", "compact", "card"] as const
 export const defaultChannelHomeItemLimit = 30
@@ -205,7 +205,7 @@ function normalizeMetaDisplay(value: unknown): ChannelMetaDisplayMode {
 function normalizeBadgeMode(value: unknown): ChannelBadgeMode {
   return channelBadgeModes.includes(value as ChannelBadgeMode)
     ? (value as ChannelBadgeMode)
-    : "source"
+    : "none"
 }
 
 function normalizeSubtitle(value: unknown) {

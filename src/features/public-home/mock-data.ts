@@ -5,6 +5,7 @@ export type HomeStory = {
   metaVariant?: "muted" | "heat" | "tag"
   url?: string
   badge?: string
+  badgeVariant?: "label" | "heat"
 }
 
 export type HomeSource = {

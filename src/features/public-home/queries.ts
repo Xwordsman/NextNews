@@ -198,7 +198,8 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
           url: item.url,
           meta: getItemMeta(item, displayConfig.metaDisplay),
           metaVariant: getItemMetaVariant(displayConfig.metaDisplay),
-          badge: getItemBadge(item.hotLabel, item.tag, displayConfig.badgeMode),
+          badge: getItemBadge(item, displayConfig.badgeMode),
+          badgeVariant: getItemBadgeVariant(displayConfig.badgeMode),
         })),
       }
     }),
@@ -333,16 +334,16 @@ function getItemMetaVariant(metaDisplay: ChannelMetaDisplayMode) {
   return metaDisplay === "heat" || metaDisplay === "tag" ? metaDisplay : "muted"
 }
 
-function getItemBadge(
-  hotLabel: string | null,
-  tag: string | null,
-  badgeMode: ChannelBadgeMode,
-) {
+function getItemBadge(item: ItemMetaInput, badgeMode: ChannelBadgeMode) {
   if (badgeMode === "none") {
     return undefined
   }
 
-  const marker = `${hotLabel ?? ""} ${tag ?? ""}`
+  if (badgeMode === "heat") {
+    return item.hotValue ?? undefined
+  }
+
+  const marker = `${item.hotLabel ?? ""} ${item.tag ?? ""}`
 
   if (marker.includes("新")) {
     return "新"
@@ -357,4 +358,8 @@ function getItemBadge(
   }
 
   return undefined
+}
+
+function getItemBadgeVariant(badgeMode: ChannelBadgeMode) {
+  return badgeMode === "heat" ? "heat" : "label"
 }
