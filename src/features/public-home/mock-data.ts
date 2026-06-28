@@ -3,6 +3,7 @@ export type HomeStory = {
   title: string
   meta?: string
   metaVariant?: "muted" | "heat" | "tag"
+  metaPosition?: "inline" | "right"
   url?: string
   badge?: string
   badgeVariant?: "label" | "heat"

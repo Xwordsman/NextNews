@@ -3,7 +3,6 @@ import {
   getChannelDisplayConfig,
   getChannelFallbackColorPreset,
   getChannelPalette,
-  type ChannelBadgeMode,
   type ChannelMetaDisplayMode,
 } from "@/server/channels/display-config"
 import { getDb } from "@/server/db/client"
@@ -202,8 +201,7 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
             url: item.url,
             meta: meta.value,
             metaVariant: meta.variant,
-            badge: getItemBadge(item, displayConfig.badgeMode),
-            badgeVariant: getItemBadgeVariant(displayConfig.badgeMode),
+            metaPosition: displayConfig.metaPosition,
           }
         }),
       }
@@ -329,7 +327,7 @@ function getItemMeta(item: ItemMetaInput, metaDisplay: ChannelMetaDisplayMode) {
   }
 
   if (metaDisplay === "tag") {
-    return { value: item.tag ?? undefined, variant: "tag" as const }
+    return { value: getItemTag(item), variant: "tag" as const }
   }
 
   if (metaDisplay === "time") {
@@ -346,26 +344,26 @@ function getItemMeta(item: ItemMetaInput, metaDisplay: ChannelMetaDisplayMode) {
     }
   }
 
-  return { value: item.tag ?? undefined, variant: "tag" as const }
+  return { value: getItemTag(item), variant: "tag" as const }
 }
 
-function getItemBadge(item: ItemMetaInput, badgeMode: ChannelBadgeMode) {
-  if (badgeMode === "none") {
-    return undefined
+function getItemTag(item: ItemMetaInput) {
+  if (item.tag) {
+    return item.tag
   }
 
-  if (badgeMode === "heat") {
-    return item.hotValue ?? undefined
-  }
+  const marker = item.hotLabel ?? ""
 
-  const marker = `${item.hotLabel ?? ""} ${item.tag ?? ""}`
-
-  if (marker.includes("新")) {
-    return "新"
+  if (marker.includes("沸")) {
+    return "沸"
   }
 
   if (marker.includes("爆")) {
     return "爆"
+  }
+
+  if (marker.includes("新")) {
+    return "新"
   }
 
   if (marker.includes("热")) {
@@ -373,8 +371,4 @@ function getItemBadge(item: ItemMetaInput, badgeMode: ChannelBadgeMode) {
   }
 
   return undefined
-}
-
-function getItemBadgeVariant(badgeMode: ChannelBadgeMode) {
-  return badgeMode === "heat" ? "heat" : "label"
 }

@@ -25,6 +25,7 @@ export const channelMetaDisplayModes = [
   "time",
 ] as const
 
+export const channelMetaPositions = ["inline", "right"] as const
 export const channelBadgeModes = ["none", "label", "heat"] as const
 export const channelTypes = ["rank", "news", "feed", "video", "topic"] as const
 export const channelDisplayStyles = ["rank", "news", "compact", "card"] as const
@@ -33,6 +34,7 @@ export const maxChannelHomeItemLimit = 100
 
 export type ChannelColorPreset = (typeof channelColorPresets)[number]
 export type ChannelMetaDisplayMode = (typeof channelMetaDisplayModes)[number]
+export type ChannelMetaPosition = (typeof channelMetaPositions)[number]
 export type ChannelBadgeMode = (typeof channelBadgeModes)[number]
 export type ChannelType = (typeof channelTypes)[number]
 export type ChannelDisplayStyle = (typeof channelDisplayStyles)[number]
@@ -41,7 +43,7 @@ export type ChannelDisplayConfig = {
   colorPreset: ChannelColorPreset
   itemLimit: number
   metaDisplay: ChannelMetaDisplayMode
-  badgeMode: ChannelBadgeMode
+  metaPosition: ChannelMetaPosition
   showUpdatedAt: boolean
   subtitle?: string | null
 }
@@ -122,10 +124,12 @@ export function getChannelDisplayConfig(
   fallbackColorPreset: ChannelColorPreset = "blue",
 ): ChannelDisplayConfig {
   const display = getRawDisplayConfig(extra)
+  const legacyBadgeMode = normalizeBadgeMode(display.badgeMode)
   const colorPreset =
     normalizeColorPreset(display.colorPreset) ??
     inferColorPresetFromLegacyColors(display) ??
     fallbackColorPreset
+  const metaDisplay = normalizeMetaDisplay(display.metaDisplay)
 
   return {
     colorPreset,
@@ -135,8 +139,11 @@ export function getChannelDisplayConfig(
       1,
       maxChannelHomeItemLimit,
     ),
-    metaDisplay: normalizeMetaDisplay(display.metaDisplay),
-    badgeMode: normalizeBadgeMode(display.badgeMode),
+    metaDisplay:
+      metaDisplay === "none"
+        ? inferMetaDisplayFromLegacyBadge(legacyBadgeMode)
+        : metaDisplay,
+    metaPosition: normalizeMetaPosition(display.metaPosition) ?? "inline",
     showUpdatedAt: normalizeBoolean(display.showUpdatedAt, true),
     subtitle: normalizeSubtitle(display.subtitle),
   }
@@ -152,7 +159,7 @@ export function mergeChannelDisplayConfig(
     colorPreset: displayConfig.colorPreset,
     itemLimit: displayConfig.itemLimit,
     metaDisplay: displayConfig.metaDisplay,
-    badgeMode: displayConfig.badgeMode,
+    metaPosition: displayConfig.metaPosition,
     showUpdatedAt: displayConfig.showUpdatedAt,
     subtitle: normalizeSubtitle(displayConfig.subtitle),
   }
@@ -206,6 +213,28 @@ function normalizeBadgeMode(value: unknown): ChannelBadgeMode {
   return channelBadgeModes.includes(value as ChannelBadgeMode)
     ? (value as ChannelBadgeMode)
     : "none"
+}
+
+function normalizeMetaPosition(
+  value: unknown,
+): ChannelMetaPosition | undefined {
+  return channelMetaPositions.includes(value as ChannelMetaPosition)
+    ? (value as ChannelMetaPosition)
+    : undefined
+}
+
+function inferMetaDisplayFromLegacyBadge(
+  badgeMode: ChannelBadgeMode,
+): ChannelMetaDisplayMode {
+  if (badgeMode === "heat") {
+    return "heat"
+  }
+
+  if (badgeMode === "label") {
+    return "tag"
+  }
+
+  return "none"
 }
 
 function normalizeSubtitle(value: unknown) {

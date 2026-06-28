@@ -112,37 +112,47 @@ function NavPill({
   )
 }
 
-function getStoryMetaClassName(
-  metaVariant: HomeSource["items"][number]["metaVariant"],
-) {
+type StoryMetaVariant =
+  | HomeSource["items"][number]["metaVariant"]
+  | HomeSource["items"][number]["badgeVariant"]
+
+function getStoryInlineMetaClassName(metaVariant: StoryMetaVariant) {
   if (metaVariant === "heat") {
-    return "text-xs font-medium text-rose-600 dark:text-rose-300"
-  }
-
-  if (metaVariant === "tag") {
-    return "inline-flex max-w-full rounded-md bg-slate-900/5 px-1.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-white/10 dark:text-white/70"
-  }
-
-  return "text-xs text-slate-500 dark:text-white/50"
-}
-
-function getStoryBadgeClassName(
-  badgeVariant:
-    | HomeSource["items"][number]["badgeVariant"]
-    | HomeSource["items"][number]["metaVariant"],
-) {
-  if (badgeVariant === "heat") {
     return "ml-1.5 inline whitespace-nowrap text-xs font-medium text-rose-600 dark:text-rose-300"
   }
 
-  if (badgeVariant === "tag") {
+  if (metaVariant === "tag") {
     return "ml-1.5 inline-flex translate-y-[-1px] items-center rounded-md bg-slate-900/5 px-1.5 py-0.5 text-[11px] font-medium leading-none text-slate-600 dark:bg-white/10 dark:text-white/70"
   }
 
-  return "ml-1.5 inline-flex translate-y-[-1px] items-center rounded-md bg-[#f5bb48] px-1.5 py-0.5 text-[11px] font-bold leading-none text-[#23180a]"
+  if (metaVariant === "label") {
+    return "ml-1.5 inline-flex translate-y-[-1px] items-center rounded-md bg-[#f5bb48] px-1.5 py-0.5 text-[11px] font-bold leading-none text-[#23180a]"
+  }
+
+  return "ml-1.5 inline whitespace-nowrap text-xs font-medium text-slate-500 dark:text-white/50"
 }
 
-function getStoryTitleMarker(item: HomeSource["items"][number]) {
+function getStoryRightMetaClassName(metaVariant: StoryMetaVariant) {
+  if (metaVariant === "heat") {
+    return "shrink-0 whitespace-nowrap pt-1 text-right text-xs font-medium text-rose-600 dark:text-rose-300"
+  }
+
+  if (metaVariant === "tag") {
+    return "mt-1 inline-flex max-w-[96px] shrink-0 items-center justify-self-end overflow-hidden text-ellipsis whitespace-nowrap rounded-md bg-slate-900/5 px-1.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-white/10 dark:text-white/70"
+  }
+
+  if (metaVariant === "label") {
+    return "mt-1 inline-flex shrink-0 items-center justify-self-end rounded-md bg-[#f5bb48] px-1.5 py-0.5 text-[11px] font-bold leading-none text-[#23180a]"
+  }
+
+  return "shrink-0 whitespace-nowrap pt-1 text-right text-xs text-slate-500 dark:text-white/50"
+}
+
+function getStoryMetaPosition(item: HomeSource["items"][number]) {
+  return item.metaPosition ?? "inline"
+}
+
+function getStoryInlineMeta(item: HomeSource["items"][number]) {
   if (item.badge) {
     return {
       value: item.badge,
@@ -150,23 +160,25 @@ function getStoryTitleMarker(item: HomeSource["items"][number]) {
     }
   }
 
-  if (
-    item.meta &&
-    (item.metaVariant === "heat" || item.metaVariant === "tag")
-  ) {
+  if (item.meta && getStoryMetaPosition(item) === "inline") {
     return {
       value: item.meta,
-      variant: item.metaVariant,
+      variant: item.metaVariant ?? "muted",
     }
   }
 
   return null
 }
 
-function shouldShowStoryMeta(item: HomeSource["items"][number]) {
-  return Boolean(
-    item.meta && item.metaVariant !== "heat" && item.metaVariant !== "tag",
-  )
+function getStoryRightMeta(item: HomeSource["items"][number]) {
+  if (item.meta && getStoryMetaPosition(item) === "right") {
+    return {
+      value: item.meta,
+      variant: item.metaVariant ?? "muted",
+    }
+  }
+
+  return null
 }
 
 export function PublicHomePage({
@@ -831,7 +843,8 @@ export function PublicHomePage({
 
                           <ol className="grid max-h-[310px] gap-2 overflow-auto rounded-xl bg-slate-50 p-2 dark:bg-black/25 [scrollbar-color:rgba(255,255,255,0.22)_transparent]">
                             {source.items.map((item, index) => {
-                              const titleMarker = getStoryTitleMarker(item)
+                              const inlineMeta = getStoryInlineMeta(item)
+                              const rightMeta = getStoryRightMeta(item)
 
                               return (
                                 <li
@@ -841,8 +854,14 @@ export function PublicHomePage({
                                   <span className="grid min-h-[30px] place-items-center rounded-md bg-slate-900/10 text-slate-600 dark:bg-white/10 dark:text-white/80">
                                     {index + 1}
                                   </span>
-                                  <span className="min-w-0">
-                                    <span className="block text-[15px] font-semibold leading-6 text-slate-900 dark:text-white/90">
+                                  <span
+                                    className={
+                                      rightMeta
+                                        ? "grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-start gap-2"
+                                        : "min-w-0"
+                                    }
+                                  >
+                                    <span className="block min-w-0 text-[15px] font-semibold leading-6 text-slate-900 dark:text-white/90">
                                       {item.url ? (
                                         <a
                                           className="inline text-current no-underline transition-colors hover:text-brand focus-visible:text-brand focus-visible:outline-none"
@@ -859,24 +878,24 @@ export function PublicHomePage({
                                       ) : (
                                         <span>{item.title}</span>
                                       )}
-                                      {titleMarker ? (
+                                      {inlineMeta ? (
                                         <span
-                                          className={getStoryBadgeClassName(
-                                            titleMarker.variant,
+                                          className={getStoryInlineMetaClassName(
+                                            inlineMeta.variant,
                                           )}
                                         >
-                                          {titleMarker.value}
+                                          {inlineMeta.value}
                                         </span>
                                       ) : null}
                                     </span>
-                                    {shouldShowStoryMeta(item) ? (
-                                      <small
-                                        className={getStoryMetaClassName(
-                                          item.metaVariant,
+                                    {rightMeta ? (
+                                      <span
+                                        className={getStoryRightMetaClassName(
+                                          rightMeta.variant,
                                         )}
                                       >
-                                        {item.meta}
-                                      </small>
+                                        {rightMeta.value}
+                                      </span>
                                     ) : null}
                                   </span>
                                 </li>

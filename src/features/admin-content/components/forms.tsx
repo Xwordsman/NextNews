@@ -14,8 +14,8 @@ import {
   getChannelFallbackColorPreset,
   maxChannelHomeItemLimit,
   channelTypeOptions,
-  type ChannelBadgeMode,
   type ChannelMetaDisplayMode,
+  type ChannelMetaPosition,
 } from "@/server/channels/display-config"
 import type {
   getAdminCategory,
@@ -43,13 +43,12 @@ const metaDisplayOptions: Array<{
   { value: "time", label: "只显示发布时间" },
 ]
 
-const badgeModeOptions: Array<{
-  value: ChannelBadgeMode
+const metaPositionOptions: Array<{
+  value: ChannelMetaPosition
   label: string
 }> = [
-  { value: "none", label: "不显示" },
-  { value: "label", label: "显示热 / 新 / 爆" },
-  { value: "heat", label: "显示具体热度值" },
+  { value: "inline", label: "显示在标题旁边" },
+  { value: "right", label: "固定显示在最右侧" },
 ]
 
 function Field({
@@ -611,7 +610,7 @@ export function ChannelForm({
         <section className={sectionClassName}>
           <div className="lg:col-span-2">
             <SectionHeader
-              description="控制首页频道卡片的副标题、颜色，以及每条内容下面显示什么信息。"
+              description="控制首页频道卡片的副标题、颜色，以及每条内容额外显示什么信息。"
               title="首页卡片"
             />
           </div>
@@ -658,7 +657,7 @@ export function ChannelForm({
           </Field>
           <Field
             htmlFor="displayMeta"
-            hint="控制每条内容标题下方显示什么。没有热度数据的资讯类频道建议选择“不显示”。"
+            hint="控制每条内容额外显示什么。没有热度数据的资讯类频道建议选择“不显示”。"
             label="条目副信息"
           >
             <Select
@@ -674,16 +673,16 @@ export function ChannelForm({
             </Select>
           </Field>
           <Field
-            htmlFor="displayBadge"
-            hint="显示在标题右侧，不再占用列表最右侧。热度值使用采集到的 hotValue，默认不显示。"
-            label="标题右侧标记"
+            htmlFor="displayMetaPosition"
+            hint="当条目副信息不为“不显示”时生效。标题旁边适合热、新、爆等短标签；最右侧适合热度值或发布时间。"
+            label="条目副信息位置"
           >
             <Select
-              defaultValue={displayConfig.badgeMode}
-              id="displayBadge"
-              name="displayBadge"
+              defaultValue={displayConfig.metaPosition}
+              id="displayMetaPosition"
+              name="displayMetaPosition"
             >
-              {badgeModeOptions.map((option) => (
+              {metaPositionOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -693,9 +692,12 @@ export function ChannelForm({
           <div className="lg:col-span-2">
             <Checkbox
               defaultChecked={displayConfig.showUpdatedAt}
-              label="显示卡片更新时间"
+              label="显示卡片顶部更新时间"
               name="displayUpdatedAt"
             />
+            <p className="mt-2 text-xs leading-5 text-zinc-500">
+              控制频道标题下方的“几分钟前更新”，不是每条内容的发布时间。
+            </p>
           </div>
         </section>
 

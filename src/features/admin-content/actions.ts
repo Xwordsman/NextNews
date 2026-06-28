@@ -7,10 +7,10 @@ import { recordAdminOperation } from "@/server/admin/operation-log"
 import { hashPassword, verifyPassword } from "@/server/auth/password"
 import { requireAdmin } from "@/server/auth/session"
 import {
-  channelBadgeModes,
   channelColorPresets,
   channelDisplayStyles,
   channelMetaDisplayModes,
+  channelMetaPositions,
   channelTypes,
   defaultChannelHomeItemLimit,
   maxChannelHomeItemLimit,
@@ -264,11 +264,11 @@ function parseChannelForm(formData: FormData) {
         "元信息",
         channelMetaDisplayModes,
       ),
-      badgeMode: selectValue(
+      metaPosition: selectValue(
         formData,
-        "displayBadge",
-        "角标",
-        channelBadgeModes,
+        "displayMetaPosition",
+        "条目副信息位置",
+        channelMetaPositions,
       ),
       showUpdatedAt: booleanField(formData, "displayUpdatedAt"),
     },
