@@ -127,6 +127,7 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
             hotLabel: bizSnapshotItem.hotLabel,
             tag: bizSnapshotItem.tag,
             publishedAt: bizSnapshotItem.publishedAt,
+            createdAt: bizSnapshotItem.createdAt,
           })
           .from(bizSnapshotItem)
           .leftJoin(
@@ -192,15 +193,19 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
         logoColor: palette.logoColor,
         favorite: index < 3,
         href: `/channels/${channel.siteSlug}/${channel.channelSlug}`,
-        items: items.slice(0, displayConfig.itemLimit).map((item) => ({
-          id: item.id,
-          title: item.title,
-          url: item.url,
-          meta: getItemMeta(item, displayConfig.metaDisplay),
-          metaVariant: getItemMetaVariant(displayConfig.metaDisplay),
-          badge: getItemBadge(item, displayConfig.badgeMode),
-          badgeVariant: getItemBadgeVariant(displayConfig.badgeMode),
-        })),
+        items: items.slice(0, displayConfig.itemLimit).map((item) => {
+          const meta = getItemMeta(item, displayConfig.metaDisplay)
+
+          return {
+            id: item.id,
+            title: item.title,
+            url: item.url,
+            meta: meta.value,
+            metaVariant: meta.variant,
+            badge: getItemBadge(item, displayConfig.badgeMode),
+            badgeVariant: getItemBadgeVariant(displayConfig.badgeMode),
+          }
+        }),
       }
     }),
     categoryNavItems: categories.map((category) => ({
@@ -308,30 +313,40 @@ type ItemMetaInput = {
   hotLabel: string | null
   tag: string | null
   publishedAt: Date | null
+  createdAt: Date
 }
 
 function getItemMeta(item: ItemMetaInput, metaDisplay: ChannelMetaDisplayMode) {
   if (metaDisplay === "none") {
-    return undefined
+    return { value: undefined, variant: "muted" as const }
   }
 
   if (metaDisplay === "heat") {
-    return item.hotValue ?? item.hotLabel ?? undefined
+    return {
+      value: item.hotValue ?? item.hotLabel ?? undefined,
+      variant: "heat" as const,
+    }
   }
 
   if (metaDisplay === "tag") {
-    return item.tag ?? undefined
+    return { value: item.tag ?? undefined, variant: "tag" as const }
   }
 
   if (metaDisplay === "time") {
-    return formatPublishedAt(item.publishedAt)
+    return {
+      value: formatPublishedAt(item.publishedAt ?? item.createdAt),
+      variant: "muted" as const,
+    }
   }
 
-  return item.hotValue ?? item.hotLabel ?? item.tag ?? undefined
-}
+  if (item.hotValue || item.hotLabel) {
+    return {
+      value: item.hotValue ?? item.hotLabel ?? undefined,
+      variant: "heat" as const,
+    }
+  }
 
-function getItemMetaVariant(metaDisplay: ChannelMetaDisplayMode) {
-  return metaDisplay === "heat" || metaDisplay === "tag" ? metaDisplay : "muted"
+  return { value: item.tag ?? undefined, variant: "tag" as const }
 }
 
 function getItemBadge(item: ItemMetaInput, badgeMode: ChannelBadgeMode) {

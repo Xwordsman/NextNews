@@ -127,13 +127,46 @@ function getStoryMetaClassName(
 }
 
 function getStoryBadgeClassName(
-  badgeVariant: HomeSource["items"][number]["badgeVariant"],
+  badgeVariant:
+    | HomeSource["items"][number]["badgeVariant"]
+    | HomeSource["items"][number]["metaVariant"],
 ) {
   if (badgeVariant === "heat") {
-    return "ml-1.5 inline text-xs font-medium text-rose-600 dark:text-rose-300"
+    return "ml-1.5 inline whitespace-nowrap text-xs font-medium text-rose-600 dark:text-rose-300"
+  }
+
+  if (badgeVariant === "tag") {
+    return "ml-1.5 inline-flex translate-y-[-1px] items-center rounded-md bg-slate-900/5 px-1.5 py-0.5 text-[11px] font-medium leading-none text-slate-600 dark:bg-white/10 dark:text-white/70"
   }
 
   return "ml-1.5 inline-flex translate-y-[-1px] items-center rounded-md bg-[#f5bb48] px-1.5 py-0.5 text-[11px] font-bold leading-none text-[#23180a]"
+}
+
+function getStoryTitleMarker(item: HomeSource["items"][number]) {
+  if (item.badge) {
+    return {
+      value: item.badge,
+      variant: item.badgeVariant ?? "label",
+    }
+  }
+
+  if (
+    item.meta &&
+    (item.metaVariant === "heat" || item.metaVariant === "tag")
+  ) {
+    return {
+      value: item.meta,
+      variant: item.metaVariant,
+    }
+  }
+
+  return null
+}
+
+function shouldShowStoryMeta(item: HomeSource["items"][number]) {
+  return Boolean(
+    item.meta && item.metaVariant !== "heat" && item.metaVariant !== "tag",
+  )
 }
 
 export function PublicHomePage({
@@ -797,52 +830,58 @@ export function PublicHomePage({
                           </div>
 
                           <ol className="grid max-h-[310px] gap-2 overflow-auto rounded-xl bg-slate-50 p-2 dark:bg-black/25 [scrollbar-color:rgba(255,255,255,0.22)_transparent]">
-                            {source.items.map((item, index) => (
-                              <li
-                                className="grid list-none grid-cols-[30px_minmax(0,1fr)] items-start gap-2.5"
-                                key={`${source.id}-${item.title}`}
-                              >
-                                <span className="grid min-h-[30px] place-items-center rounded-md bg-slate-900/10 text-slate-600 dark:bg-white/10 dark:text-white/80">
-                                  {index + 1}
-                                </span>
-                                <span className="min-w-0">
-                                  <span className="block text-[15px] font-semibold leading-6 text-slate-900 dark:text-white/90">
-                                    {item.url ? (
-                                      <a
-                                        className="text-current no-underline transition-colors hover:text-brand focus-visible:text-brand focus-visible:outline-none"
-                                        href={
-                                          item.id ? `/go/${item.id}` : item.url
-                                        }
-                                        rel="noreferrer"
-                                        target="_blank"
-                                      >
-                                        {item.title}
-                                      </a>
-                                    ) : (
-                                      <span>{item.title}</span>
-                                    )}
-                                    {item.badge ? (
-                                      <span
-                                        className={getStoryBadgeClassName(
-                                          item.badgeVariant,
+                            {source.items.map((item, index) => {
+                              const titleMarker = getStoryTitleMarker(item)
+
+                              return (
+                                <li
+                                  className="grid list-none grid-cols-[30px_minmax(0,1fr)] items-start gap-2.5"
+                                  key={`${source.id}-${item.title}`}
+                                >
+                                  <span className="grid min-h-[30px] place-items-center rounded-md bg-slate-900/10 text-slate-600 dark:bg-white/10 dark:text-white/80">
+                                    {index + 1}
+                                  </span>
+                                  <span className="min-w-0">
+                                    <span className="block text-[15px] font-semibold leading-6 text-slate-900 dark:text-white/90">
+                                      {item.url ? (
+                                        <a
+                                          className="inline text-current no-underline transition-colors hover:text-brand focus-visible:text-brand focus-visible:outline-none"
+                                          href={
+                                            item.id
+                                              ? `/go/${item.id}`
+                                              : item.url
+                                          }
+                                          rel="noreferrer"
+                                          target="_blank"
+                                        >
+                                          {item.title}
+                                        </a>
+                                      ) : (
+                                        <span>{item.title}</span>
+                                      )}
+                                      {titleMarker ? (
+                                        <span
+                                          className={getStoryBadgeClassName(
+                                            titleMarker.variant,
+                                          )}
+                                        >
+                                          {titleMarker.value}
+                                        </span>
+                                      ) : null}
+                                    </span>
+                                    {shouldShowStoryMeta(item) ? (
+                                      <small
+                                        className={getStoryMetaClassName(
+                                          item.metaVariant,
                                         )}
                                       >
-                                        {item.badge}
-                                      </span>
+                                        {item.meta}
+                                      </small>
                                     ) : null}
                                   </span>
-                                  {item.meta ? (
-                                    <small
-                                      className={getStoryMetaClassName(
-                                        item.metaVariant,
-                                      )}
-                                    >
-                                      {item.meta}
-                                    </small>
-                                  ) : null}
-                                </span>
-                              </li>
-                            ))}
+                                </li>
+                              )
+                            })}
                           </ol>
                         </article>
                       ))
