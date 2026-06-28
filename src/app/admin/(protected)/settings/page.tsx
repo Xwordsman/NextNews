@@ -7,7 +7,10 @@ import {
   BooleanBadge,
   RunButton,
 } from "@/features/admin-content/components/admin-ui"
-import { saveSystemSettingsAction } from "@/features/admin-content/actions"
+import {
+  saveSystemSettingsAction,
+  syncBuiltinNewsSourcesAction,
+} from "@/features/admin-content/actions"
 import {
   getAdminSystemOverview,
   getAdminSystemSettings,
@@ -158,8 +161,14 @@ export default async function AdminSettingsPage({
       </div>
 
       <AdminSection>
-        <div className="border-b border-zinc-200 bg-zinc-50 px-5 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-zinc-500">
-          频道定义
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200 bg-zinc-50 px-5 py-3">
+          <div className="text-xs font-semibold uppercase tracking-[0.08em] text-zinc-500">
+            频道定义
+          </div>
+          <form action={syncBuiltinNewsSourcesAction}>
+            <input name="backTo" type="hidden" value="/admin/settings" />
+            <RunButton label="同步内置数据源" />
+          </form>
         </div>
         <div className="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-4">
           {overview.channelDefinitions.map((definition) => (

@@ -20,6 +20,7 @@ import { getChannelDefinition } from "@/server/channels/registry"
 import { hashContentUrl, normalizeContentUrl } from "@/server/content/hash"
 import { runChannelCrawl } from "@/server/crawling/run-channel"
 import { getDb } from "@/server/db/client"
+import { syncBuiltinNewsSources } from "@/server/db/initial-data"
 import {
   bizCategory,
   bizChannel,
@@ -984,6 +985,33 @@ export async function updateUserStatusAction(formData: FormData) {
 
   revalidatePath("/admin/users")
   redirectWithMessage(backTo, "notice", "用户状态已更新")
+}
+
+export async function syncBuiltinNewsSourcesAction(formData: FormData) {
+  const admin = await requireAdmin()
+  const backTo = safeAdminBackTo(
+    formString(formData, "backTo"),
+    "/admin/settings",
+  )
+  const result = await syncBuiltinNewsSources()
+
+  await recordAdminOperation({
+    action: "builtin_sources.sync",
+    adminId: admin.id,
+    summary: `同步内置数据源：${result.siteCount} 个站点，${result.channelCount} 个频道`,
+    targetType: "biz_channel",
+  })
+
+  revalidatePath("/admin/settings")
+  revalidatePath("/admin/sites")
+  revalidatePath("/admin/categories")
+  revalidatePath("/admin/channels")
+  revalidatePath("/admin/crawls/tasks")
+  redirectWithMessage(
+    backTo,
+    "notice",
+    `内置数据源同步完成：${result.siteCount} 个站点，${result.channelCount} 个频道`,
+  )
 }
 
 export async function saveSystemSettingsAction(formData: FormData) {

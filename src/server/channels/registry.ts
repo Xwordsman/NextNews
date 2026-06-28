@@ -1,4 +1,5 @@
 import "./github/trending-today"
+import "./newsnow"
 import "./rss/solidot-news"
 import "./weibo/hot-search"
 import "./zhihu/hot-list"

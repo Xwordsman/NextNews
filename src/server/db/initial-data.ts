@@ -1,6 +1,10 @@
 import { eq } from "drizzle-orm"
 import { hashPassword } from "@/server/auth/password"
 import { mergeChannelDisplayConfig } from "@/server/channels/display-config"
+import {
+  newsnowCategorySeeds,
+  newsnowChannelCatalog,
+} from "@/server/channels/newsnow/catalog"
 import { getDb } from "./client"
 import {
   bizCategory,
@@ -12,7 +16,9 @@ import {
 } from "./schema"
 
 type SiteInsert = typeof bizSite.$inferInsert
+type SiteSelect = typeof bizSite.$inferSelect
 type CategoryInsert = typeof bizCategory.$inferInsert
+type CategorySelect = typeof bizCategory.$inferSelect
 type ChannelInsert = typeof bizChannel.$inferInsert
 
 export type SeedInitialDataOptions = {
@@ -32,163 +38,7 @@ export async function seedInitialData(options: SeedInitialDataOptions = {}) {
     resetPassword: options.resetAdminPassword ?? false,
   })
 
-  const general = await upsertCategory({
-    categoryName: "综合",
-    slug: "general",
-    icon: "newspaper",
-    color: "#1E40AF",
-    sort: 10,
-  })
-  const tech = await upsertCategory({
-    categoryName: "科技",
-    slug: "tech",
-    icon: "cpu",
-    color: "#047857",
-    sort: 20,
-  })
-  const entertainment = await upsertCategory({
-    categoryName: "娱乐",
-    slug: "entertainment",
-    icon: "sparkles",
-    color: "#DC2626",
-    sort: 30,
-  })
-
-  const weibo = await upsertSite({
-    siteName: "微博",
-    slug: "weibo",
-    homepageUrl: "https://weibo.com",
-    description: "微博热点与热搜来源",
-    sort: 10,
-    isVisible: true,
-  })
-  const zhihu = await upsertSite({
-    siteName: "知乎",
-    slug: "zhihu",
-    homepageUrl: "https://www.zhihu.com",
-    description: "知乎社区热榜来源",
-    sort: 20,
-    isVisible: true,
-  })
-  const github = await upsertSite({
-    siteName: "GitHub",
-    slug: "github",
-    homepageUrl: "https://github.com",
-    description: "开源项目趋势来源",
-    sort: 30,
-    isVisible: true,
-  })
-  const solidot = await upsertSite({
-    siteName: "Solidot",
-    slug: "solidot",
-    homepageUrl: "https://www.solidot.org",
-    description: "Solidot 科技资讯 RSS 来源",
-    sort: 40,
-    isVisible: true,
-  })
-
-  const weiboHot = await upsertChannel({
-    siteId: weibo.id,
-    channelName: "微博热搜",
-    slug: "hot-search",
-    definitionKey: "weibo.hot-search",
-    collectorType: "adapter",
-    homepageUrl: "https://s.weibo.com/top/summary",
-    crawlIntervalSeconds: 600,
-    snapshotIntervalSeconds: 7200,
-    isCrawlEnabled: false,
-    isPublic: true,
-    isHomeVisible: true,
-    isSubscribable: true,
-    sort: 10,
-    status: "draft",
-    extra: mergeChannelDisplayConfig(null, {
-      colorPreset: "red",
-      itemLimit: 30,
-      metaDisplay: "heat",
-      metaPosition: "right",
-      showUpdatedAt: true,
-      subtitle: "热搜",
-    }),
-  })
-  const zhihuHot = await upsertChannel({
-    siteId: zhihu.id,
-    channelName: "知乎热榜",
-    slug: "hot-list",
-    definitionKey: "zhihu.hot-list",
-    collectorType: "adapter",
-    homepageUrl: "https://www.zhihu.com/hot",
-    crawlIntervalSeconds: 600,
-    snapshotIntervalSeconds: 7200,
-    isCrawlEnabled: false,
-    isPublic: true,
-    isHomeVisible: true,
-    isSubscribable: true,
-    sort: 20,
-    status: "draft",
-    extra: mergeChannelDisplayConfig(null, {
-      colorPreset: "blue",
-      itemLimit: 30,
-      metaDisplay: "heat",
-      metaPosition: "right",
-      showUpdatedAt: true,
-      subtitle: "热榜",
-    }),
-  })
-  const githubTrending = await upsertChannel({
-    siteId: github.id,
-    channelName: "GitHub Trending",
-    slug: "trending-today",
-    definitionKey: "github.trending-today",
-    collectorType: "adapter",
-    homepageUrl: "https://github.com/trending",
-    crawlIntervalSeconds: 1800,
-    snapshotIntervalSeconds: 7200,
-    isCrawlEnabled: false,
-    isPublic: true,
-    isHomeVisible: true,
-    isSubscribable: true,
-    sort: 30,
-    status: "draft",
-    extra: mergeChannelDisplayConfig(null, {
-      colorPreset: "gray",
-      itemLimit: 30,
-      metaDisplay: "heat",
-      metaPosition: "right",
-      showUpdatedAt: true,
-      subtitle: "Trending",
-    }),
-  })
-  const solidotNews = await upsertChannel({
-    siteId: solidot.id,
-    channelName: "Solidot",
-    slug: "news",
-    definitionKey: "solidot.news",
-    collectorType: "rss",
-    homepageUrl: "https://www.solidot.org",
-    crawlIntervalSeconds: 1800,
-    snapshotIntervalSeconds: 7200,
-    isCrawlEnabled: true,
-    isPublic: true,
-    isHomeVisible: true,
-    isSubscribable: true,
-    sort: 40,
-    status: "active",
-    extra: mergeChannelDisplayConfig(null, {
-      colorPreset: "teal",
-      itemLimit: 30,
-      metaDisplay: "none",
-      metaPosition: "inline",
-      showUpdatedAt: false,
-      subtitle: "资讯",
-    }),
-  })
-
-  await bindChannelCategory(weiboHot.id, general.id)
-  await bindChannelCategory(weiboHot.id, entertainment.id)
-  await bindChannelCategory(zhihuHot.id, general.id)
-  await bindChannelCategory(githubTrending.id, tech.id)
-  await bindChannelCategory(solidotNews.id, tech.id)
+  await syncBuiltinNewsSources()
 
   if (options.markInstalled ?? true) {
     await upsertSetting("app.name", options.appName ?? "NextNews", true)
@@ -202,6 +52,83 @@ export async function seedInitialData(options: SeedInitialDataOptions = {}) {
   }
 
   return { admin }
+}
+
+export async function syncBuiltinNewsSources() {
+  const categoriesBySlug = new Map<string, CategorySelect>()
+  const sitesBySlug = new Map<string, SiteSelect>()
+
+  for (const category of newsnowCategorySeeds) {
+    const row = await upsertCategory({
+      categoryName: category.categoryName,
+      color: category.color,
+      icon: category.icon,
+      slug: category.slug,
+      sort: category.sort,
+    })
+    categoriesBySlug.set(row.slug, row)
+  }
+
+  for (const entry of newsnowChannelCatalog) {
+    if (!sitesBySlug.has(entry.siteSlug)) {
+      const site = await upsertSite({
+        description: entry.description,
+        homepageUrl: entry.homepageUrl,
+        isVisible: true,
+        siteName: entry.siteName,
+        slug: entry.siteSlug,
+        sort: entry.siteSort,
+      })
+      sitesBySlug.set(site.slug, site)
+    }
+
+    const site = sitesBySlug.get(entry.siteSlug)
+
+    if (!site) {
+      continue
+    }
+
+    const channel = await upsertChannel({
+      channelName: entry.channelName,
+      channelType: entry.channelType,
+      collectorType: entry.collectorType,
+      crawlIntervalSeconds: entry.crawlIntervalSeconds,
+      definitionKey: entry.definitionKey,
+      displayStyle: entry.displayStyle,
+      extra: mergeChannelDisplayConfig(null, {
+        colorPreset: entry.colorPreset,
+        itemLimit: entry.itemLimit,
+        metaDisplay: entry.metaDisplay,
+        metaPosition: entry.metaPosition,
+        showUpdatedAt: entry.showUpdatedAt,
+        subtitle: entry.subtitle,
+      }),
+      homepageUrl: entry.homepageUrl,
+      isCrawlEnabled: entry.isCrawlEnabled,
+      isHomeVisible: entry.isHomeVisible,
+      isPublic: true,
+      isSubscribable: entry.isSubscribable,
+      siteId: site.id,
+      slug: entry.channelSlug,
+      snapshotIntervalSeconds: entry.snapshotIntervalSeconds,
+      sort: entry.sort,
+      status: entry.status,
+    })
+
+    for (const categorySlug of entry.categorySlugs) {
+      const category = categoriesBySlug.get(categorySlug)
+
+      if (category) {
+        await bindChannelCategory(channel.id, category.id)
+      }
+    }
+  }
+
+  return {
+    categoryCount: newsnowCategorySeeds.length,
+    channelCount: newsnowChannelCatalog.length,
+    siteCount: sitesBySlug.size,
+  }
 }
 
 async function ensureAdminUser({
@@ -247,9 +174,9 @@ async function ensureAdminUser({
   const [created] = await db
     .insert(sysUser)
     .values({
+      displayName: "NextNews Admin",
       email: normalizedEmail,
       passwordHash: hashPassword(password),
-      displayName: "NextNews Admin",
       role: "admin",
     })
     .returning()
@@ -310,8 +237,8 @@ async function bindChannelCategory(channelId: string, categoryId: string) {
   await db
     .insert(relChannelCategory)
     .values({
-      channelId,
       categoryId,
+      channelId,
     })
     .onConflictDoNothing({
       target: [relChannelCategory.channelId, relChannelCategory.categoryId],
@@ -327,15 +254,15 @@ async function upsertSetting(
   await db
     .insert(sysSetting)
     .values({
+      isPublic,
       settingKey,
       settingValue,
-      isPublic,
     })
     .onConflictDoUpdate({
       target: sysSetting.settingKey,
       set: {
-        settingValue,
         isPublic,
+        settingValue,
         updatedAt: new Date(),
       },
     })
