@@ -57,21 +57,28 @@ export async function seedInitialData(options: SeedInitialDataOptions = {}) {
 export async function syncBuiltinNewsSources() {
   const categoriesBySlug = new Map<string, CategorySelect>()
   const sitesBySlug = new Map<string, SiteSelect>()
+  let createdCategoryCount = 0
+  let createdSiteCount = 0
+  let createdChannelCount = 0
 
   for (const category of newsnowCategorySeeds) {
-    const row = await upsertCategory({
+    const result = await upsertCategory({
       categoryName: category.categoryName,
       color: category.color,
       icon: category.icon,
       slug: category.slug,
       sort: category.sort,
     })
+    const row = result.row
+    if (result.created) {
+      createdCategoryCount += 1
+    }
     categoriesBySlug.set(row.slug, row)
   }
 
   for (const entry of newsnowChannelCatalog) {
     if (!sitesBySlug.has(entry.siteSlug)) {
-      const site = await upsertSite({
+      const result = await upsertSite({
         description: entry.description,
         homepageUrl: entry.homepageUrl,
         isVisible: true,
@@ -79,6 +86,10 @@ export async function syncBuiltinNewsSources() {
         slug: entry.siteSlug,
         sort: entry.siteSort,
       })
+      const site = result.row
+      if (result.created) {
+        createdSiteCount += 1
+      }
       sitesBySlug.set(site.slug, site)
     }
 
@@ -88,7 +99,7 @@ export async function syncBuiltinNewsSources() {
       continue
     }
 
-    const channel = await upsertChannel({
+    const result = await upsertChannel({
       channelName: entry.channelName,
       channelType: entry.channelType,
       collectorType: entry.collectorType,
@@ -114,6 +125,10 @@ export async function syncBuiltinNewsSources() {
       sort: entry.sort,
       status: entry.status,
     })
+    const channel = result.row
+    if (result.created) {
+      createdChannelCount += 1
+    }
 
     for (const categorySlug of entry.categorySlugs) {
       const category = categoriesBySlug.get(categorySlug)
@@ -127,6 +142,9 @@ export async function syncBuiltinNewsSources() {
   return {
     categoryCount: newsnowCategorySeeds.length,
     channelCount: newsnowChannelCatalog.length,
+    createdCategoryCount,
+    createdChannelCount,
+    createdSiteCount,
     siteCount: sitesBySlug.size,
   }
 }
@@ -193,11 +211,11 @@ async function upsertSite(values: SiteInsert) {
     .limit(1)
 
   if (existing) {
-    return existing
+    return { created: false, row: existing }
   }
 
   const [created] = await db.insert(bizSite).values(values).returning()
-  return created
+  return { created: true, row: created }
 }
 
 async function upsertCategory(values: CategoryInsert) {
@@ -209,11 +227,11 @@ async function upsertCategory(values: CategoryInsert) {
     .limit(1)
 
   if (existing) {
-    return existing
+    return { created: false, row: existing }
   }
 
   const [created] = await db.insert(bizCategory).values(values).returning()
-  return created
+  return { created: true, row: created }
 }
 
 async function upsertChannel(values: ChannelInsert) {
@@ -225,11 +243,11 @@ async function upsertChannel(values: ChannelInsert) {
     .limit(1)
 
   if (existing) {
-    return existing
+    return { created: false, row: existing }
   }
 
   const [created] = await db.insert(bizChannel).values(values).returning()
-  return created
+  return { created: true, row: created }
 }
 
 async function bindChannelCategory(channelId: string, categoryId: string) {

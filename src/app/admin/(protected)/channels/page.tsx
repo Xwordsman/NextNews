@@ -15,6 +15,7 @@ import {
 import {
   deleteChannelAction,
   runChannelCrawlAction,
+  syncBuiltinNewsSourcesAction,
 } from "@/features/admin-content/actions"
 import { listAdminChannels } from "@/features/admin-content/queries"
 import {
@@ -44,6 +45,15 @@ export default async function ChannelsPage({
         eyebrow="内容源"
         title="频道管理"
       />
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-600 shadow-sm">
+        <span>
+          升级后如果没有看到新增内置数据源，先同步到数据库。同步只会补齐缺失频道，不会覆盖已有频道配置。
+        </span>
+        <form action={syncBuiltinNewsSourcesAction}>
+          <input name="backTo" type="hidden" value="/admin/channels" />
+          <RunButton label="同步内置数据源" />
+        </form>
+      </div>
       <AdminAlert message={errorMessage} />
       <AdminNotice message={noticeMessage} />
       <AdminSection>
