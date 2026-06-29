@@ -82,8 +82,7 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
           eq(bizCategory.isNavVisible, true),
         ),
       )
-      .orderBy(asc(bizCategory.sort), asc(bizCategory.categoryName))
-      .limit(9),
+      .orderBy(asc(bizCategory.sort), asc(bizCategory.categoryName)),
     listHomeModules(),
   ])
 

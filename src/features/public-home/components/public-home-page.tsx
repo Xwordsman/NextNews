@@ -185,7 +185,7 @@ export function PublicHomePage({
   categoryNavItems = defaultCategoryNavItems,
   homeModules = [],
   initialSources,
-  moreNavItems = defaultMoreNavItems,
+  moreNavItems = [],
   primaryNavItems = defaultPrimaryNavItems,
 }: PublicHomePageProps) {
   const [sources, setSources] = useState<HomeSource[]>(() =>
@@ -532,22 +532,24 @@ export function PublicHomePage({
                       label={item.label}
                     />
                   ))}
-                  <details className="relative shrink-0">
-                    <summary className="flex min-h-8 cursor-pointer list-none items-center rounded-full px-3 transition-colors hover:bg-slate-900/10 hover:text-slate-950 focus-visible:bg-slate-900/10 focus-visible:text-slate-950 focus-visible:outline-none dark:hover:bg-white/10 dark:hover:text-slate-50 dark:focus-visible:bg-white/10 dark:focus-visible:text-slate-50">
-                      更多
-                    </summary>
-                    <div className="absolute right-0 top-11 z-30 grid min-w-28 gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-line dark:bg-slate-950">
-                      {moreNavItems.map((item) => (
-                        <Link
-                          className="rounded-lg px-3 py-2 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-slate-50"
-                          href={item.href}
-                          key={item.href}
-                        >
-                          {item.label}
-                        </Link>
-                      ))}
-                    </div>
-                  </details>
+                  {moreNavItems.length > 0 ? (
+                    <details className="relative shrink-0">
+                      <summary className="flex min-h-8 cursor-pointer list-none items-center rounded-full px-3 transition-colors hover:bg-slate-900/10 hover:text-slate-950 focus-visible:bg-slate-900/10 focus-visible:text-slate-950 focus-visible:outline-none dark:hover:bg-white/10 dark:hover:text-slate-50 dark:focus-visible:bg-white/10 dark:focus-visible:text-slate-50">
+                        更多
+                      </summary>
+                      <div className="absolute right-0 top-11 z-30 grid min-w-28 gap-1 rounded-xl border border-slate-200 bg-white p-2 shadow-lg dark:border-line dark:bg-slate-950">
+                        {moreNavItems.map((item) => (
+                          <Link
+                            className="rounded-lg px-3 py-2 text-sm text-slate-600 no-underline transition-colors hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-slate-50"
+                            href={item.href}
+                            key={item.href}
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </details>
+                  ) : null}
                 </nav>
               </div>
             </div>
