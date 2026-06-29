@@ -3,6 +3,12 @@ import { describe, it } from "node:test"
 import { legacyNewsnowDefinitionKeys, newsnowChannelCatalog } from "./catalog"
 import { implementedNewsnowCollectorKeys } from "./sources"
 
+const reviewRequiredDefinitionKeys = new Set([
+  "kaopu.news",
+  "sputniknewscn.news",
+  "zaobao.realtime",
+])
+
 describe("newsnow channel catalog", () => {
   it("contains every non-redirect NewsNow source once", () => {
     assert.equal(
@@ -16,6 +22,56 @@ describe("newsnow channel catalog", () => {
     assert.equal(
       new Set(newsnowChannelCatalog.map((item) => item.definitionKey)).size,
       newsnowChannelCatalog.length,
+    )
+  })
+
+  it("enables ordinary builtin sources for crawling and home display by default", () => {
+    const disabled = newsnowChannelCatalog
+      .filter((item) => !reviewRequiredDefinitionKeys.has(item.definitionKey))
+      .filter(
+        (item) =>
+          item.status !== "active" ||
+          !item.isCrawlEnabled ||
+          !item.isHomeVisible ||
+          !item.isSubscribable,
+      )
+      .map((item) => item.definitionKey)
+
+    assert.deepEqual(disabled, [])
+  })
+
+  it("keeps review-required sources disabled by default", () => {
+    const enabled = newsnowChannelCatalog
+      .filter((item) => reviewRequiredDefinitionKeys.has(item.definitionKey))
+      .filter(
+        (item) =>
+          item.status !== "draft" ||
+          item.isCrawlEnabled ||
+          item.isHomeVisible ||
+          !item.isSubscribable,
+      )
+      .map((item) => item.definitionKey)
+
+    assert.deepEqual(enabled, [])
+  })
+
+  it("uses the site name as the channel name and keeps qualifiers in subtitles", () => {
+    const duplicated = newsnowChannelCatalog
+      .filter((item) => item.channelName !== item.siteName)
+      .map((item) => item.definitionKey)
+
+    assert.deepEqual(duplicated, [])
+    assert.equal(
+      newsnowChannelCatalog.find(
+        (item) => item.definitionKey === "wallstreetcn.quick",
+      )?.channelName,
+      "华尔街见闻",
+    )
+    assert.equal(
+      newsnowChannelCatalog.find(
+        (item) => item.definitionKey === "wallstreetcn.quick",
+      )?.subtitle,
+      "快讯",
     )
   })
 

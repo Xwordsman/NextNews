@@ -22,6 +22,7 @@ export type NewsnowChannelCatalogEntry = {
   channelSlug: string
   siteName: string
   channelName: string
+  sourceChannelName: string
   homepageUrl: string
   description: string
   collectorType: ChannelCollectorType
@@ -54,6 +55,7 @@ type CatalogInput = Omit<
   | "metaPosition"
   | "showUpdatedAt"
   | "snapshotIntervalSeconds"
+  | "sourceChannelName"
   | "isSubscribable"
 >
 
@@ -159,6 +161,11 @@ const catalogInputs: CatalogInput[] = [
     40,
     10,
     "实时",
+    30,
+    undefined,
+    false,
+    false,
+    "draft",
   ),
   channel(
     "coolapk",
@@ -400,6 +407,11 @@ const catalogInputs: CatalogInput[] = [
     160,
     10,
     "新闻",
+    30,
+    undefined,
+    false,
+    false,
+    "draft",
   ),
   channel(
     "cankaoxiaoxi",
@@ -697,6 +709,11 @@ const catalogInputs: CatalogInput[] = [
     290,
     10,
     "新闻",
+    30,
+    undefined,
+    false,
+    false,
+    "draft",
   ),
   channel(
     "jin10",
@@ -931,7 +948,9 @@ const catalogInputs: CatalogInput[] = [
 export const newsnowChannelCatalog: NewsnowChannelCatalogEntry[] =
   catalogInputs.map((entry) => ({
     ...entry,
+    channelName: entry.siteName,
     description: `${entry.siteName} 的 NewsNow 内置数据源。`,
+    sourceChannelName: entry.channelName,
     channelType: inferChannelType(entry),
     displayStyle: inferDisplayStyle(entry),
     itemLimit: entry.itemLimit,
@@ -969,9 +988,9 @@ function channel(
   subtitle: string | null,
   itemLimit = 30,
   rssUrl?: string,
-  isCrawlEnabled = false,
-  isHomeVisible = false,
-  status: "draft" | "active" | "disabled" = "draft",
+  isCrawlEnabled = true,
+  isHomeVisible = true,
+  status: "draft" | "active" | "disabled" = "active",
 ): CatalogInput {
   return {
     sourceId,

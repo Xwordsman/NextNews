@@ -998,7 +998,7 @@ export async function syncBuiltinNewsSourcesAction(formData: FormData) {
   await recordAdminOperation({
     action: "builtin_sources.sync",
     adminId: admin.id,
-    summary: `同步内置数据源：新增 ${result.createdSiteCount} 个站点、${result.createdChannelCount} 个频道，共 ${result.siteCount} 个站点、${result.channelCount} 个频道定义`,
+    summary: `同步内置数据源：新增 ${result.createdSiteCount} 个站点、${result.createdChannelCount} 个频道，更新 ${result.updatedChannelCount} 个频道，共 ${result.siteCount} 个站点、${result.channelCount} 个频道定义`,
     targetType: "biz_channel",
   })
 
@@ -1010,7 +1010,7 @@ export async function syncBuiltinNewsSourcesAction(formData: FormData) {
   redirectWithMessage(
     backTo,
     "notice",
-    `内置数据源同步完成：新增 ${result.createdSiteCount} 个站点、${result.createdChannelCount} 个频道；当前内置定义共 ${result.siteCount} 个站点、${result.channelCount} 个频道`,
+    `内置数据源同步完成：新增 ${result.createdSiteCount} 个站点、${result.createdChannelCount} 个频道，更新 ${result.updatedChannelCount} 个频道；当前内置定义共 ${result.siteCount} 个站点、${result.channelCount} 个频道`,
   )
 }
 

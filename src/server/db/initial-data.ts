@@ -20,6 +20,16 @@ type SiteSelect = typeof bizSite.$inferSelect
 type CategoryInsert = typeof bizCategory.$inferInsert
 type CategorySelect = typeof bizCategory.$inferSelect
 type ChannelInsert = typeof bizChannel.$inferInsert
+type ChannelSelect = typeof bizChannel.$inferSelect
+type BuiltinChannelEntry = (typeof newsnowChannelCatalog)[number]
+type BuiltinChannelUpdate = {
+  channelName?: string
+  isCrawlEnabled?: boolean
+  isHomeVisible?: boolean
+  isSubscribable?: boolean
+  status?: ChannelSelect["status"]
+  updatedAt: Date
+}
 
 export type SeedInitialDataOptions = {
   adminEmail?: string
@@ -60,6 +70,7 @@ export async function syncBuiltinNewsSources() {
   let createdCategoryCount = 0
   let createdSiteCount = 0
   let createdChannelCount = 0
+  let updatedChannelCount = 0
 
   for (const category of newsnowCategorySeeds) {
     const result = await upsertCategory({
@@ -125,9 +136,16 @@ export async function syncBuiltinNewsSources() {
       sort: entry.sort,
       status: entry.status,
     })
-    const channel = result.row
+    let channel = result.row
     if (result.created) {
       createdChannelCount += 1
+    } else {
+      const updates = getBuiltinChannelUpdates(channel, entry)
+
+      if (updates) {
+        channel = await updateBuiltinChannel(channel.id, entry, updates)
+        updatedChannelCount += 1
+      }
     }
 
     for (const categorySlug of entry.categorySlugs) {
@@ -145,6 +163,7 @@ export async function syncBuiltinNewsSources() {
     createdCategoryCount,
     createdChannelCount,
     createdSiteCount,
+    updatedChannelCount,
     siteCount: sitesBySlug.size,
   }
 }
@@ -248,6 +267,57 @@ async function upsertChannel(values: ChannelInsert) {
 
   const [created] = await db.insert(bizChannel).values(values).returning()
   return { created: true, row: created }
+}
+
+function getBuiltinChannelUpdates(
+  channel: ChannelSelect,
+  entry: BuiltinChannelEntry,
+) {
+  const updates: BuiltinChannelUpdate = { updatedAt: new Date() }
+
+  if (
+    entry.sourceChannelName !== entry.channelName &&
+    channel.channelName === entry.sourceChannelName
+  ) {
+    updates.channelName = entry.channelName
+  }
+
+  if (
+    entry.status === "active" &&
+    entry.isCrawlEnabled &&
+    entry.isHomeVisible &&
+    channel.status === "draft" &&
+    !channel.isCrawlEnabled &&
+    !channel.isHomeVisible &&
+    channel.lastCrawlAt === null &&
+    channel.lastSuccessAt === null
+  ) {
+    updates.isCrawlEnabled = entry.isCrawlEnabled
+    updates.isHomeVisible = entry.isHomeVisible
+    updates.isSubscribable = entry.isSubscribable
+    updates.status = entry.status
+  }
+
+  return Object.keys(updates).length > 1 ? updates : null
+}
+
+async function updateBuiltinChannel(
+  channelId: string,
+  entry: BuiltinChannelEntry,
+  updates: BuiltinChannelUpdate,
+) {
+  const db = getDb()
+  const [updated] = await db
+    .update(bizChannel)
+    .set(updates)
+    .where(eq(bizChannel.id, channelId))
+    .returning()
+
+  if (!updated) {
+    throw new Error(`未能更新内置频道默认配置：${entry.definitionKey}`)
+  }
+
+  return updated
 }
 
 async function bindChannelCategory(channelId: string, categoryId: string) {
