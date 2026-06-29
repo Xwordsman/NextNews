@@ -144,9 +144,11 @@ async function collectCoolapkHotList() {
       editor_title?: string
       id?: string
       message?: string
+      message_title?: string
       targetRow?: {
         subTitle?: string
       }
+      title?: string
       url?: string
     }>
   }
@@ -158,13 +160,18 @@ async function collectCoolapkHotList() {
 
   return rankItems(
     (response.data ?? []).map((item) => {
-      const messageTitle = stripHtml(item.message)?.split("\n")[0]
-      const title = cleanText(item.editor_title ?? messageTitle)
+      const messageTitle = cleanText(stripHtml(item.message)?.split("\n")[0])
+      const title =
+        cleanText(item.editor_title) ??
+        cleanText(item.message_title) ??
+        messageTitle ??
+        cleanText(item.title)
+      const href = cleanText(item.url) ?? (item.id ? `/feed/${item.id}` : "")
 
       return {
         sourceItemId: item.id,
         title: title ?? "",
-        url: item.url ? absoluteUrl(item.url, "https://www.coolapk.com") : "",
+        url: href ? absoluteUrl(href, "https://www.coolapk.com") : "",
         hotLabel: cleanText(item.targetRow?.subTitle),
         hotValue: cleanText(item.targetRow?.subTitle),
       }

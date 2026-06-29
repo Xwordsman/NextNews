@@ -1,6 +1,10 @@
 import assert from "node:assert/strict"
 import { describe, it } from "node:test"
-import { legacyNewsnowDefinitionKeys, newsnowChannelCatalog } from "./catalog"
+import {
+  legacyNewsnowDefinitionKeys,
+  newsnowCategorySeeds,
+  newsnowChannelCatalog,
+} from "./catalog"
 import { implementedNewsnowCollectorKeys } from "./sources"
 
 const reviewRequiredDefinitionKeys = new Set([
@@ -10,6 +14,37 @@ const reviewRequiredDefinitionKeys = new Set([
 ])
 
 describe("newsnow channel catalog", () => {
+  it("seeds the required admin categories", () => {
+    const requiredCategoryNames = [
+      "综合",
+      "科技",
+      "财经",
+      "开发",
+      "AI",
+      "社区",
+      "娱乐",
+      "购物",
+      "简报",
+      "报刊",
+      "设计",
+    ]
+    const names = new Set(newsnowCategorySeeds.map((item) => item.categoryName))
+    const missing = requiredCategoryNames.filter((name) => !names.has(name))
+
+    assert.deepEqual(missing, [])
+  })
+
+  it("references only seeded category slugs", () => {
+    const categorySlugs = new Set(newsnowCategorySeeds.map((item) => item.slug))
+    const missing = newsnowChannelCatalog.flatMap((item) =>
+      item.categorySlugs
+        .filter((slug) => !categorySlugs.has(slug))
+        .map((slug) => `${item.definitionKey}:${slug}`),
+    )
+
+    assert.deepEqual(missing, [])
+  })
+
   it("contains every non-redirect NewsNow source once", () => {
     assert.equal(
       new Set(newsnowChannelCatalog.map((item) => item.sourceId)).size,

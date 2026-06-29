@@ -288,9 +288,7 @@ function getBuiltinChannelUpdates(
     entry.isHomeVisible &&
     channel.status === "draft" &&
     !channel.isCrawlEnabled &&
-    !channel.isHomeVisible &&
-    channel.lastCrawlAt === null &&
-    channel.lastSuccessAt === null
+    !channel.isHomeVisible
   ) {
     updates.isCrawlEnabled = entry.isCrawlEnabled
     updates.isHomeVisible = entry.isHomeVisible
