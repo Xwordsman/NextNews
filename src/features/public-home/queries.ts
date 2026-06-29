@@ -39,6 +39,32 @@ export type HomeModule = {
   status: "draft" | "active" | "disabled"
 }
 
+type HomeChannelRow = {
+  id: string
+  siteSlug: string
+  siteName: string
+  channelSlug: string
+  channelName: string
+  extra: Record<string, unknown> | null
+  lastSnapshotId: string | null
+  lastSuccessAt: Date | null
+  sort: number
+}
+
+type HomeSnapshotItemRow = {
+  id: string
+  snapshotId: string
+  rankNo: number | null
+  title: string
+  url: string
+  summary: string | null
+  hotValue: string | null
+  hotLabel: string | null
+  tag: string | null
+  publishedAt: Date | null
+  createdAt: Date
+}
+
 export async function getPublicHomeData(): Promise<PublicHomeData> {
   const db = getDb()
 
@@ -63,7 +89,6 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
           isNull(bizSite.deletedAt),
           eq(bizChannel.status, "active"),
           eq(bizChannel.isPublic, true),
-          eq(bizChannel.isHomeVisible, true),
           eq(bizSite.status, "active"),
           eq(bizSite.isVisible, true),
         ),
@@ -97,6 +122,118 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
     }
   }
 
+  return {
+    sources: await mapChannelsToHomeSources(channels),
+    categoryNavItems: categories.map((category) => ({
+      label: category.categoryName,
+      href: `/categories/${category.slug}`,
+    })),
+    homeModules,
+  }
+}
+
+export async function getPublicCategoryHomeData(categorySlug: string) {
+  const db = getDb()
+  const [category] = await db
+    .select({
+      id: bizCategory.id,
+      categoryName: bizCategory.categoryName,
+      slug: bizCategory.slug,
+    })
+    .from(bizCategory)
+    .where(
+      and(
+        isNull(bizCategory.deletedAt),
+        eq(bizCategory.slug, categorySlug),
+        eq(bizCategory.status, "active"),
+        eq(bizCategory.isNavVisible, true),
+      ),
+    )
+    .limit(1)
+
+  if (!category) {
+    return null
+  }
+
+  const [channels, categories, homeModules] = await Promise.all([
+    db
+      .select({
+        id: bizChannel.id,
+        siteSlug: bizSite.slug,
+        siteName: bizSite.siteName,
+        channelSlug: bizChannel.slug,
+        channelName: bizChannel.channelName,
+        extra: bizChannel.extra,
+        lastSnapshotId: bizChannel.lastSnapshotId,
+        lastSuccessAt: bizChannel.lastSuccessAt,
+        sort: bizChannel.sort,
+      })
+      .from(relChannelCategory)
+      .innerJoin(bizChannel, eq(relChannelCategory.channelId, bizChannel.id))
+      .innerJoin(bizSite, eq(bizChannel.siteId, bizSite.id))
+      .where(
+        and(
+          eq(relChannelCategory.categoryId, category.id),
+          isNull(bizChannel.deletedAt),
+          isNull(bizSite.deletedAt),
+          eq(bizChannel.status, "active"),
+          eq(bizChannel.isPublic, true),
+          eq(bizChannel.isHomeVisible, true),
+          eq(bizSite.status, "active"),
+          eq(bizSite.isVisible, true),
+        ),
+      )
+      .orderBy(
+        asc(relChannelCategory.sort),
+        asc(bizSite.sort),
+        asc(bizChannel.sort),
+      ),
+    listCategoryNavItems(),
+    listHomeModules(),
+  ])
+
+  return {
+    category,
+    data: {
+      sources: await mapChannelsToHomeSources(channels, category.slug),
+      categoryNavItems: categories,
+      homeModules,
+    },
+  }
+}
+
+async function listCategoryNavItems(): Promise<NavItem[]> {
+  return getDb()
+    .select({
+      label: bizCategory.categoryName,
+      slug: bizCategory.slug,
+    })
+    .from(bizCategory)
+    .where(
+      and(
+        isNull(bizCategory.deletedAt),
+        eq(bizCategory.status, "active"),
+        eq(bizCategory.isNavVisible, true),
+      ),
+    )
+    .orderBy(asc(bizCategory.sort), asc(bizCategory.categoryName))
+    .then((categories) =>
+      categories.map((category) => ({
+        label: category.label,
+        href: `/categories/${category.slug}`,
+      })),
+    )
+}
+
+async function mapChannelsToHomeSources(
+  channels: HomeChannelRow[],
+  fallbackCategorySlug?: string,
+): Promise<HomeSource[]> {
+  if (channels.length === 0) {
+    return []
+  }
+
+  const db = getDb()
   const channelIds = channels.map((channel) => channel.id)
   const snapshotIds = channels
     .map((channel) => channel.lastSnapshotId)
@@ -142,11 +279,11 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
             ),
           )
           .orderBy(asc(bizSnapshotItem.snapshotId), asc(bizSnapshotItem.rankNo))
-      : [],
+      : ([] as HomeSnapshotItemRow[]),
   ])
 
   const categoryByChannelId = new Map<string, string>()
-  const itemsBySnapshotId = new Map<string, typeof itemRows>()
+  const itemsBySnapshotId = new Map<string, HomeSnapshotItemRow[]>()
 
   for (const row of categoryRows) {
     if (!categoryByChannelId.has(row.channelId)) {
@@ -160,57 +297,53 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
     itemsBySnapshotId.set(item.snapshotId, items)
   }
 
-  return {
-    sources: channels.map((channel, index) => {
-      const fallbackColorPreset = getChannelFallbackColorPreset(
-        `${channel.siteSlug}.${channel.channelSlug}`,
-      )
-      const displayConfig = getChannelDisplayConfig(
-        channel.extra,
-        fallbackColorPreset,
-      )
-      const palette = getChannelPalette(displayConfig.colorPreset)
-      const items = channel.lastSnapshotId
-        ? (itemsBySnapshotId.get(channel.lastSnapshotId) ?? [])
-        : []
+  return channels.map((channel, index) => {
+    const fallbackColorPreset = getChannelFallbackColorPreset(
+      `${channel.siteSlug}.${channel.channelSlug}`,
+    )
+    const displayConfig = getChannelDisplayConfig(
+      channel.extra,
+      fallbackColorPreset,
+    )
+    const palette = getChannelPalette(displayConfig.colorPreset)
+    const items = channel.lastSnapshotId
+      ? (itemsBySnapshotId.get(channel.lastSnapshotId) ?? [])
+      : []
 
-      return {
-        id: channel.id,
-        name: channel.channelName,
-        logo: getLogoText(channel.siteName),
-        tag: getChannelSubtitle(
-          channel.channelName,
-          channel.siteName,
-          displayConfig.subtitle,
-        ),
-        updatedLabel: displayConfig.showUpdatedAt
-          ? formatUpdateTag(channel.lastSuccessAt)
-          : undefined,
-        category: categoryByChannelId.get(channel.id) ?? "general",
-        color: palette.color,
-        logoColor: palette.logoColor,
-        favorite: index < 3,
-        href: `/channels/${channel.siteSlug}/${channel.channelSlug}`,
-        items: items.slice(0, displayConfig.itemLimit).map((item) => {
-          const meta = getItemMeta(item, displayConfig.metaDisplay)
+    return {
+      id: channel.id,
+      name: channel.channelName,
+      logo: getLogoText(channel.siteName),
+      tag: getChannelSubtitle(
+        channel.channelName,
+        channel.siteName,
+        displayConfig.subtitle,
+      ),
+      updatedLabel: displayConfig.showUpdatedAt
+        ? formatUpdateTag(channel.lastSuccessAt)
+        : undefined,
+      category:
+        categoryByChannelId.get(channel.id) ??
+        fallbackCategorySlug ??
+        "general",
+      color: palette.color,
+      logoColor: palette.logoColor,
+      favorite: index < 3,
+      href: `/channels/${channel.siteSlug}/${channel.channelSlug}`,
+      items: items.slice(0, displayConfig.itemLimit).map((item) => {
+        const meta = getItemMeta(item, displayConfig.metaDisplay)
 
-          return {
-            id: item.id,
-            title: item.title,
-            url: item.url,
-            meta: meta.value,
-            metaVariant: meta.variant,
-            metaPosition: displayConfig.metaPosition,
-          }
-        }),
-      }
-    }),
-    categoryNavItems: categories.map((category) => ({
-      label: category.categoryName,
-      href: `/categories/${category.slug}`,
-    })),
-    homeModules,
-  }
+        return {
+          id: item.id,
+          title: item.title,
+          url: item.url,
+          meta: meta.value,
+          metaVariant: meta.variant,
+          metaPosition: displayConfig.metaPosition,
+        }
+      }),
+    }
+  })
 }
 
 async function listHomeModules(): Promise<HomeModule[]> {

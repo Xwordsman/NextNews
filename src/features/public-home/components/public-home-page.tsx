@@ -67,6 +67,7 @@ function getSourceCardBackground(source: HomeSource, isDarkMode: boolean) {
 }
 
 type PublicHomePageProps = {
+  activePath?: string
   initialSources?: HomeSource[]
   categoryNavItems?: typeof defaultCategoryNavItems
   homeModules?: HomeModule[]
@@ -182,6 +183,7 @@ function getStoryRightMeta(item: HomeSource["items"][number]) {
 }
 
 export function PublicHomePage({
+  activePath = "/",
   categoryNavItems = defaultCategoryNavItems,
   homeModules = [],
   initialSources,
@@ -508,7 +510,7 @@ export function PublicHomePage({
                 >
                   {primaryNavItems.map((item) => (
                     <NavPill
-                      active={item.href === "/"}
+                      active={item.href === activePath}
                       href={item.href}
                       key={item.href}
                       label={item.label}
@@ -527,6 +529,7 @@ export function PublicHomePage({
                 >
                   {categoryNavItems.map((item) => (
                     <NavPill
+                      active={item.href === activePath}
                       href={item.href}
                       key={item.href}
                       label={item.label}
